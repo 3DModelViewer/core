@@ -13,6 +13,14 @@ BEGIN
 END$$
 DELIMITER ;
 
+DROP FUNCTION IF EXISTS lex;
+DELIMITER $$
+CREATE FUNCTION lex(src BINARY(16)) RETURNS VARCHAR(32) DETERMINISTIC
+BEGIN
+    RETURN LOWER(HEX(src));
+END$$
+DELIMITER ;
+
 DROP FUNCTION IF EXISTS createTempIdsTable;
 DELIMITER $$
 CREATE FUNCTION createTempIdsTable(ids varchar(3300)) RETURNS BOOL NOT DETERMINISTIC
@@ -159,7 +167,6 @@ CREATE TABLE documentVersion(
     fileExtension VARCHAR(10) NOT NULL,
     urn VARCHAR(1000) NOT NULL,
     status VARCHAR(50) NOT NULL,
-    originalJson VARCHAR(19000) NULL,
 	PRIMARY KEY (document, version, id),
     UNIQUE INDEX (id),
     FOREIGN KEY (project) REFERENCES project(id) ON DELETE CASCADE,
@@ -326,7 +333,7 @@ BEGIN
         locale = locale,
         timeFormat = timeFormat;
         
-	SELECT HEX(u.id) AS id, u.username, u.avatar, u.fullName, u.superUser, u.description, u.uiLanguage, u.uiTheme, u.locale, u.timeFormat FROM user AS u WHERE u.autodeskId = autodeskId;
+	SELECT lex(u.id) AS id, u.username, u.avatar, u.fullName, u.superUser, u.description, u.uiLanguage, u.uiTheme, u.locale, u.timeFormat FROM user AS u WHERE u.autodeskId = autodeskId;
 END$$
 DELIMITER ;
 
@@ -375,7 +382,7 @@ DELIMITER $$
 CREATE PROCEDURE userGet(ids VARCHAR(6600))
 BEGIN
 	IF createTempIdsTable(ids) THEN
-		SELECT HEX(u.id) AS id, username, avatar, fullName FROM user AS u INNER JOIN tempIds AS t ON u.id = t.id;
+		SELECT lex(u.id) AS id, username, avatar, fullName FROM user AS u INNER JOIN tempIds AS t ON u.id = t.id;
     END IF;
     DROP TEMPORARY TABLE IF EXISTS tempIds;
 END$$
@@ -422,13 +429,13 @@ BEGIN
 			MESSAGE_TEXT = "offset beyond the end of results set",
             MYSQL_ERRNO = 45004;
     ELSE IF sortBy = 'usernameAsc' THEN
-		SELECT totalResults, HEX(id) AS id, username, avatar, fullName, description FROM tempUserSearch ORDER BY username ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, username, avatar, fullName, description FROM tempUserSearch ORDER BY username ASC LIMIT os, l;
 	ELSE IF sortBy = 'usernameDesc' THEN
-		SELECT totalResults, HEX(id) AS id, username, avatar, fullName, description FROM tempUserSearch ORDER BY username DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, username, avatar, fullName, description FROM tempUserSearch ORDER BY username DESC LIMIT os, l;
 	ELSE IF sortBy = 'fullNameDesc' THEN
-		SELECT totalResults, HEX(id) AS id, username, avatar, fullName, description FROM tempUserSearch ORDER BY fullName DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, username, avatar, fullName, description FROM tempUserSearch ORDER BY fullName DESC LIMIT os, l;
 	ELSE
-		SELECT totalResults, HEX(id) AS id, username, avatar, fullName, description FROM tempUserSearch ORDER BY fullName ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, username, avatar, fullName, description FROM tempUserSearch ORDER BY fullName ASC LIMIT os, l;
 	END IF;
     END IF;
     END IF;
@@ -488,17 +495,17 @@ BEGIN
 				MESSAGE_TEXT = "offset beyond the end of results set",
 				MYSQL_ERRNO = 45004;
 		ELSE IF sortBy = 'roleDesc' THEN
-			SELECT totalResults, HEX(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY role DESC, fullName ASC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY role DESC, fullName ASC LIMIT os, l;
 		ELSE IF sortBy = 'roleAsc' THEN
-			SELECT totalResults, HEX(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY role ASC, fullName ASC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY role ASC, fullName ASC LIMIT os, l;
 		ELSE IF sortBy = 'usernameDesc' THEN
-			SELECT totalResults, HEX(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY username DESC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY username DESC LIMIT os, l;
 		ELSE IF sortBy = 'usernameAsc' THEN
-			SELECT totalResults, HEX(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY username ASC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY username ASC LIMIT os, l;
         ELSE IF sortBy = 'fullNameDesc' THEN
-			SELECT totalResults, HEX(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY fullName DESC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY fullName DESC LIMIT os, l;
 		ELSE
-			SELECT totalResults, HEX(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY fullName ASC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY fullName ASC LIMIT os, l;
 		END IF;
 		END IF;
         END IF;
@@ -567,17 +574,17 @@ BEGIN
 				MESSAGE_TEXT = "offset beyond the end of results set",
 				MYSQL_ERRNO = 45004;
 		ELSE IF sortBy = 'roleDesc' THEN
-			SELECT totalResults, HEX(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY role DESC, fullName ASC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY role DESC, fullName ASC LIMIT os, l;
 		ELSE IF sortBy = 'roleAsc' THEN
-			SELECT totalResults, HEX(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY role ASC, fullName ASC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY role ASC, fullName ASC LIMIT os, l;
 		ELSE IF sortBy = 'usernameDesc' THEN
-			SELECT totalResults, HEX(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY username DESC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY username DESC LIMIT os, l;
 		ELSE IF sortBy = 'usernameAsc' THEN
-			SELECT totalResults, HEX(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY username ASC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY username ASC LIMIT os, l;
         ELSE IF sortBy = 'fullNameDesc' THEN
-			SELECT totalResults, HEX(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY fullName DESC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY fullName DESC LIMIT os, l;
 		ELSE
-			SELECT totalResults, HEX(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY fullName ASC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, username, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY fullName ASC LIMIT os, l;
 		END IF;
 		END IF;
         END IF;
@@ -624,7 +631,7 @@ BEGIN
 	VALUES
 		(opId, UNHEX(forUserId), 'owner');
     
-	SELECT HEX(id) AS id, name, description, created, imageFileExtension FROM project WHERE id = opId;
+	SELECT lex(id) AS id, name, description, created, imageFileExtension FROM project WHERE id = opId;
 END$$
 DELIMITER ;
 
@@ -757,15 +764,14 @@ DROP PROCEDURE IF EXISTS projectGet;
 DELIMITER $$
 CREATE PROCEDURE projectGet(forUserId VARCHAR(32), projects VARCHAR(3300))
 BEGIN
-	DECLARE currentProjectId BINARY(16) DEFAULT NULL;
 	DECLARE projectsCount INT DEFAULT 0;
     DECLARE permissionsCount INT DEFAULT 0;
     
 	IF createTempIdsTable(projects) THEN        
 		SELECT COUNT(*) INTO projectsCount FROM tempIds;
-        SELECT COUNT(*) INTO permissionsCount FROM permission AS p INNER JOIN tempIds AS t ON p.project = t.id WHERE user = UNHEX(forUserId);
+        SELECT COUNT(*) INTO permissionsCount FROM permission AS p INNER JOIN tempIds AS t ON p.project = t.id WHERE p.user = UNHEX(forUserId);
         IF projectsCount = permissionsCount THEN
-			SELECT HEX(p.id) AS id, name, description, created, imageFileExtension FROM project AS p INNER JOIN tempIds AS t ON p.id = t.id;
+			SELECT lex(p.id) AS id, name, description, created, imageFileExtension FROM project AS p INNER JOIN tempIds AS t ON p.id = t.id;
         ELSE
 			SIGNAL SQLSTATE 
 				'45002'
@@ -808,13 +814,13 @@ BEGIN
 			MESSAGE_TEXT = "offset beyond the end of results set",
             MYSQL_ERRNO = 45004;
     ELSE IF sortBy = 'createdDesc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY created DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY created DESC LIMIT os, l;
     ELSE IF sortBy = 'createdAsc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY created ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY created ASC LIMIT os, l;
     ELSE IF sortBy = 'nameDesc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY name DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY name DESC LIMIT os, l;
     ELSE
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY name ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY name ASC LIMIT os, l;
 	END IF;
     END IF;
     END IF;
@@ -880,17 +886,17 @@ BEGIN
 			MESSAGE_TEXT = "offset beyond the end of results set",
             MYSQL_ERRNO = 45004;
     ELSE IF sortBy = 'roleDesc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY role DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY role DESC LIMIT os, l;
     ELSE IF sortBy = 'roleAsc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY role ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY role ASC LIMIT os, l;
     ELSE IF sortBy = 'createdDesc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY created DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY created DESC LIMIT os, l;
     ELSE IF sortBy = 'createdAsc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY created ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY created ASC LIMIT os, l;
     ELSE IF sortBy = 'nameDesc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY name DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY name DESC LIMIT os, l;
 	ELSE
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY name ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY name ASC LIMIT os, l;
 	END IF;
     END IF;
     END IF;
@@ -958,17 +964,17 @@ BEGIN
 			MESSAGE_TEXT = "offset beyond the end of results set",
             MYSQL_ERRNO = 45004;
     ELSE IF sortBy = 'roleDesc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY role DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY role DESC LIMIT os, l;
     ELSE IF sortBy = 'roleAsc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY role ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY role ASC LIMIT os, l;
     ELSE IF sortBy = 'createdDesc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY created DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY created DESC LIMIT os, l;
     ELSE IF sortBy = 'createdAsc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY created ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY created ASC LIMIT os, l;
     ELSE IF sortBy = 'nameDesc' THEN
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY name DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY name DESC LIMIT os, l;
 	ELSE
-		SELECT totalResults, HEX(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY name ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY name ASC LIMIT os, l;
 	END IF;
     END IF;
     END IF;
@@ -998,7 +1004,7 @@ BEGIN
         SET forUserRole = _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
 		IF (newNodeType = 'folder' AND forUserRole IN ('owner', 'admin', 'organiser')) OR (newNodeType != 'folder' AND forUserRole IN ('owner', 'admin', 'organiser', 'contributor')) THEN
 			INSERT INTO treeNode (id, parent, project, name, nodeType) VALUES (newTreeNodeId, UNHEX(parentId), projectId, newNodeName, newNodeType);
-			SELECT HEX(newTreeNodeId) AS id, parentId AS parent, HEX(projectId) AS project, newNodeName AS name, newNodeType AS nodeType;
+			SELECT lex(newTreeNodeId) AS id, parentId AS parent, lex(projectId) AS project, newNodeName AS name, newNodeType AS nodeType;
 		ELSE 
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1027,11 +1033,11 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS treeNodeCreateDocument;
 DELIMITER $$
-CREATE PROCEDURE treeNodeCreateDocument(forUserId VARCHAR(32), parentId VARCHAR(32), documentName VARCHAR(50), uploadComment VARCHAR(250), fileExtension VARCHAR(10))
+CREATE PROCEDURE treeNodeCreateDocument(forUserId VARCHAR(32), parentId VARCHAR(32), documentName VARCHAR(50), documentVersionId VARCHAR(32), uploadComment VARCHAR(250), fileExtension VARCHAR(10), urn VARCHAR(1000), status VARCHAR(50))
 BEGIN
     DECLARE newTreeNodeId BINARY(16) DEFAULT opUuid();
 	CALL _treeNode_createNode(forUserId, newTreeNodeId, parentId, documentName, 'document');
-    #TODO insert documentVersion row
+    CALL documentVersionCreate(forUserId, lex(newTreeNodeId), documentVersionId, uploadComment, fileExtension, urn, status);
 END$$
 DELIMITER ;
 
@@ -1051,7 +1057,7 @@ CREATE PROCEDURE treeNodeSetName(forUserId VARCHAR(32), treeNodeId VARCHAR(32), 
 BEGIN
 	DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM treeNode WHERE id = UNHEX(treeNodeId));
 	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
-	IF forUserRole IN ('owner', 'admin', 'organiser') THEN
+	IF forUserRole IN ('owner', 'admin', 'organiser') AND UNHEX(treeNodeId) != projectId THEN
 		UPDATE treeNode SET name = newName WHERE id = UNHEX(treeNodeId);
 	ELSE 
 		SIGNAL SQLSTATE 
@@ -1147,9 +1153,9 @@ BEGIN
             IF totalResults = 0 THEN
 				SELECT totalResults;
             ELSE IF sortBy = 'nameDesc' THEN
-				SELECT totalResults, HEX(id) AS id, HEX(parent) AS parent, HEX(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType ORDER BY name DESC LIMIT os, l;
+				SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType ORDER BY name DESC LIMIT os, l;
             ELSE
-				SELECT totalResults, HEX(id) AS id, HEX(parent) AS parent, HEX(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType ORDER BY name ASC LIMIT os, l;				
+				SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType ORDER BY name ASC LIMIT os, l;				
             END IF;
             END IF;
 		ELSE 
@@ -1192,8 +1198,8 @@ BEGIN
             PRIMARY KEY (depth)
 		);
 		WHILE currentParent IS NOT NULL DO
-			SELECT HEX(id), parent, name INTO treeNodeId, currentParent, currentName FROM treeNode WHERE id = currentParent;
-			INSERT INTO tempTreeNodeGetParents (depth, id, parent, name) VALUES (depthCounter, treeNodeId, HEX(currentParent), currentName);
+			SELECT lex(id), parent, name INTO treeNodeId, currentParent, currentName FROM treeNode WHERE id = currentParent;
+			INSERT INTO tempTreeNodeGetParents (depth, id, parent, name) VALUES (depthCounter, treeNodeId, lex(currentParent), currentName);
             SET depthCounter = depthCounter + 1;
 		END WHILE;
         SELECT id, parent, name FROM tempTreeNodeGetParents ORDER BY depth DESC;
@@ -1237,7 +1243,7 @@ BEGIN
         INDEX (name)
 	);
     
-    INSERT INTO tempTreeNodeGlobalSearch (id, parent, project, name, nodeType) SELECT HEX(tn.id), HEX(tn.parent), HEX(tn.project), tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN permission AS p ON tn.project = p.project WHERE p.user = UNHEX(forUserId) AND tn.nodeType = childNodeType AND MATCH(tn.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+    INSERT INTO tempTreeNodeGlobalSearch (id, parent, project, name, nodeType) SELECT lex(tn.id), lex(tn.parent), lex(tn.project), tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN permission AS p ON tn.project = p.project WHERE p.user = UNHEX(forUserId) AND tn.nodeType = childNodeType AND MATCH(tn.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
     SELECT COUNT(*) INTO totalResults FROM tempTreeNodeGlobalSearch;
     
     IF totalResults = 0 THEN
@@ -1285,7 +1291,7 @@ BEGIN
     SET forUserRole = _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
     
 	IF forUserRole IS NOT NULL THEN
-		INSERT INTO tempTreeNodeProjectSearch (id, parent, project, name, nodeType) SELECT HEX(id), HEX(parent), HEX(project), name, nodeType FROM treeNode WHERE project = UNHEX(projectId) AND nodeType = childNodeType AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+		INSERT INTO tempTreeNodeProjectSearch (id, parent, project, name, nodeType) SELECT lex(id), lex(parent), lex(project), name, nodeType FROM treeNode WHERE project = UNHEX(projectId) AND nodeType = childNodeType AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE); 
 		SELECT COUNT(*) INTO totalResults FROM tempTreeNodeProjectSearch;
     
 		IF totalResults = 0 THEN
@@ -1305,5 +1311,50 @@ DELIMITER ;
 # END TREENODE
 
 # START DOCUMENTVERSION
+
+DROP PROCEDURE IF EXISTS documentVersionCreate;
+DELIMITER $$
+CREATE PROCEDURE documentVersionCreate(forUserId VARCHAR(32), documentId VARCHAR(32), documentVersionId VARCHAR(32), uploadComment VARCHAR(250), fileExtension VARCHAR(10), urn VARCHAR(1000), status VARCHAR(50))
+BEGIN
+	DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM treeNode WHERE id = UNHEX(documentId));
+    DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
+    DECLARE version INT DEFAULT (SELECT COUNT(*) FROM documentVersion WHERE document = UNHEX(documentId)) + 1;
+    
+    IF forUserRole IN ('owner', 'admin', 'organiser', 'contributor') THEN
+		INSERT INTO documentVersion (id, document, version, project, uploaded, uploadComment, uploadedBy, fileExtension, urn, status)
+        VALUES (UNHEX(documentVersionId), UNHEX(documentId), version, projectId, UTC_TIMESTAMP(), uploadComment, UNHEX(forUserId), fileExtension, urn, status);
+	ELSE
+		SIGNAL SQLSTATE 
+			'45002'
+		SET
+			MESSAGE_TEXT = "Unauthorized action: documentVersion create",
+			MYSQL_ERRNO = 45002;
+    END IF;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS documentVersionGet;
+DELIMITER $$
+CREATE PROCEDURE documentVersionGet(forUserId VARCHAR(32), documentVersions VARCHAR(3300))
+BEGIN
+	DECLARE projectId BINARY(16) DEFAULT NULL;
+    DECLARE distinctProjectsCount INT DEFAULT 0;
+    
+	IF createTempIdsTable(documentVersions) THEN
+		SELECT project INTO projectId FROM documentVersion WHERE id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
+        SELECT COUNT(DISTINCT project) INTO distinctProjectsCount FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
+        IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
+			SELECT lex(dv.id) AS id, lex(document) as document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, status FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
+        ELSE
+			SIGNAL SQLSTATE 
+				'45002'
+			SET
+				MESSAGE_TEXT = "Unauthorized action: documentVersion get",
+				MYSQL_ERRNO = 45002;
+        END IF;		
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS tempIds;
+END$$
+DELIMITER ;
 
 # END DOCUMENTVERSION

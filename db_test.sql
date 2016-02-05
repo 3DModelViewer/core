@@ -1300,9 +1300,9 @@ DELIMITER ;
 CALL test_treeNodeCreateFolder();
 DROP PROCEDURE IF EXISTS test_treeNodeCreateFolder;
 
-DROP PROCEDURE IF EXISTS test_treeNodeCreateDocument;
+DROP PROCEDURE IF EXISTS test_treeNodeCreateDocument_and_documentVersionCreate;
 DELIMITER $$
-CREATE PROCEDURE test_treeNodeCreateDocument()
+CREATE PROCEDURE test_treeNodeCreateDocument_and_documentVersionCreate()
 BEGIN
 	DECLARE ashId VARCHAR(32) DEFAULT '00000000000000000000000000000000';
 	DECLARE bobId VARCHAR(32) DEFAULT '11111111111111111111111111111111';
@@ -1344,20 +1344,20 @@ BEGIN
 		(UNHEX('99999999999999999999999999999999'), UNHEX(ashProjId), UNHEX(ashProjId), 'some doc', 'document');
         
 	SELECT '<somUuid>, ashProjId, ashProjId, new doc, document';
-	CALL treeNodeCreateDocument(ashId, ashProjId, 'new doc', 'new doc upload comment', 'nwd');
+	CALL treeNodeCreateDocument(ashId, ashProjId, 'new doc', HEX(opUuid()), 'new doc upload comment', 'nwd', 'a urn', 'a status');
 	SELECT '<somUuid>, ashProjId, ashProjId, another new doc, document';
-	CALL treeNodeCreateDocument(catId, ashProjId, 'another new doc', 'another new doc upload comment', 'nwd');
+	CALL treeNodeCreateDocument(catId, ashProjId, 'another new doc', HEX(opUuid()), 'another new doc upload comment', 'nwd', 'another urn', 'another status');
 	SELECT 'error bob is not allowed to make documents';
-	CALL treeNodeCreateDocument(bobId, ashProjId, 'another new doc', 'a new doc upload comment', 'nwd');
+	CALL treeNodeCreateDocument(bobId, ashProjId, 'another new doc', HEX(opUuid()), 'a new doc upload comment', 'nwd', 'a urn', 'a status');
 	SELECT 'error cant create tree node under none folder node';
-	CALL treeNodeCreateDocument(ashId, '99999999999999999999999999999999', 'another new doc', 'a new doc upload comment', 'nwd');
+	CALL treeNodeCreateDocument(ashId, '99999999999999999999999999999999', HEX(opUuid()), 'another new doc', 'a new doc upload comment', 'nwd', 'a urn', 'a status');
     
 	DELETE FROM user WHERE autodeskId IN ('ash autodeskId', 'bob autodeskId', 'cat autodeskId');
 	DELETE FROM project WHERE id IN (UNHEX(ashProjId), UNHEX(bobProjId), UNHEX(catProjId));
 END $$
 DELIMITER ;
-CALL test_treeNodeCreateDocument();
-DROP PROCEDURE IF EXISTS test_treeNodeCreateDocument;
+CALL test_treeNodeCreateDocument_and_documentVersionCreate();
+DROP PROCEDURE IF EXISTS test_treeNodeCreateDocument_and_documentVersionCreate;
 
 DROP PROCEDURE IF EXISTS test_treeNodeCreateViewerState;
 DELIMITER $$
@@ -1863,3 +1863,64 @@ END $$
 DELIMITER ;
 CALL test_treeNodeProjectSearch();
 DROP PROCEDURE IF EXISTS test_treeNodeProjectSearch;
+
+DROP PROCEDURE IF EXISTS test_documentVersionGet;
+DELIMITER $$
+CREATE PROCEDURE test_documentVersionGet()
+BEGIN
+	DECLARE ashId VARCHAR(32) DEFAULT '00000000000000000000000000000000';
+	DECLARE bobId VARCHAR(32) DEFAULT '11111111111111111111111111111111';
+	DECLARE catId VARCHAR(32) DEFAULT '22222222222222222222222222222222';
+    DECLARE ashProjId VARCHAR(32) DEFAULT '33333333333333333333333333333333';
+    DECLARE bobProjId VARCHAR(32) DEFAULT '44444444444444444444444444444444';
+    DECLARE catProjId VARCHAR(32) DEFAULT '55555555555555555555555555555555';
+    DECLARE docVer1Id VARCHAR(32) DEFAULT HEX(opUuid());
+    DECLARE docVer2Id VARCHAR(32) DEFAULT HEX(opUuid());
+    DECLARE errorReceiver BOOL;
+	DECLARE CONTINUE HANDLER FOR 45002 SELECT TRUE INTO errorReceiver;
+	DECLARE CONTINUE HANDLER FOR 45003 SELECT TRUE INTO errorReceiver;
+    
+	INSERT INTO user
+		(id, autodeskId, openId, username, avatar, fullName, email, superUser, lastLogin, description, uiLanguage, uiTheme, locale, timeFormat)
+	VALUES
+		(UNHEX(ashId), 'ash autodeskId', 'ash openId', 'ash username', 'ash avatar', 'ash fullName', 'ash email', FALSE, UTC_TIMESTAMP(), 'ash description', 'en', 'dark', 'en-GB', 'llll'),
+		(UNHEX(bobId), 'bob autodeskId', 'bob openId', 'bob username', 'bob avatar', 'bob fullName', 'bob email', FALSE, UTC_TIMESTAMP(), 'bob description', 'en', 'dark', 'en-GB', 'llll'),
+		(UNHEX(catId), 'cat autodeskId', 'cat openId', 'cat username', 'cat avatar', 'cat fullName', 'cat email', FALSE, UTC_TIMESTAMP(), 'cat description', 'en', 'dark', 'en-GB', 'llll');
+    
+    INSERT INTO project
+		(id, name, description, created, imageFileExtension)
+	VALUES
+		(UNHEX(ashProjId), 'ashProj name', 'ashProj description', UTC_TIMESTAMP(), 'png'),
+		(UNHEX(bobProjId), 'bobProj name', 'bobProj description', UTC_TIMESTAMP(), 'png'),
+		(UNHEX(catProjId), 'catProj name', 'catProj description', UTC_TIMESTAMP(), 'png');
+    
+    INSERT INTO permission
+		(project, user, role)
+	VALUES
+		(UNHEX(ashProjId), UNHEX(ashId), 'owner'),
+		(UNHEX(ashProjId), UNHEX(bobId), 'observer'),
+		(UNHEX(ashProjId), UNHEX(catId), 'contributor'),
+		(UNHEX(bobProjId), UNHEX(bobId), 'owner'),
+		(UNHEX(catProjId), UNHEX(catId), 'owner');
+        
+	INSERT INTO treeNode
+		(id, parent, project, name, nodeType)
+	VALUES
+		(UNHEX(ashProjId), NULL, UNHEX(ashProjId), 'root', 'folder'),
+		(UNHEX('99999999999999999999999999999999'), UNHEX(ashProjId), UNHEX(ashProjId), 'some doc', 'document');
+        
+	SELECT '<somUuid>, ashProjId, ashProjId, new doc, document';
+	CALL treeNodeCreateDocument(ashId, ashProjId, 'new doc', docVer1Id, 'new doc upload comment', 'nwd', 'a urn', 'a status');
+	SELECT '<somUuid>, ashProjId, ashProjId, another new doc, document';
+	CALL treeNodeCreateDocument(catId, ashProjId, 'another new doc', docVer2Id, 'another new doc upload comment', 'nwd', 'another urn', 'another status');
+    
+    SELECT '2';
+    CALL documentVersionGet(ashId, CONCAT(docVer1Id, ',', docVer2Id));
+    
+	DELETE FROM user WHERE autodeskId IN ('ash autodeskId', 'bob autodeskId', 'cat autodeskId');
+	DELETE FROM project WHERE id IN (UNHEX(ashProjId), UNHEX(bobProjId), UNHEX(catProjId));
+END $$
+DELIMITER ;
+CALL test_documentVersionGet();
+DROP PROCEDURE IF EXISTS test_documentVersionGet;
+
