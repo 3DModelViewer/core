@@ -182,6 +182,7 @@ CREATE TABLE sheet(
     name VARCHAR(100) NULL,
     baseUrn VARCHAR(1000) NOT NULL,
     path VARCHAR(1000) NOT NULL,
+    thumbnails VARCHAR(4000) NULL,
     role VARCHAR(50) NULL,
 	PRIMARY KEY (documentVersion, id),
     UNIQUE INDEX (id),
@@ -189,14 +190,6 @@ CREATE TABLE sheet(
     FULLTEXT(name),
     FOREIGN KEY (project) REFERENCES project(id) ON DELETE CASCADE,
     FOREIGN KEY (documentVersion) REFERENCES documentVersion(id) ON DELETE CASCADE
-);
-
-DROP TABLE IF EXISTS thumbnail;
-CREATE TABLE thumbnail(
-	sheet BINARY(16) NOT NULL,
-	path VARCHAR(1000) NOT NULL,
-	PRIMARY KEY (sheet, path),
-    FOREIGN KEY (sheet) REFERENCES sheet(id) ON DELETE CASCADE
 );
 
 # END TABLES
