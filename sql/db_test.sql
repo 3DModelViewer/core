@@ -1593,6 +1593,7 @@ BEGIN
     DECLARE errorReceiver BOOL;
 	DECLARE CONTINUE HANDLER FOR 45002 SELECT TRUE INTO errorReceiver;
 	DECLARE CONTINUE HANDLER FOR 45003 SELECT TRUE INTO errorReceiver;
+	DECLARE CONTINUE HANDLER FOR 45004 SELECT TRUE INTO errorReceiver;
     
 	INSERT INTO user
 		(id, autodeskId, openId, username, avatar, fullName, email, superUser, lastLogin, description, uiLanguage, uiTheme, locale, timeFormat)
@@ -1726,6 +1727,7 @@ BEGIN
     DECLARE errorReceiver BOOL;
 	DECLARE CONTINUE HANDLER FOR 45002 SELECT TRUE INTO errorReceiver;
 	DECLARE CONTINUE HANDLER FOR 45003 SELECT TRUE INTO errorReceiver;
+	DECLARE CONTINUE HANDLER FOR 45004 SELECT TRUE INTO errorReceiver;
     
 	INSERT INTO user
 		(id, autodeskId, openId, username, avatar, fullName, email, superUser, lastLogin, description, uiLanguage, uiTheme, locale, timeFormat)
@@ -1803,6 +1805,7 @@ BEGIN
     DECLARE errorReceiver BOOL;
 	DECLARE CONTINUE HANDLER FOR 45002 SELECT TRUE INTO errorReceiver;
 	DECLARE CONTINUE HANDLER FOR 45003 SELECT TRUE INTO errorReceiver;
+	DECLARE CONTINUE HANDLER FOR 45004 SELECT TRUE INTO errorReceiver;
     
 	INSERT INTO user
 		(id, autodeskId, openId, username, avatar, fullName, email, superUser, lastLogin, description, uiLanguage, uiTheme, locale, timeFormat)
