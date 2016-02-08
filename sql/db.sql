@@ -1353,12 +1353,12 @@ BEGIN
 		SELECT project INTO projectId FROM documentVersion WHERE id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
         SELECT COUNT(DISTINCT project) INTO distinctProjectsCount FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
         IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
-			SELECT lex(dv.id) AS id, lex(document) as document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, status FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
+			SELECT lex(dv.id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, status FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
         ELSE
 			SIGNAL SQLSTATE 
 				'45002'
 			SET
-				MESSAGE_TEXT = "Unauthorized action: documentVersion get",
+				MESSAGE_TEXT = "Unauthorized action: documentVersion get cross project",
 				MYSQL_ERRNO = 45002;
         END IF;		
     END IF;
@@ -1366,4 +1366,44 @@ BEGIN
 END$$
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS documentVersionGetForDocument;
+DELIMITER $$
+CREATE PROCEDURE documentVersionGetForDocument(forUserId VARCHAR(32), documentId VARCHAR(32), os INT, l INT, sortBy VARCHAR(50))
+BEGIN
+	DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM treeNode WHERE id = UNHEX(documentId));
+	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
+    DECLARE totalResults INT DEFAULT 0;
+    
+	IF forUserRole IS NOT NULL THEN
+		SELECT COUNT(*) INTO totalResults FROM documentVersion WHERE document = UNHEX(documentId);
+        IF os >= totalResults THEN
+			SELECT totalResults;
+			SIGNAL SQLSTATE
+				'45004'
+			SET
+				MESSAGE_TEXT = "offset beyond the end of results set",
+				MYSQL_ERRNO = 45004;
+		ELSE IF sortBy = 'versionAsc' THEN
+			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, status FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version ASC LIMIT os, l;
+		ELSE
+			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, status FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version DESC LIMIT os, l;
+        END IF;
+        END IF;
+    ELSE 
+		SIGNAL SQLSTATE 
+			'45002'
+		SET
+			MESSAGE_TEXT = "Unauthorized action: documentVersion get by document",
+			MYSQL_ERRNO = 45002;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS tempIds;
+END$$
+DELIMITER ;
+
 # END DOCUMENTVERSION
+
+# START SHEET
+
+	
+
+# END SHEET
