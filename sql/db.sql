@@ -1143,8 +1143,14 @@ BEGIN
     IF parentNodeType = 'folder' THEN
 		IF forUserRole IS NOT NULL THEN
 			SELECT COUNT(*) INTO totalResults FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType;
-            IF totalResults = 0 THEN
-				SELECT totalResults;
+            
+		IF os >= totalResults THEN
+			SELECT totalResults;
+			SIGNAL SQLSTATE
+				'45004'
+			SET
+				MESSAGE_TEXT = "offset beyond the end of results set",
+				MYSQL_ERRNO = 45004;
             ELSE IF sortBy = 'nameDesc' THEN
 				SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType ORDER BY name DESC LIMIT os, l;
             ELSE
@@ -1239,8 +1245,13 @@ BEGIN
     INSERT INTO tempTreeNodeGlobalSearch (id, parent, project, name, nodeType) SELECT lex(tn.id), lex(tn.parent), lex(tn.project), tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN permission AS p ON tn.project = p.project WHERE p.user = UNHEX(forUserId) AND tn.nodeType = childNodeType AND MATCH(tn.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
     SELECT COUNT(*) INTO totalResults FROM tempTreeNodeGlobalSearch;
     
-    IF totalResults = 0 THEN
+    IF os >= totalResults THEN
 		SELECT totalResults;
+        SIGNAL SQLSTATE
+			'45004'
+		SET
+			MESSAGE_TEXT = "offset beyond the end of results set",
+            MYSQL_ERRNO = 45004;
     ELSE IF sortBy = 'nameDesc' THEN
 		SELECT totalResults, id, parent, project, name, nodeType FROM tempTreeNodeGlobalSearch ORDER BY name DESC LIMIT os, l;
     ELSE
@@ -1286,9 +1297,14 @@ BEGIN
 	IF forUserRole IS NOT NULL THEN
 		INSERT INTO tempTreeNodeProjectSearch (id, parent, project, name, nodeType) SELECT lex(id), lex(parent), lex(project), name, nodeType FROM treeNode WHERE project = UNHEX(projectId) AND nodeType = childNodeType AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE); 
 		SELECT COUNT(*) INTO totalResults FROM tempTreeNodeProjectSearch;
-    
-		IF totalResults = 0 THEN
+		
+		IF os >= totalResults THEN
 			SELECT totalResults;
+			SIGNAL SQLSTATE
+				'45004'
+			SET
+				MESSAGE_TEXT = "offset beyond the end of results set",
+				MYSQL_ERRNO = 45004;
 		ELSE IF sortBy = 'nameDesc' THEN
 			SELECT totalResults, id, parent, project, name, nodeType FROM tempTreeNodeProjectSearch ORDER BY name DESC LIMIT os, l;
 		ELSE
