@@ -1235,15 +1235,15 @@ BEGIN
 	
     DROP TEMPORARY TABLE IF EXISTS tempTreeNodeGlobalSearch;
 	CREATE TEMPORARY TABLE tempTreeNodeGlobalSearch(
-		id VARCHAR(32) NOT NULL,
-		parent VARCHAR(32) NULL,
-        project VARCHAR(32) NOT NULL,
+		id BINARY(16) NOT NULL,
+		parent BINARY(16) NULL,
+        project BINARY(16) NOT NULL,
 		name VARCHAR(50) NULL,
         nodeType VARCHAR(50) NOT NULL,
         INDEX (name)
 	);
     
-    INSERT INTO tempTreeNodeGlobalSearch (id, parent, project, name, nodeType) SELECT lex(tn.id), lex(tn.parent), lex(tn.project), tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN permission AS p ON tn.project = p.project WHERE p.user = UNHEX(forUserId) AND tn.nodeType = childNodeType AND MATCH(tn.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+    INSERT INTO tempTreeNodeGlobalSearch (id, parent, project, name, nodeType) SELECT tn.id, tn.parent, tn.project, tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN permission AS p ON tn.project = p.project WHERE p.user = UNHEX(forUserId) AND tn.nodeType = childNodeType AND MATCH(tn.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
     SELECT COUNT(*) INTO totalResults FROM tempTreeNodeGlobalSearch;
     
     IF os >= totalResults THEN
@@ -1254,9 +1254,9 @@ BEGIN
 			MESSAGE_TEXT = "offset beyond the end of results set",
             MYSQL_ERRNO = 45004;
     ELSE IF sortBy = 'nameDesc' THEN
-		SELECT totalResults, id, parent, project, name, nodeType FROM tempTreeNodeGlobalSearch ORDER BY name DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM tempTreeNodeGlobalSearch ORDER BY name DESC LIMIT os, l;
     ELSE
-		SELECT totalResults, id, parent, project, name, nodeType FROM tempTreeNodeGlobalSearch ORDER BY name ASC LIMIT os, l;				
+		SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM tempTreeNodeGlobalSearch ORDER BY name ASC LIMIT os, l;			
     END IF;
     END IF;
     
@@ -1285,9 +1285,9 @@ BEGIN
     
     DROP TEMPORARY TABLE IF EXISTS tempTreeNodeProjectSearch;
 	CREATE TEMPORARY TABLE tempTreeNodeProjectSearch(
-		id VARCHAR(32) NOT NULL,
-		parent VARCHAR(32) NULL,
-        project VARCHAR(32) NOT NULL,
+		id BINARY(16) NOT NULL,
+		parent BINARY(16) NULL,
+        project BINARY(16) NOT NULL,
 		name VARCHAR(50) NULL,
         nodeType VARCHAR(50) NOT NULL,
         INDEX (name)
@@ -1296,7 +1296,7 @@ BEGIN
     SET forUserRole = _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
     
 	IF forUserRole IS NOT NULL THEN
-		INSERT INTO tempTreeNodeProjectSearch (id, parent, project, name, nodeType) SELECT lex(id), lex(parent), lex(project), name, nodeType FROM treeNode WHERE project = UNHEX(projectId) AND nodeType = childNodeType AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+		INSERT INTO tempTreeNodeProjectSearch (id, parent, project, name, nodeType) SELECT id, parent, project, name, nodeType FROM treeNode WHERE project = UNHEX(projectId) AND nodeType = childNodeType AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE); 
 		SELECT COUNT(*) INTO totalResults FROM tempTreeNodeProjectSearch;
 		
 		IF os >= totalResults THEN
@@ -1307,9 +1307,9 @@ BEGIN
 				MESSAGE_TEXT = "offset beyond the end of results set",
 				MYSQL_ERRNO = 45004;
 		ELSE IF sortBy = 'nameDesc' THEN
-			SELECT totalResults, id, parent, project, name, nodeType FROM tempTreeNodeProjectSearch ORDER BY name DESC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM tempTreeNodeProjectSearch ORDER BY name DESC LIMIT os, l;
 		ELSE
-			SELECT totalResults, id, parent, project, name, nodeType FROM tempTreeNodeProjectSearch ORDER BY name ASC LIMIT os, l;				
+			SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM tempTreeNodeProjectSearch ORDER BY name ASC LIMIT os, l;		
 		END IF;
         END IF;
     END IF;
@@ -1375,6 +1375,18 @@ BEGIN
 	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
     DECLARE totalResults INT DEFAULT 0;
     
+	IF os < 0 THEN
+		SET os = 0;
+	END IF;
+    
+	IF l < 1 THEN
+		SET l = 1;
+	END IF;
+    
+	IF l > 100 THEN
+		SET l = 100;
+	END IF;
+    
 	IF forUserRole IS NOT NULL THEN
 		SELECT COUNT(*) INTO totalResults FROM documentVersion WHERE document = UNHEX(documentId);
         IF os >= totalResults THEN
@@ -1406,9 +1418,249 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS sheetCreate;
 DELIMITER $$
-CREATE PROCEDURE sheetCreate(documentVersionId VARCHAR(32), name VARCHAR(100), baseUrn VARCHAR(1000), path VARCHAR(1000), thumbnails VARCHAR(4000), role VARCHAR(50))
+CREATE PROCEDURE sheetCreate(documentVersionId VARCHAR(32), projectId VARCHAR(32), name VARCHAR(100), baseUrn VARCHAR(1000), path VARCHAR(1000), thumbnails VARCHAR(4000), role VARCHAR(50))
 BEGIN
+    INSERT INTO sheet (id, documentVersion, project, name, baseUrn, path, thumbnails, role)
+    VALUES (opUuid(), UNHEX(documentVersionId), UNHEX(projectId), name, baseUrn, path, thumbnails, role);
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sheetGet;
+DELIMITER $$
+CREATE PROCEDURE sheetGet(forUserId VARCHAR(32), sheets VARCHAR(3300))
+BEGIN
+    DECLARE projectId BINARY(16) DEFAULT NULL;
     
+    IF createTempIdsTable(sheets) THEN
+		SET projectId = (SELECT project FROM sheet WHERE id = (SELECT id FROM tempIds LIMIT 0, 1));
+        IF _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
+			IF (SELECT COUNT(DISTINCT project) FROM sheet WHERE id IN (SELECT id FROM tempIds)) = 1 THEN
+				SELECT lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM sheet WHERE id IN (SELECT id FROM tempIds);
+			ELSE
+				SIGNAL SQLSTATE 
+					'45002'
+				SET
+					MESSAGE_TEXT = "Unauthorized action: sheet get cross project",
+					MYSQL_ERRNO = 45002;
+				
+            END IF;
+		ELSE
+			SIGNAL SQLSTATE 
+				'45002'
+			SET
+				MESSAGE_TEXT = "Unauthorized action: sheet get",
+				MYSQL_ERRNO = 45002;
+        END IF;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS tempIds;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sheetGetForDocumentVersion;
+DELIMITER $$
+CREATE PROCEDURE sheetGetForDocumentVersion(forUserId VARCHAR(32), documentVersionId VARCHAR(32), os INT, l INT, sortBy VARCHAR(50))
+BEGIN
+    DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM documentVersion WHERE id = UNHEX(documentVersionId));
+	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
+    DECLARE totalResults INT DEFAULT 0;
+    
+	IF os < 0 THEN
+		SET os = 0;
+	END IF;
+    
+	IF l < 1 THEN
+		SET l = 1;
+	END IF;
+    
+	IF l > 100 THEN
+		SET l = 100;
+	END IF;
+    
+	IF forUserRole IS NOT NULL THEN
+		SELECT COUNT(*) INTO totalResults FROM sheet WHERE documentVersion = UNHEX(documentVersionId);
+        IF os >= totalResults THEN
+			SELECT totalResults;
+			SIGNAL SQLSTATE
+				'45004'
+			SET
+				MESSAGE_TEXT = "offset beyond the end of results set",
+				MYSQL_ERRNO = 45004;
+		ELSE IF sortBy = 'nameDesc' THEN
+			SELECT totalResults, lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM sheet WHERE documentVersion = UNHEX(documentVersionId) ORDER BY name DESC LIMIT os, l;
+		ELSE
+			SELECT totalResults, lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM sheet WHERE documentVersion = UNHEX(documentVersionId) ORDER BY name ASC LIMIT os, l;
+        END IF;
+        END IF;
+    ELSE 
+		SIGNAL SQLSTATE 
+			'45002'
+		SET
+			MESSAGE_TEXT = "Unauthorized action: sheet get by documentVersion",
+			MYSQL_ERRNO = 45002;
+    END IF;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sheetGlobalSearch;
+DELIMITER $$
+CREATE PROCEDURE sheetGlobalSearch(forUserId VARCHAR(32), search VARCHAR(100), os INT, l INT, sortBy VARCHAR(50))
+BEGIN
+    DECLARE totalResults INT DEFAULT 0;
+    
+	IF os < 0 THEN
+		SET os = 0;
+	END IF;
+    
+	IF l < 1 THEN
+		SET l = 1;
+	END IF;
+    
+	IF l > 100 THEN
+		SET l = 100;
+	END IF;
+	
+    DROP TEMPORARY TABLE IF EXISTS tempSheetGlobalSearch;
+	CREATE TEMPORARY TABLE tempSheetGlobalSearch(
+		id BINARY(16) NOT NULL,
+		documentVersion BINARY(16) NOT NULL,
+		project BINARY(16) NOT NULL,
+		name VARCHAR(100) NULL,
+		baseUrn VARCHAR(1000) NOT NULL,
+		path VARCHAR(1000) NOT NULL,
+		thumbnails VARCHAR(4000) NULL,
+		role VARCHAR(50) NULL,
+		PRIMARY KEY (documentVersion, id),
+        INDEX (name)
+	);
+    
+    INSERT INTO tempSheetGlobalSearch (id, documentVersion, project, name, baseUrn, path, thumbnails, role) SELECT s.id, s.documentVersion, s.project, s.name, s.baseUrn, s.path, s.thumbnails, s.role FROM sheet AS s INNER JOIN permission AS p ON s.project = p.project WHERE p.user = UNHEX(forUserId) AND MATCH(s.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+    SELECT COUNT(*) INTO totalResults FROM tempSheetGlobalSearch;
+    
+    IF os >= totalResults THEN
+		SELECT totalResults;
+        SIGNAL SQLSTATE
+			'45004'
+		SET
+			MESSAGE_TEXT = "offset beyond the end of results set",
+            MYSQL_ERRNO = 45004;
+    ELSE IF sortBy = 'nameDesc' THEN
+		SELECT totalResults, lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM tempSheetGlobalSearch ORDER BY name DESC LIMIT os, l;
+    ELSE
+		SELECT totalResults, lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM tempSheetGlobalSearch ORDER BY name ASC LIMIT os, l;
+    END IF;
+    END IF;
+    
+    DROP TEMPORARY TABLE IF EXISTS tempSheetGlobalSearch;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sheetGlobalSearch;
+DELIMITER $$
+CREATE PROCEDURE sheetGlobalSearch(forUserId VARCHAR(32), search VARCHAR(100), os INT, l INT, sortBy VARCHAR(50))
+BEGIN
+    DECLARE totalResults INT DEFAULT 0;
+    
+	IF os < 0 THEN
+		SET os = 0;
+	END IF;
+    
+	IF l < 1 THEN
+		SET l = 1;
+	END IF;
+    
+	IF l > 100 THEN
+		SET l = 100;
+	END IF;
+	
+    DROP TEMPORARY TABLE IF EXISTS tempSheetGlobalSearch;
+	CREATE TEMPORARY TABLE tempSheetGlobalSearch(
+		id BINARY(16) NOT NULL,
+		documentVersion BINARY(16) NOT NULL,
+		project BINARY(16) NOT NULL,
+		name VARCHAR(100) NULL,
+		baseUrn VARCHAR(1000) NOT NULL,
+		path VARCHAR(1000) NOT NULL,
+		thumbnails VARCHAR(4000) NULL,
+		role VARCHAR(50) NULL,
+		PRIMARY KEY (documentVersion, id),
+        INDEX (name)
+	);
+    
+    INSERT INTO tempSheetGlobalSearch (id, documentVersion, project, name, baseUrn, path, thumbnails, role) SELECT s.id, s.documentVersion, s.project, s.name, s.baseUrn, s.path, s.thumbnails, s.role FROM sheet AS s INNER JOIN permission AS p ON s.project = p.project WHERE p.user = UNHEX(forUserId) AND MATCH(s.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+    SELECT COUNT(*) INTO totalResults FROM tempSheetGlobalSearch;
+    
+    IF os >= totalResults THEN
+		SELECT totalResults;
+        SIGNAL SQLSTATE
+			'45004'
+		SET
+			MESSAGE_TEXT = "offset beyond the end of results set",
+            MYSQL_ERRNO = 45004;
+    ELSE IF sortBy = 'nameDesc' THEN
+		SELECT totalResults, lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM tempSheetGlobalSearch ORDER BY name DESC LIMIT os, l;
+    ELSE
+		SELECT totalResults, lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM tempSheetGlobalSearch ORDER BY name ASC LIMIT os, l;
+    END IF;
+    END IF;
+    
+    DROP TEMPORARY TABLE IF EXISTS tempSheetGlobalSearch;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sheetProjectSearch;
+DELIMITER $$
+CREATE PROCEDURE sheetProjectSearch(forUserId VARCHAR(32), projectId VARCHAR(32), search VARCHAR(100), os INT, l INT, sortBy VARCHAR(50))
+BEGIN
+    DECLARE totalResults INT DEFAULT 0;
+	DECLARE forUserRole VARCHAR(50) DEFAULT NULL;
+    
+	IF os < 0 THEN
+		SET os = 0;
+	END IF;
+    
+	IF l < 1 THEN
+		SET l = 1;
+	END IF;
+    
+	IF l > 100 THEN
+		SET l = 100;
+	END IF;
+	
+    DROP TEMPORARY TABLE IF EXISTS tempSheetProjectSearch;
+	CREATE TEMPORARY TABLE tempSheetProjectSearch(
+		id BINARY(16) NOT NULL,
+		documentVersion BINARY(16) NOT NULL,
+		project BINARY(16) NOT NULL,
+		name VARCHAR(100) NULL,
+		baseUrn VARCHAR(1000) NOT NULL,
+		path VARCHAR(1000) NOT NULL,
+		thumbnails VARCHAR(4000) NULL,
+		role VARCHAR(50) NULL,
+		PRIMARY KEY (documentVersion, id),
+        INDEX (name)
+	);
+    
+    SET forUserRole = _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
+    
+    IF forUserRole IS NOT NULL THEN
+		INSERT INTO tempSheetProjectSearch (id, documentVersion, project, name, baseUrn, path, thumbnails, role) SELECT id, documentVersion, project, name, baseUrn, path, thumbnails, role FROM sheet WHERE project = UNHEX(projectId) AND MATCH(s.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+		SELECT COUNT(*) INTO totalResults FROM tempSheetProjectSearch;
+    
+		IF os >= totalResults THEN
+			SELECT totalResults;
+			SIGNAL SQLSTATE
+				'45004'
+			SET
+				MESSAGE_TEXT = "offset beyond the end of results set",
+				MYSQL_ERRNO = 45004;
+		ELSE IF sortBy = 'nameDesc' THEN
+			SELECT totalResults, lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM tempSheetProjectSearch ORDER BY name DESC LIMIT os, l;
+		ELSE
+			SELECT totalResults, lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM tempSheetProjectSearch ORDER BY name ASC LIMIT os, l;
+		END IF;
+		END IF;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS tempSheetProjectSearch;
 END$$
 DELIMITER ;
 
