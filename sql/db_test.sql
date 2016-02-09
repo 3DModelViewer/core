@@ -1847,7 +1847,7 @@ BEGIN
 	CALL treeNodeProjectSearch(catId, ashProjId, 'root', 'folder', 0, 5, 'nameDesc');
     SELECT '1, root';
 	CALL treeNodeProjectSearch(catId, catProjId, 'root', 'folder', 0, 5, 'nameDesc');
-    SELECT 'nothing';
+    SELECT 'error bob is not a member of ashs project';
 	CALL treeNodeProjectSearch(bobId, ashProjId, 'sub', 'folder', 0, 5, 'nameDesc');
     SELECT '2, sub folder 1, sub folder 2';
 	CALL treeNodeProjectSearch(ashId, ashProjId, 'sub', 'folder', 0, 5, 'nameAsc');
@@ -1994,3 +1994,87 @@ DELIMITER ;
 CALL test_documentVersionGetForDocument();
 DROP PROCEDURE IF EXISTS test_documentVersionGetForDocument;
 
+DROP PROCEDURE IF EXISTS test_sheet;
+DELIMITER $$
+CREATE PROCEDURE test_sheet()
+BEGIN
+	DECLARE ashId VARCHAR(32) DEFAULT '00000000000000000000000000000000';
+	DECLARE bobId VARCHAR(32) DEFAULT '11111111111111111111111111111111';
+	DECLARE catId VARCHAR(32) DEFAULT '22222222222222222222222222222222';
+    DECLARE ashProjId VARCHAR(32) DEFAULT '33333333333333333333333333333333';
+    DECLARE bobProjId VARCHAR(32) DEFAULT '44444444444444444444444444444444';
+    DECLARE catProjId VARCHAR(32) DEFAULT '55555555555555555555555555555555';
+    DECLARE docVer1Id VARCHAR(32) DEFAULT HEX(opUuid());
+    DECLARE errorReceiver BOOL;
+	DECLARE CONTINUE HANDLER FOR 45002 SELECT TRUE INTO errorReceiver;
+	DECLARE CONTINUE HANDLER FOR 45003 SELECT TRUE INTO errorReceiver;
+	DECLARE CONTINUE HANDLER FOR 45004 SELECT TRUE INTO errorReceiver;
+    
+	INSERT INTO user
+		(id, autodeskId, openId, username, avatar, fullName, email, superUser, lastLogin, description, uiLanguage, uiTheme, locale, timeFormat)
+	VALUES
+		(UNHEX(ashId), 'ash autodeskId', 'ash openId', 'ash username', 'ash avatar', 'ash fullName', 'ash email', FALSE, UTC_TIMESTAMP(), 'ash description', 'en', 'dark', 'en-GB', 'llll'),
+		(UNHEX(bobId), 'bob autodeskId', 'bob openId', 'bob username', 'bob avatar', 'bob fullName', 'bob email', FALSE, UTC_TIMESTAMP(), 'bob description', 'en', 'dark', 'en-GB', 'llll'),
+		(UNHEX(catId), 'cat autodeskId', 'cat openId', 'cat username', 'cat avatar', 'cat fullName', 'cat email', FALSE, UTC_TIMESTAMP(), 'cat description', 'en', 'dark', 'en-GB', 'llll');
+    
+    INSERT INTO project
+		(id, name, description, created, imageFileExtension)
+	VALUES
+		(UNHEX(ashProjId), 'ashProj name', 'ashProj description', UTC_TIMESTAMP(), 'png'),
+		(UNHEX(bobProjId), 'bobProj name', 'bobProj description', UTC_TIMESTAMP(), 'png'),
+		(UNHEX(catProjId), 'catProj name', 'catProj description', UTC_TIMESTAMP(), 'png');
+    
+    INSERT INTO permission
+		(project, user, role)
+	VALUES
+		(UNHEX(ashProjId), UNHEX(ashId), 'owner'),
+		(UNHEX(ashProjId), UNHEX(catId), 'contributor'),
+		(UNHEX(bobProjId), UNHEX(bobId), 'owner'),
+		(UNHEX(catProjId), UNHEX(catId), 'owner');
+        
+	INSERT INTO treeNode
+		(id, parent, project, name, nodeType)
+	VALUES
+		(UNHEX(ashProjId), NULL, UNHEX(ashProjId), 'root', 'folder'),
+		(UNHEX('99999999999999999999999999999999'), UNHEX(ashProjId), UNHEX(ashProjId), 'some doc', 'document');
+        
+	CALL documentVersionCreate(ashId, '99999999999999999999999999999999', docVer1Id, 'upload comment', 'nwd', 'urn', 'status');
+    
+    CALL sheetCreate(docVer1Id, ashProjId, 'sheet 1', 'baseUrn 1', 'path 1', 'thumbnails 1', 'role 1');
+    CALL sheetCreate(docVer1Id, ashProjId, 'name 2', 'baseUrn 2', 'path 2', 'thumbnails 2', 'role 2');
+    
+    SELECT 'sheet 1';
+    CALL sheetGet(ashId, (SELECT lex(id) FROM sheet LIMIT 0, 1));
+    SELECT 'name 2';
+    CALL sheetGet(ashId, (SELECT lex(id) FROM sheet LIMIT 1, 1));
+    SELECT '2, sheet 1, name 2';
+    CALL sheetGetForDocumentVersion(ashId, docVer1Id, 0, 5, 'nameDesc');
+    SELECT '2, name 2, sheet 1';
+    CALL sheetGetForDocumentVersion(ashId, docVer1Id, 0, 5, 'nameAsc');
+    SELECT '2, sheet 1';
+    CALL sheetGetForDocumentVersion(ashId, docVer1Id, 1, 5, 'nameAsc');
+    SELECT '2, name 2';
+    CALL sheetGetForDocumentVersion(ashId, docVer1Id, 0, 1, 'nameAsc');
+    SELECT 'error bob is not a member of ashs project';
+    CALL sheetGetForDocumentVersion(bobId, docVer1Id, 0, 5, 'nameAsc');
+    SELECT '1, sheet';
+    CALL sheetGlobalSearch(ashId, 'sheet', 0, 5, 'nameAsc');
+    SELECT '1, name';
+    CALL sheetGlobalSearch(ashId, 'name', 0, 5, 'nameAsc');
+    SELECT '0';
+    CALL sheetGlobalSearch(bobId, 'sheet', 0, 5, 'nameAsc');
+    SELECT '0';
+    CALL sheetGlobalSearch(bobId, 'name', 0, 5, 'nameAsc');
+    SELECT '1, sheet';
+    CALL sheetProjectSearch(catId, ashProjId, 'sheet', 0, 5, 'nameAsc');
+    SELECT '0';
+    CALL sheetProjectSearch(catId, catProjId, 'sheet', 0, 5, 'nameAsc');
+    SELECT 'error bob is not a member of ashs project';
+    CALL sheetProjectSearch(bobId, ashProjId, 'sheet', 0, 5, 'nameAsc');
+    
+	DELETE FROM user WHERE autodeskId IN ('ash autodeskId', 'bob autodeskId', 'cat autodeskId');
+	DELETE FROM project WHERE id IN (UNHEX(ashProjId), UNHEX(bobProjId), UNHEX(catProjId));
+END $$
+DELIMITER ;
+CALL test_sheet();
+DROP PROCEDURE IF EXISTS test_sheet;

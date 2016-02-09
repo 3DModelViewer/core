@@ -1643,7 +1643,7 @@ BEGIN
     SET forUserRole = _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
     
     IF forUserRole IS NOT NULL THEN
-		INSERT INTO tempSheetProjectSearch (id, documentVersion, project, name, baseUrn, path, thumbnails, role) SELECT id, documentVersion, project, name, baseUrn, path, thumbnails, role FROM sheet WHERE project = UNHEX(projectId) AND MATCH(s.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+		INSERT INTO tempSheetProjectSearch (id, documentVersion, project, name, baseUrn, path, thumbnails, role) SELECT id, documentVersion, project, name, baseUrn, path, thumbnails, role FROM sheet WHERE project = UNHEX(projectId) AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE); 
 		SELECT COUNT(*) INTO totalResults FROM tempSheetProjectSearch;
     
 		IF os >= totalResults THEN
