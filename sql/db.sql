@@ -1665,3 +1665,11 @@ END$$
 DELIMITER ;
 
 # END SHEET
+
+# This username and password are for local testing purposes only, 
+# formally deployed environments should have cryptographically
+# strong usernames and passwords maintained by ops, developers
+# shoulds not have access to these credentials.
+DROP USER IF EXISTS 'modelhub-api'@'%';
+CREATE USER 'modelhub-api'@'%' IDENTIFIED BY 'M0d-3l-Hu8-@p1'; 
+GRANT EXECUTE ON modelhub.* TO 'modelhub-api'@'%';
