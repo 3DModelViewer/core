@@ -62,8 +62,8 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 
 		if rows != nil {
 			defer rows.Close()
-			u := UserWithDescription{}
 			for rows.Next() {
+				u := UserWithDescription{}
 				tmpErr := rows.Scan(&u.Id, &u.Avatar, &u.FullName, &u.Description)
 				if tmpErr != nil {
 					err = tmpErr
@@ -76,7 +76,7 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 	}
 
 	_getInProjectContext := func(sql string, forUser string, project string, role project.Role, offset int, limit int, sortBy sortBy) ([]*UserInProjectContext, int, error) {
-		rows, err := db.Query(sql, forUser, project, role, offset, limit, sortBy)
+		rows, err := db.Query(sql, forUser, project, role, offset, limit, string(sortBy))
 		if err != nil {
 			return nil, 0, err
 		}
@@ -86,8 +86,8 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 
 		if rows != nil {
 			defer rows.Close()
-			u := UserInProjectContext{}
 			for rows.Next() {
+				u := UserInProjectContext{}
 				tmpErr := rows.Scan(&totalResults, &u.Id, &u.Avatar, &u.FullName, &u.Role)
 				if tmpErr != nil {
 					err = tmpErr
@@ -108,7 +108,7 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 	}
 
 	search := func(search string, offset int, limit int, sortBy sortBy) ([]*User, int, error) {
-		rows, err := db.Query("CALL userSearch(?, ?, ?, ?)", search, offset, limit, sortBy)
+		rows, err := db.Query("CALL userSearch(?, ?, ?, ?)", search, offset, limit, string(sortBy))
 		if err != nil {
 			return nil, 0, err
 		}
@@ -118,11 +118,10 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 
 		if rows != nil {
 			defer rows.Close()
-			u := User{}
 			for rows.Next() {
-				tmpErr := rows.Scan(&totalResults, &u.Id, &u.Avatar, &u.FullName)
-				if tmpErr != nil {
-					err = tmpErr
+				u := User{}
+				if err = rows.Scan(&totalResults, &u.Id, &u.Avatar, &u.FullName); err != nil {
+					return users, totalResults, err
 				}
 				users = append(users, &u)
 			}
