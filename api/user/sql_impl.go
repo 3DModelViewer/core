@@ -2,8 +2,8 @@ package user
 
 import (
 	"database/sql"
-	"github.com/robsix/golog"
 	"github.com/modelhub/db/api/project"
+	"github.com/robsix/golog"
 )
 
 func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {

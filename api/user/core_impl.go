@@ -1,38 +1,38 @@
 package user
 
 import (
-	"github.com/modelhub/permission"
 	"github.com/robsix/golog"
+	"github.com/modelhub/db/api/project"
 )
 
 func newUserStore(login login, setDescription setProperty, setUILanguage setProperty, setUITheme setProperty, setLocale setProperty, setTimeFormat setProperty, get get, getInProjectContext getInProjectContext, getInProjectInviteContext getInProjectContext, search search, log golog.Log) UserStore {
 	return &userStore{
-		login:               login,
-		setDescription:      setDescription,
-		setUILanguage:       setUILanguage,
-		setUITheme:          setUITheme,
-		setLocale:           setLocale,
-		setTimeFormat:       setTimeFormat,
-		get:                 get,
-		getInProjectContext: getInProjectContext,
+		login:                     login,
+		setDescription:            setDescription,
+		setUILanguage:             setUILanguage,
+		setUITheme:                setUITheme,
+		setLocale:                 setLocale,
+		setTimeFormat:             setTimeFormat,
+		get:                       get,
+		getInProjectContext:       getInProjectContext,
 		getInProjectInviteContext: getInProjectInviteContext,
-		search:              search,
-		log:                 log,
+		search: search,
+		log:    log,
 	}
 }
 
 type userStore struct {
-	login               login
-	setDescription      setProperty
-	setUILanguage       setProperty
-	setUITheme          setProperty
-	setLocale           setProperty
-	setTimeFormat       setProperty
-	get                 get
-	getInProjectContext getInProjectContext
+	login                     login
+	setDescription            setProperty
+	setUILanguage             setProperty
+	setUITheme                setProperty
+	setLocale                 setProperty
+	setTimeFormat             setProperty
+	get                       get
+	getInProjectContext       getInProjectContext
 	getInProjectInviteContext getInProjectContext
-	search              search
-	log                 golog.Log
+	search                    search
+	log                       golog.Log
 }
 
 func (us *userStore) Login(autodeskId string, openId string, username string, avatar string, fullName string, email string) (*CurrentUser, error) {
@@ -105,7 +105,7 @@ func (us *userStore) Get(ids []string) ([]*User, error) {
 	}
 }
 
-func (us *userStore) GetInProjectContext(forUser string, project string, role permission.Role, offset int, limit int, sortBy sortBy) ([]*UserInProjectContext, int, error) {
+func (us *userStore) GetInProjectContext(forUser string, project string, role project.Role, offset int, limit int, sortBy sortBy) ([]*UserInProjectContext, int, error) {
 	if users, totalResults, err := us.getInProjectContext(forUser, project, role, offset, limit, sortBy); err != nil {
 		us.log.Error("UserStore.GetInProjectContext error: forUser: %q project: %q role: %q offset: %d limit: %d sortBy: %q error: %v", forUser, project, role, offset, limit, sortBy, err)
 		return users, totalResults, err
@@ -115,7 +115,7 @@ func (us *userStore) GetInProjectContext(forUser string, project string, role pe
 	}
 }
 
-func (us *userStore) GetInProjectInviteContext(forUser string, project string, role permission.Role, offset int, limit int, sortBy sortBy) ([]*UserInProjectContext, int, error) {
+func (us *userStore) GetInProjectInviteContext(forUser string, project string, role project.Role, offset int, limit int, sortBy sortBy) ([]*UserInProjectContext, int, error) {
 	if users, totalResults, err := us.getInProjectInviteContext(forUser, project, role, offset, limit, sortBy); err != nil {
 		us.log.Error("UserStore.GetInProjectInviteContext error: forUser: %q project: %q role: %q offset: %d limit: %d sortBy: %q error: %v", forUser, project, role, offset, limit, sortBy, err)
 		return users, totalResults, err

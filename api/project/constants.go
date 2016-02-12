@@ -6,11 +6,11 @@ const (
 	CreatedAsc = sortBy("createdAsc")
 	CreatedDec = sortBy("createdDec")
 
-	Owner = Role("owner")
-	Admin = Role("admin")
-	Organiser = Role("organiser")
+	Owner       = Role("owner")
+	Admin       = Role("admin")
+	Organiser   = Role("organiser")
 	Contributor = Role("contributor")
-	Observer = Role("observer")
+	Observer    = Role("observer")
 )
 
 type sortBy string

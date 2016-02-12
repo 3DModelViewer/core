@@ -21,7 +21,7 @@ func main(){
 	if rows != nil {
 		defer rows.Close()
 		for rows.Next() {
-			err = rows.Scan(&cu.Id, &cu.Username, &cu.Avatar, &cu.FullName, &cu.SuperUser, &cu.Description, &cu.UILanguage, &cu.UITheme, &cu.TimeZone, &cu.TimeFormat)
+			err = rows.Scan(&cu.Id, &cu.Avatar, &cu.FullName, &cu.SuperUser, &cu.Description, &cu.UILanguage, &cu.UITheme, &cu.TimeZone, &cu.TimeFormat)
 		}
 		log.Critical("ITER %v", err)
 	}
