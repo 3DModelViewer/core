@@ -12,25 +12,18 @@ import(
 func main(){
 	log := golog.NewConsoleLog(0)
 	db, _ := sql.Open("mysql", "modelhub-api:M0d-3l-Hu8-@p1@tcp(localhost:3306)/modelhub?parseTime=true&loc=UTC")
+	userStore := NewSqlUserStore(db, log)
 
-	rows, err := db.Query("CALL userLogin(?,?,?,?,?,?)", "dan autodeskId", "dan openId", "dan username", "dan avatar", "dan fullName", "dan email")
+	cu, err := userStore.Login("dan autodeskId", "dan openId", "dan username", "dan avatar", "dan fullName", "dan email")
+	b, _ := json.Marshal(cu)
+	log.Info("%v %s %v", cu, string(b), err)
 
-	log.Error("%v %v",rows, err)
-	cu := CurrentUser{}
+	err = userStore.SetDescription(cu.Id, "fuck you")
+	log.Info("%v", err)
 
-	if rows != nil {
-		defer rows.Close()
-		for rows.Next() {
-			err = rows.Scan(&cu.Id, &cu.Avatar, &cu.FullName, &cu.SuperUser, &cu.Description, &cu.UILanguage, &cu.UITheme, &cu.TimeZone, &cu.TimeFormat)
-		}
-		log.Critical("ITER %v", err)
-	}
-
-	log.Info("%#v", cu)
-	b, err := json.Marshal(&cu)
-	log.Info("%q", string(b))
-
-	NewSqlUserStore(db, log)
+	us, err := userStore.Get([]string{cu.Id})
+	b, _ = json.Marshal(us)
+	log.Info("%v %s %v", us, string(b), err)
 
 	fmt.Scanln()
 }

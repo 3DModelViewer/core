@@ -376,58 +376,9 @@ DELIMITER $$
 CREATE PROCEDURE userGet(ids VARCHAR(6600))
 BEGIN
 	IF createTempIdsTable(ids) THEN
-		SELECT lex(u.id) AS id, avatar, fullName FROM user AS u INNER JOIN tempIds AS t ON u.id = t.id;
+		SELECT lex(u.id) AS id, avatar, fullName, description FROM user AS u INNER JOIN tempIds AS t ON u.id = t.id;
     END IF;
     DROP TEMPORARY TABLE IF EXISTS tempIds;
-END$$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS userSearch;
-DELIMITER $$
-CREATE PROCEDURE userSearch(search VARCHAR(100), os INT, l INT, sortBy VARCHAR(50))
-BEGIN
-    DECLARE totalResults INT;
-    
-	IF os < 0 THEN
-		SET os = 0;
-    END IF;
-    
-	IF l < 1 THEN
-		SET l = 1;
-    END IF;
-    
-	IF l > 100 THEN
-		SET l = 100;
-    END IF;
-    
-    DROP TEMPORARY TABLE IF EXISTS tempUserSearch;
-    CREATE TEMPORARY TABLE tempUserSearch(
-		id BINARY(16) NULL,
-		avatar VARCHAR(500),
-		fullName VARCHAR(100),
-        description VARCHAR(250),
-        INDEX (fullName)
-    );
-    
-    INSERT INTO tempUserSearch (id, avatar, fullName, description) SELECT u.id, u.avatar, u.fullName, u.description FROM user AS u WHERE MATCH(username, fullName, email) AGAINST(search IN NATURAL LANGUAGE MODE);
-	
-    SELECT COUNT(*) INTO totalResults FROM tempUserSearch;
-    
-    IF os >= totalResults THEN
-		SELECT totalResults;
-        SIGNAL SQLSTATE
-			'45004'
-		SET
-			MESSAGE_TEXT = "offset beyond the end of results set",
-            MYSQL_ERRNO = 45004;
-	ELSE IF sortBy = 'fullNameDesc' THEN
-		SELECT totalResults, lex(id) AS id, avatar, fullName, description FROM tempUserSearch ORDER BY fullName DESC LIMIT os, l;
-	ELSE
-		SELECT totalResults, lex(id) AS id, avatar, fullName, description FROM tempUserSearch ORDER BY fullName ASC LIMIT os, l;
-	END IF;
-    END IF;
-    
-    DROP TEMPORARY TABLE IF EXISTS tempUserSearch;
 END$$
 DELIMITER ;
 
@@ -472,7 +423,7 @@ BEGIN
 		SELECT COUNT(*) INTO totalResults FROM tempUserGetInProjectContext;
     
 		IF os >= totalResults THEN
-			SELECT totalResults;
+			SELECT totalResults, "" AS id, "" AS avatar, "" AS fullName, "" as role;
 			SIGNAL SQLSTATE
 				'45004'
 			SET
@@ -543,7 +494,7 @@ BEGIN
 		SELECT COUNT(*) INTO totalResults FROM tempUserGetInProjectInviteContext;
     
 		IF os >= totalResults THEN
-			SELECT totalResults;
+			SELECT totalResults, "" AS id, "" AS avatar, "" AS fullName, "" as role;
 			SIGNAL SQLSTATE
 				'45004'
 			SET
@@ -570,6 +521,54 @@ BEGIN
 			MESSAGE_TEXT = "Unauthorized action: get user in project invite context",
             MYSQL_ERRNO = 45002;
     END IF;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS userSearch;
+DELIMITER $$
+CREATE PROCEDURE userSearch(search VARCHAR(100), os INT, l INT, sortBy VARCHAR(50))
+BEGIN
+    DECLARE totalResults INT;
+
+	IF os < 0 THEN
+		SET os = 0;
+    END IF;
+
+	IF l < 1 THEN
+		SET l = 1;
+    END IF;
+
+	IF l > 100 THEN
+		SET l = 100;
+    END IF;
+
+    DROP TEMPORARY TABLE IF EXISTS tempUserSearch;
+    CREATE TEMPORARY TABLE tempUserSearch(
+		id BINARY(16) NULL,
+		avatar VARCHAR(500),
+		fullName VARCHAR(100),
+        INDEX (fullName)
+    );
+
+    INSERT INTO tempUserSearch (id, avatar, fullName) SELECT u.id, u.avatar, u.fullName FROM user AS u WHERE MATCH(username, fullName, email) AGAINST(search IN NATURAL LANGUAGE MODE);
+
+    SELECT COUNT(*) INTO totalResults FROM tempUserSearch;
+
+    IF os >= totalResults THEN
+		SELECT totalResults, "" AS id, "" AS avatar, "" AS fullName;
+        SIGNAL SQLSTATE
+			'45004'
+		SET
+			MESSAGE_TEXT = "offset beyond the end of results set",
+            MYSQL_ERRNO = 45004;
+	ELSE IF sortBy = 'fullNameDesc' THEN
+		SELECT totalResults, lex(id) AS id, avatar, fullName FROM tempUserSearch ORDER BY fullName DESC LIMIT os, l;
+	ELSE
+		SELECT totalResults, lex(id) AS id, avatar, fullName FROM tempUserSearch ORDER BY fullName ASC LIMIT os, l;
+	END IF;
+    END IF;
+
+    DROP TEMPORARY TABLE IF EXISTS tempUserSearch;
 END$$
 DELIMITER ;
 

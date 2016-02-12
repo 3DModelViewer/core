@@ -95,7 +95,7 @@ func (us *userStore) SetTimeFormat(forUser string, timeFormat string) error {
 	}
 }
 
-func (us *userStore) Get(ids []string) ([]*User, error) {
+func (us *userStore) Get(ids []string) ([]*UserWithDescription, error) {
 	if users, err := us.get(ids); err != nil {
 		us.log.Error("UserStore.Get error: ids: %v error: %v", ids, err)
 		return users, err

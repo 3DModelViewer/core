@@ -1,11 +1,11 @@
 package user
 
 type CurrentUser struct {
-	User
+	UserWithDescription
 	SuperUser  bool   `json:"superUser"`
 	UILanguage string `json:"uiLanguage"`
 	UITheme    string `json:"uiTheme"`
-	TimeZone   string `json:"timeZone"`
+	Locale   string `json:"locale"`
 	TimeFormat string `json:"timeFormat"`
 }
 
@@ -13,6 +13,10 @@ type User struct {
 	Id          string `json:"id"`
 	Avatar      string `json:"avatar"`
 	FullName    string `json:"fullName"`
+}
+
+type UserWithDescription struct{
+	User
 	Description string `json:"description"`
 }
 
