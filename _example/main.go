@@ -70,5 +70,4 @@ func main(){
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
 	fmt.Scanln()
-	fmt.Scanln()
 }
