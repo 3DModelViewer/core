@@ -529,8 +529,6 @@ DELIMITER $$
 CREATE PROCEDURE userSearch(search VARCHAR(100), os INT, l INT, sortBy VARCHAR(50))
 BEGIN
     DECLARE totalResults INT;
-    DECLARE errorReceiver BOOL;
-	DECLARE EXIT HANDLER FOR 45004 SELECT TRUE INTO errorReceiver;
 
 	IF os < 0 THEN
 		SET os = 0;

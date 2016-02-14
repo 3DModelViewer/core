@@ -413,7 +413,7 @@ BEGIN
 		CALL STOP_TEST_FAIL();
     END IF;
     
-    IF _description IS NOT NULL THEN
+    IF _description != '' THEN
 		CALL STOP_TEST_FAIL();
     END IF;
     
