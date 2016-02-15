@@ -24,7 +24,7 @@ func main(){
 	vada := vada.NewVadaClient(vadaHost, clientKey, clientSecret, log)
 	db, _ := sql.Open(sqlDriver, sqlConnectionString)
 	userStore := NewSqlUserStore(db, log)
-	project.NewSqlProjectStore(db, vada, ossBucketPrefix, ossBucketPolicy, log)
+	projectStore := project.NewSqlProjectStore(db, vada, ossBucketPrefix, ossBucketPolicy, log)
 
 	ash, err := userStore.Login("ash autodeskId", "ash openId", "ash username", "ash avatar", "ash fullName", "ash email")
 	b, _ := json.Marshal(ash)
@@ -57,9 +57,9 @@ func main(){
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	us, totalResults, err = userStore.Search("fullName", 3, 5, FullNameAsc)
-	b, _ = json.Marshal(us)
-	log.Info("%v %d %s %v", us, totalResults, string(b), err)
+//	us, totalResults, err = userStore.Search("fullName", 3, 5, FullNameAsc)
+//	b, _ = json.Marshal(us)
+//	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
 	us, totalResults, err = userStore.Search("fullName", 1, 1, FullNameAsc)
 	b, _ = json.Marshal(us)
@@ -68,6 +68,10 @@ func main(){
 	us, totalResults, err = userStore.Search("fullName", 0, 5, FullNameDec)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
+
+	p, err := projectStore.Create(ash.Id, "ashs project", "ash description", "", nil)
+	b, _ = json.Marshal(p)
+	log.Info("%v %d %s %v", p, totalResults, string(b), err)
 
 	fmt.Scanln()
 }

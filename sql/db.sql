@@ -142,7 +142,7 @@ INSERT INTO treeNodeType (id)
 DROP TABLE IF EXISTS treeNode;
 CREATE TABLE treeNode(
 	id BINARY(16) NOT NULL,
-	parent BINARY(16) NOT NULL,
+	parent BINARY(16) NULL,
     project BINARY(16) NOT NULL,
     name VARCHAR(50) NOT NULL,
     nodeType VARCHAR(50) NOT NULL,
