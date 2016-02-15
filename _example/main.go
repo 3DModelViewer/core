@@ -69,9 +69,17 @@ func main(){
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	p, err := projectStore.Create(ash.Id, "ashs project", "ash description", "", nil)
+	p, err := projectStore.Create(ash.Id, "ashs project 1", "ash description 1", "", nil)
 	b, _ = json.Marshal(p)
 	log.Info("%v %d %s %v", p, totalResults, string(b), err)
+
+	p, err = projectStore.Create(ash.Id, "ashs project 2", "ash description 2", "", nil)
+	b, _ = json.Marshal(p)
+	log.Info("%v %d %s %v", p, totalResults, string(b), err)
+
+	ps, totalResults, err := projectStore.Search(ash.Id, "ashs", 0, 5, project.NameAsc)
+	b, _ = json.Marshal(ps)
+	log.Info("%v %d %s %v", ps, totalResults, string(b), err)
 
 	fmt.Scanln()
 }

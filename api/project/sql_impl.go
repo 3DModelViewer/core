@@ -150,7 +150,23 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 	}
 
 	search := func(forUser string, search string, offset int, limit int, sortBy sortBy) ([]*Project, int, error) {
-		return nil, 0, nil
+		rows, err := db.Query("CALL projectSearch(?, ?, ?, ?, ?)", forUser, search, offset, limit, string(sortBy))
+
+		if rows != nil {
+			defer rows.Close()
+			totalResults := 0
+			ps := make([]*Project, 0, 100)
+			for rows.Next() {
+				p := Project{}
+				if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Description, &p.Created, &p.ImageFileExtension); err != nil {
+					return ps, totalResults, err
+				}
+				ps = append(ps, &p)
+			}
+			return ps, totalResults, err
+		}
+
+		return nil, 0, err
 	}
 
 	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addOwners, addAdmins, addOrganisers, addContributors, addObservers, removeUsers, acceptInvitation, declineInvitation, getRole, get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)

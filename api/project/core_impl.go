@@ -258,10 +258,10 @@ func (ps *projectStore) GetInUserInviteContext(forUser string, user string, role
 
 func (ps *projectStore) Search(forUser string, search string, offset int, limit int, sortBy sortBy) ([]*Project, int, error) {
 	if projects, totalResults, err := ps.search(forUser, search, offset, limit, sortBy); err != nil {
-		ps.log.Error("ProjectStore.Search error: forUser: ", forUser, " search: '", search, "' offset: ", offset, " limit: ", limit, " sortBy: ", sortBy, " error: ", err)
+		ps.log.Error("ProjectStore.Search error: forUser: %q search: %q offset: %d limit: %d sortBy: %q error: %v", forUser, search, offset, limit, sortBy, err)
 		return projects, totalResults, err
 	} else {
-		ps.log.Info("ProjectStore.Search success: forUser: ", forUser, " search: '", search, "' offset: ", offset, " limit: ", limit, " sortBy: ", sortBy, " total results found: ", totalResults, " projects: ", projects)
+		ps.log.Info("ProjectStore.Search success: forUser: %q search: %q offset: %d limit: %d sortBy: %q totalResults: %d projects: %v", forUser, search, offset, limit, sortBy, totalResults, projects)
 		return projects, totalResults, nil
 	}
 }
