@@ -290,14 +290,6 @@ BEGIN
 END$$
 DELIMITER ;
 
-DROP PROCEDURE IF EXISTS permissionGetRole;
-DELIMITER $$
-CREATE PROCEDURE permissionGetRole(forUserId VARCHAR(32), projectId VARCHAR(32))
-BEGIN
-	SELECT _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId)) AS role;
-END$$
-DELIMITER ;
-
 # END PERMISSION
 
 # START USER
@@ -743,6 +735,14 @@ DELIMITER $$
 CREATE PROCEDURE projectDeclineInvitation(forUserId VARCHAR(32), projectId VARCHAR(32))
 BEGIN
 	DELETE FROM invitation WHERE project = UNHEX(projectId) AND user = UNHEX(forUserId);
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS projectGetRole;
+DELIMITER $$
+CREATE PROCEDURE projectGetRole(forUserId VARCHAR(32), projectId VARCHAR(32))
+BEGIN
+	SELECT _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId)) AS role;
 END$$
 DELIMITER ;
 

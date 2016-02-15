@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"github.com/robsix/golog"
 	"github.com/modelhub/vada"
+	"strings"
 )
 
 func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
 
-	create := func(forUser string, name string, description string, imageFileExtension string) (*project, error) {
+	create := func(forUser string, name string, description string, imageFileExtension string) (*Project, error) {
 		return nil, nil
 	}
 
@@ -29,7 +30,8 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 	}
 
 	updateUserPermissions := func(sql string, forUser string, id string, users []string) error {
-		return nil //strings.Join(users, ",")
+		_, err := db.Exec(sql, forUser, id, strings.Join(users, ","))
+		return err
 	}
 
 	addOwners := func(forUser string, id string, users []string) error {
@@ -64,21 +66,25 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return nil
 	}
 
-	get := func(forUser string, ids []string) ([]*project, error) {
+	getRole := func(forUser string, id string) (string, error) {
+		return "", nil
+	}
+
+	get := func(forUser string, ids []string) ([]*Project, error) {
 		return nil, nil
 	}
 
-	getInUserContext := func(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*project, int, error) {
+	getInUserContext := func(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
 		return nil, 0, nil
 	}
 
-	getInUserInviteContext := func(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*project, int, error) {
+	getInUserInviteContext := func(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
 		return nil, 0, nil
 	}
 
-	search := func(forUser string, search string, offset int, limit int, sortBy sortBy) ([]*project, int, error) {
+	search := func(forUser string, search string, offset int, limit int, sortBy sortBy) ([]*Project, int, error) {
 		return nil, 0, nil
 	}
 
-	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addOwners, addAdmins, addOrganisers, addContributors, addObservers, removeUsers, acceptInvitation, declineInvitation, get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
+	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addOwners, addAdmins, addOrganisers, addContributors, addObservers, removeUsers, acceptInvitation, declineInvitation, getRole, get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
 }

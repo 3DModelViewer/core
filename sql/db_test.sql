@@ -306,50 +306,6 @@ DELIMITER ;
 CALL test_permissions_and_invitations();
 DROP PROCEDURE IF EXISTS test_permissions_and_invitations;
 
-DROP PROCEDURE IF EXISTS test_permissionGetRole;
-DELIMITER $$
-CREATE PROCEDURE test_permissionGetRole()
-BEGIN
-	DECLARE ashId VARCHAR(32) DEFAULT '00000000000000000000000000000000';
-	DECLARE bobId VARCHAR(32) DEFAULT '11111111111111111111111111111111';
-	DECLARE catId VARCHAR(32) DEFAULT '22222222222222222222222222222222';
-    DECLARE ashProjId VARCHAR(32) DEFAULT '33333333333333333333333333333333';
-    DECLARE bobProjId VARCHAR(32) DEFAULT '44444444444444444444444444444444';
-    DECLARE catProjId VARCHAR(32) DEFAULT '55555555555555555555555555555555';
-    DECLARE errorReceiver BOOL;
-	DECLARE CONTINUE HANDLER FOR 45002 SELECT TRUE INTO errorReceiver;
-    
-	INSERT INTO user
-		(id, autodeskId, openId, username, avatar, fullName, email, superUser, lastLogin, description, uiLanguage, uiTheme, locale, timeFormat)
-	VALUES
-		(UNHEX(ashId), 'ash autodeskId', 'ash openId', 'ash username', 'ash avatar', 'ash fullName', 'ash email', FALSE, UTC_TIMESTAMP(), 'ash description', 'en', 'dark', 'en-GB', 'llll'),
-		(UNHEX(bobId), 'bob autodeskId', 'bob openId', 'bob username', 'bob avatar', 'bob fullName', 'bob email', FALSE, UTC_TIMESTAMP(), 'bob description', 'en', 'dark', 'en-GB', 'llll'),
-		(UNHEX(catId), 'cat autodeskId', 'cat openId', 'cat username', 'cat avatar', 'cat fullName', 'cat email', FALSE, UTC_TIMESTAMP(), 'cat description', 'en', 'dark', 'en-GB', 'llll');
-    
-    INSERT INTO project
-		(id, name, description, created, imageFileExtension)
-	VALUES
-		(UNHEX(ashProjId), 'ashProj name', 'ashProj description', UTC_TIMESTAMP(), 'png'),
-		(UNHEX(bobProjId), 'bobProj name', 'bobProj description', UTC_TIMESTAMP(), 'png'),
-		(UNHEX(catProjId), 'catProj name', 'catProj description', UTC_TIMESTAMP(), 'png');
-    
-    INSERT INTO permission
-		(project, user, role)
-	VALUES
-		(UNHEX(ashProjId), UNHEX(ashId), 'owner'),
-		(UNHEX(bobProjId), UNHEX(bobId), 'owner'),
-		(UNHEX(catProjId), UNHEX(catId), 'owner');
-        
-	SELECT 'owner';
-	CALL permissionGetRole(ashId, ashProjId);
-    
-	DELETE FROM user WHERE autodeskId IN ('ash autodeskId', 'bob autodeskId', 'cat autodeskId');
-	DELETE FROM project WHERE id IN (UNHEX(ashProjId), UNHEX(bobProjId), UNHEX(catProjId));
-END $$
-DELIMITER ;
-CALL test_permissionGetRole();
-DROP PROCEDURE IF EXISTS test_permissionGetRole;
-
 # END PERMISSION
 
 # START USER
@@ -999,6 +955,50 @@ END $$
 DELIMITER ;
 CALL test_projectSetImageFileExtension();
 DROP PROCEDURE IF EXISTS test_projectSetImageFileExtension;
+
+DROP PROCEDURE IF EXISTS test_projectGetRole;
+DELIMITER $$
+CREATE PROCEDURE test_projectGetRole()
+BEGIN
+	DECLARE ashId VARCHAR(32) DEFAULT '00000000000000000000000000000000';
+	DECLARE bobId VARCHAR(32) DEFAULT '11111111111111111111111111111111';
+	DECLARE catId VARCHAR(32) DEFAULT '22222222222222222222222222222222';
+    DECLARE ashProjId VARCHAR(32) DEFAULT '33333333333333333333333333333333';
+    DECLARE bobProjId VARCHAR(32) DEFAULT '44444444444444444444444444444444';
+    DECLARE catProjId VARCHAR(32) DEFAULT '55555555555555555555555555555555';
+    DECLARE errorReceiver BOOL;
+	DECLARE CONTINUE HANDLER FOR 45002 SELECT TRUE INTO errorReceiver;
+    
+	INSERT INTO user
+		(id, autodeskId, openId, username, avatar, fullName, email, superUser, lastLogin, description, uiLanguage, uiTheme, locale, timeFormat)
+	VALUES
+		(UNHEX(ashId), 'ash autodeskId', 'ash openId', 'ash username', 'ash avatar', 'ash fullName', 'ash email', FALSE, UTC_TIMESTAMP(), 'ash description', 'en', 'dark', 'en-GB', 'llll'),
+		(UNHEX(bobId), 'bob autodeskId', 'bob openId', 'bob username', 'bob avatar', 'bob fullName', 'bob email', FALSE, UTC_TIMESTAMP(), 'bob description', 'en', 'dark', 'en-GB', 'llll'),
+		(UNHEX(catId), 'cat autodeskId', 'cat openId', 'cat username', 'cat avatar', 'cat fullName', 'cat email', FALSE, UTC_TIMESTAMP(), 'cat description', 'en', 'dark', 'en-GB', 'llll');
+    
+    INSERT INTO project
+		(id, name, description, created, imageFileExtension)
+	VALUES
+		(UNHEX(ashProjId), 'ashProj name', 'ashProj description', UTC_TIMESTAMP(), 'png'),
+		(UNHEX(bobProjId), 'bobProj name', 'bobProj description', UTC_TIMESTAMP(), 'png'),
+		(UNHEX(catProjId), 'catProj name', 'catProj description', UTC_TIMESTAMP(), 'png');
+    
+    INSERT INTO permission
+		(project, user, role)
+	VALUES
+		(UNHEX(ashProjId), UNHEX(ashId), 'owner'),
+		(UNHEX(bobProjId), UNHEX(bobId), 'owner'),
+		(UNHEX(catProjId), UNHEX(catId), 'owner');
+        
+	SELECT 'owner';
+	CALL projectGetRole(ashId, ashProjId);
+    
+	DELETE FROM user WHERE autodeskId IN ('ash autodeskId', 'bob autodeskId', 'cat autodeskId');
+	DELETE FROM project WHERE id IN (UNHEX(ashProjId), UNHEX(bobProjId), UNHEX(catProjId));
+END $$
+DELIMITER ;
+CALL test_projectGetRole();
+DROP PROCEDURE IF EXISTS test_projectGetRole;
 
 DROP PROCEDURE IF EXISTS test_projectGet;
 DELIMITER $$
