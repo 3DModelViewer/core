@@ -11,20 +11,19 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 
 	login := func(autodeskId string, openId string, username string, avatar string, fullName string, email string) (*CurrentUser, error) {
 		rows, err := db.Query("CALL userLogin(?, ?, ?, ?, ?, ?)", autodeskId, openId, username, avatar, fullName, email)
-		if err != nil {
-			return nil, err
-		}
-
-		cu := CurrentUser{}
 
 		if rows != nil {
 			defer rows.Close()
+			cu := CurrentUser{}
 			for rows.Next() {
-				err = rows.Scan(&cu.Id, &cu.Avatar, &cu.FullName, &cu.SuperUser, &cu.Description, &cu.UILanguage, &cu.UITheme, &cu.Locale, &cu.TimeFormat)
+				if err := rows.Scan(&cu.Id, &cu.Avatar, &cu.FullName, &cu.SuperUser, &cu.Description, &cu.UILanguage, &cu.UITheme, &cu.Locale, &cu.TimeFormat); err != nil {
+					return &cu, err
+				}
 			}
+			return &cu, err
 		}
 
-		return &cu, err
+		return nil, err
 	}
 
 	setProperty := func(sql string, forUser string, value string) error {
@@ -54,49 +53,41 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 
 	get := func(ids []string) ([]*UserWithDescription, error) {
 		rows, err := db.Query("CALL userGet(?)", strings.Join(ids, ","))
-		if err != nil {
-			return nil, err
-		}
-
-		users := make([]*UserWithDescription, 0, len(ids))
 
 		if rows != nil {
 			defer rows.Close()
+			us := make([]*UserWithDescription, 0, len(ids))
 			for rows.Next() {
 				u := UserWithDescription{}
-				tmpErr := rows.Scan(&u.Id, &u.Avatar, &u.FullName, &u.Description)
-				if tmpErr != nil {
-					err = tmpErr
+				if err := rows.Scan(&u.Id, &u.Avatar, &u.FullName, &u.Description); err != nil {
+					return us, err
 				}
-				users = append(users, &u)
+				us = append(us, &u)
 			}
+			return us, err
 		}
 
-		return users, err
+		return nil, err
 	}
 
 	_getInProjectContext := func(sql string, forUser string, project string, role project.Role, offset int, limit int, sortBy sortBy) ([]*UserInProjectContext, int, error) {
 		rows, err := db.Query(sql, forUser, project, role, offset, limit, string(sortBy))
-		if err != nil {
-			return nil, 0, err
-		}
-
-		totalResults := 0
-		users := make([]*UserInProjectContext, 0, 100)
 
 		if rows != nil {
 			defer rows.Close()
+			totalResults := 0
+			users := make([]*UserInProjectContext, 0, 100)
 			for rows.Next() {
 				u := UserInProjectContext{}
-				tmpErr := rows.Scan(&totalResults, &u.Id, &u.Avatar, &u.FullName, &u.Role)
-				if tmpErr != nil {
-					err = tmpErr
+				if err := rows.Scan(&totalResults, &u.Id, &u.Avatar, &u.FullName, &u.Role); err != nil {
+					return users, totalResults, err
 				}
 				users = append(users, &u)
 			}
+			return users, totalResults, err
 		}
 
-		return users, totalResults, err
+		return nil, 0, err
 	}
 
 	getInProjectContext := func(forUser string, project string, role project.Role, offset int, limit int, sortBy sortBy) ([]*UserInProjectContext, int, error) {
@@ -109,25 +100,22 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 
 	search := func(search string, offset int, limit int, sortBy sortBy) ([]*User, int, error) {
 		rows, err := db.Query("CALL userSearch(?, ?, ?, ?)", search, offset, limit, string(sortBy))
-		if err != nil {
-			return nil, 0, err
-		}
-
-		totalResults := 0
-		users := make([]*User, 0, 100)
 
 		if rows != nil {
 			defer rows.Close()
+			totalResults := 0
+			users := make([]*User, 0, 100)
 			for rows.Next() {
 				u := User{}
-				if err = rows.Scan(&totalResults, &u.Id, &u.Avatar, &u.FullName); err != nil {
+				if err := rows.Scan(&totalResults, &u.Id, &u.Avatar, &u.FullName); err != nil {
 					return users, totalResults, err
 				}
 				users = append(users, &u)
 			}
+			return users, totalResults, err
 		}
 
-		return users, totalResults, err
+		return nil, 0, err
 	}
 
 	return newUserStore(login, setDescription, setUILanguage, setUITheme, setLocale, setTimeFormat, get, getInProjectContext, getInProjectInviteContext, search, log)

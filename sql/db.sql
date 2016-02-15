@@ -598,7 +598,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS projectDelete;
 DELIMITER $$
-CREATE PROCEDURE projectDelete(forUserId VARCHAR(32), projectId VARCHAR(32), newName VARCHAR(100))
+CREATE PROCEDURE projectDelete(forUserId VARCHAR(32), projectId VARCHAR(32))
 BEGIN
 	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
 	IF forUserRole = 'owner' THEN
