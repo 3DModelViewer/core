@@ -1072,9 +1072,9 @@ BEGIN
 		IF newParentNodeType = 'folder' THEN
 			IF createTempIdsTable(treeNodes) THEN
 				SELECT COUNT(*) INTO treeNodesCount FROM tempIds;
-                SELECT COUNT(*) INTO treeNodesInSameProjectCount FROM treeNode AS tn INNER JOIN tempIds AS t ON tn.id = t.id WHERE project = projectId;
+                SELECT COUNT(*) INTO treeNodesInSameProjectCount FROM treeNode AS tn INNER JOIN tempIds AS t ON tn.id = t.id WHERE tn.project = projectId;
 				IF treeNodesCount = treeNodesInSameProjectCount THEN
-					IF (SELECT COUNT(*) FROM treeNode AS tn INNER JOIN tempIds AS t ON tn.id = t.id WHERE tn.id = project) = 0 THEN
+					IF (SELECT COUNT(*) FROM treeNode AS tn INNER JOIN tempIds AS t ON tn.id = t.id WHERE tn.id = tn.project) = 0 THEN
 						UPDATE treeNode SET parent = UNHEX(newParentId) WHERE id IN (SELECT id FROM tempIds);
 					ELSE
 						SIGNAL SQLSTATE 
