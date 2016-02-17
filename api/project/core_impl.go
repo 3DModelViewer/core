@@ -1,10 +1,11 @@
 package project
 
 import (
+	"github.com/modelhub/db/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"mime/multipart"
-	"strings"
+	"errors"
 )
 
 func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addOwners updateUserPermissions, addAdmins updateUserPermissions, addOrganisers updateUserPermissions, addContributors updateUserPermissions, addObservers updateUserPermissions, removeUsers updateUserPermissions, acceptInvitation processInvitation, declineInvitation processInvitation, getRole getRole, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
@@ -13,16 +14,16 @@ func newProjectStore(create create, delete delete, setName setName, setDescripti
 		delete:                 delete,
 		setName:                setName,
 		setDescription:         setDescription,
-		setImageFileExtension:               setImageFileExtension,
+		setImageFileExtension:  setImageFileExtension,
 		addOwners:              addOwners,
 		addAdmins:              addAdmins,
 		addOrganisers:          addOrganisers,
 		addContributors:        addContributors,
 		addObservers:           addObservers,
 		removeUsers:            removeUsers,
-		acceptInvitation: acceptInvitation,
-		declineInvitation: declineInvitation,
-		getRole: getRole,
+		acceptInvitation:       acceptInvitation,
+		declineInvitation:      declineInvitation,
+		getRole:                getRole,
 		get:                    get,
 		getInUserContext:       getInUserContext,
 		getInUserInviteContext: getInUserInviteContext,
@@ -48,7 +49,7 @@ type projectStore struct {
 	removeUsers            updateUserPermissions
 	acceptInvitation       processInvitation
 	declineInvitation      processInvitation
-	getRole getRole
+	getRole                getRole
 	get                    get
 	getInUserContext       getInUserContext
 	getInUserInviteContext getInUserContext
@@ -60,34 +61,31 @@ type projectStore struct {
 }
 
 func (ps *projectStore) Create(forUser string, name string, description string, imageName string, image multipart.File) (*Project, error) {
-	imageFileExtension, err := getImageFileExtension(imageName)
-	if err != nil && image != nil {
-		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q description: %q imageName: %q image: %v error: %v", forUser, name, description, imageName, image, err)
+	newProjectId := util.NewId()
+	var imageFileExtension string
+
+	json, err := ps.vada.CreateBucket(ps.ossBucketPrefix+newProjectId, ps.ossBucketPolicy)
+	if err != nil {
+		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q description: %q imageName: %q createBucketJson: %v error: %v", forUser, name, description, imageName, json, err)
 		return nil, err
 	}
 
-	proj, err := ps.create(forUser, name, description, imageFileExtension)
-	if err != nil {
-		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q description: %q imageFileExtension: %q image: %v error: %v", forUser, name, description, imageFileExtension, image, err)
-		return proj, err
-	}
-
-	json, err := ps.vada.CreateBucket(ps.ossBucketPrefix+proj.Id, ps.ossBucketPolicy)
-	if err != nil {
-		ps.delete(forUser, proj.Id)
-		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q description: %q imageFileExtension: %q image: %v createBucketJson: %v error: %v", forUser, name, description, imageFileExtension, image, json, err)
-		return proj, err
-	}
-
 	if image != nil {
-		if json, err := ps.vada.UploadFile(proj.Id+"."+imageFileExtension, ps.ossBucketPrefix+proj.Id, image); err != nil {
-			ps.log.Error("ProjectStore.Create error: forUser: %q name: %q description: %q imageFileExtension: %q image: %v imageUploadJson: %v error: %v", forUser, name, description, imageFileExtension, image, json, err)
-			ps.setImageFileExtension(forUser, proj.Id, "")
+		if imageFileExtension, err = util.GetImageFileExtension(imageName); err != nil {
+			ps.log.Error("ProjectStore.Create error: forUser: %q name: %q description: %q imageFileExtension: %q error: %v", forUser, name, description, imageFileExtension, err)
+		} else if json, err := ps.vada.UploadFile(newProjectId+"."+imageFileExtension, ps.ossBucketPrefix+newProjectId, image); err != nil {
+			ps.log.Error("ProjectStore.Create error: forUser: %q name: %q description: %q imageFileExtension: %q imageUploadJson: %v error: %v", forUser, name, description, imageFileExtension, json, err)
+			imageFileExtension = ""
 		}
 	}
 
-	ps.log.Info("ProjectStore.Create success: forUser: %q name: %q description: %q imageFileExtension: %q image: %v error: %v", forUser, name, description, imageFileExtension, image, err)
-	return proj, nil
+	if proj, err := ps.create(forUser, newProjectId, name, description, imageFileExtension); err != nil {
+		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q description: %q imageFileExtension: %q image: %v error: %v", forUser, name, description, imageFileExtension, image, err)
+		return proj, err
+	} else {
+		ps.log.Info("ProjectStore.Create success: forUser: %q name: %q description: %q imageFileExtension: %q", forUser, name, description, imageFileExtension)
+		return proj, nil
+	}
 }
 
 func (ps *projectStore) Delete(forUser string, id string) error {
@@ -96,7 +94,7 @@ func (ps *projectStore) Delete(forUser string, id string) error {
 		return err
 	}
 
-	if err := ps.vada.DeleteBucket(ps.ossBucketPrefix+id); err != nil {
+	if err := ps.vada.DeleteBucket(ps.ossBucketPrefix + id); err != nil {
 		ps.log.Error("ProjectStore.Delete error: forUser: %q id: %q error: %v", forUser, id, err)
 	}
 
@@ -123,24 +121,40 @@ func (ps *projectStore) SetDescription(forUser string, id string, newDescription
 }
 
 func (ps *projectStore) SetImage(forUser string, id string, name string, image multipart.File) error {
-	imageFileExtension, err := getImageFileExtension(name)
+
+	role, err := ps.getRole(forUser, id)
 	if err != nil {
+		ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q name: %q image: %v error: %v", forUser, id, name, image, err)
+		return err
+	} else if role != "owner" {
+		err := errors.New("Unauthorized Action: none owner trying to set project image")
 		ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q name: %q image: %v error: %v", forUser, id, name, image, err)
 		return err
 	}
 
-	if err := ps.setImageFileExtension(forUser, id, imageFileExtension); err != nil {
-		ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q imageFileExtension: %q image: %v error: %v", forUser, id, imageFileExtension, err)
+	if projects, err := ps.get(forUser, []string{id}); err != nil {
+		ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q name: %q image: %v error: %v", forUser, id, name, image, err)
 		return err
+	} else if len(projects) != 1 {
+		err := errors.New("project not found")
+		ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q name: %q image: %v error: %v", forUser, id, name, image, err)
+		return err
+	} else if projects[0].ImageFileExtension != "" {
+		if err := ps.vada.DeleteFile(id+"."+projects[0].ImageFileExtension, ps.ossBucketPrefix+id); err != nil {
+			ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q name: %q image: %v error: %v", forUser, id, name, image, err)
+		}
 	}
 
-	if json, err := ps.vada.UploadFile(id+"."+imageFileExtension, ps.ossBucketPrefix+id, image); err != nil {
-		ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q imageFileExtension: %q image: %v imageUploadJson: %v error: %v", forUser, id, imageFileExtension, image, json, err)
-		ps.setImageFileExtension(forUser, id, "")
-		return err
+	if image != nil {
+		if imageFileExtension, err := util.GetImageFileExtension(name); err != nil {
+			ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q name: %q image: %v error: %v", forUser, id, name, image, err)
+			return err
+		} else if json, err := ps.vada.UploadFile(id+"."+imageFileExtension, ps.ossBucketPrefix+id, image); err != nil {
+			ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q imageFileExtension: %q image: %v imageUploadJson: %v error: %v", forUser, id, imageFileExtension, image, json, err)
+			return err
+		}
 	}
 
-	ps.log.Info("ProjectStore.SetImage success: forUser: %q id: %q imageFileExtension: %q image: %v", forUser, id, imageFileExtension, image)
 	return nil
 }
 
@@ -264,20 +278,4 @@ func (ps *projectStore) Search(forUser string, search string, offset int, limit 
 		ps.log.Info("ProjectStore.Search success: forUser: %q search: %q offset: %d limit: %d sortBy: %q totalResults: %d projects: %v", forUser, search, offset, limit, sortBy, totalResults, projects)
 		return projects, totalResults, nil
 	}
-}
-
-func getImageFileExtension(imageName string) (string, error) {
-	switch {
-	case strings.HasSuffix(imageName, ".png"):
-		return "png", nil
-	case strings.HasSuffix(imageName, ".jpeg"):
-		return "jpeg", nil
-	case strings.HasSuffix(imageName, ".jpg"):
-		return "jpg", nil
-	case strings.HasSuffix(imageName, ".gif"):
-		return "gif", nil
-	case strings.HasSuffix(imageName, ".webp"):
-		return "webp", nil
-	}
-	return "", &cantFindValidImageFileExtensionError{imageName}
 }

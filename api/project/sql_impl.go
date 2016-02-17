@@ -2,15 +2,15 @@ package project
 
 import (
 	"database/sql"
-	"github.com/robsix/golog"
 	"github.com/modelhub/vada"
+	"github.com/robsix/golog"
 	"strings"
 )
 
 func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
 
-	create := func(forUser string, name string, description string, imageFileExtension string) (*Project, error) {
-		rows, err := db.Query("CALL projectCreate(?, ?, ?, ?)", forUser, name, description, imageFileExtension)
+	create := func(forUser string, id string, name string, description string, imageFileExtension string) (*Project, error) {
+		rows, err := db.Query("CALL projectCreate(?, ?, ?, ?, ?)", forUser, id, name, description, imageFileExtension)
 
 		if rows != nil {
 			defer rows.Close()

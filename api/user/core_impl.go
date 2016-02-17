@@ -1,8 +1,8 @@
 package user
 
 import (
-	"github.com/robsix/golog"
 	"github.com/modelhub/db/api/project"
+	"github.com/robsix/golog"
 )
 
 func newUserStore(login login, setDescription setProperty, setUILanguage setProperty, setUITheme setProperty, setLocale setProperty, setTimeFormat setProperty, get get, getInProjectContext getInProjectContext, getInProjectInviteContext getInProjectContext, search search, log golog.Log) UserStore {

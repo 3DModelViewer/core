@@ -4,7 +4,7 @@ import (
 	"mime/multipart"
 )
 
-type create func(forUser string, name string, description string, imageFileExtension string) (*Project, error)
+type create func(forUser string, id, name string, description string, imageFileExtension string) (*Project, error)
 type delete func(forUser string, id string) error
 type setName func(forUser string, id string, newName string) error
 type setDescription func(forUser string, id string, newDescription string) error

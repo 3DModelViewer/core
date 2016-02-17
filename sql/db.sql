@@ -574,29 +574,27 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS projectCreate;
 DELIMITER $$
-CREATE PROCEDURE projectCreate(forUserId VARCHAR(32), name VARCHAR(100), description VARCHAR(1000), imageFileExtension VARCHAR(10))
-BEGIN
-	DECLARE opId BINARY(16) DEFAULT opUuid();
-    
+CREATE PROCEDURE projectCreate(forUserId VARCHAR(32), newProjectId VARCHAR(32), name VARCHAR(100), description VARCHAR(1000), imageFileExtension VARCHAR(10))
+BEGIN    
     # create project
 	INSERT INTO project
 		(id, name, description, created, imageFileExtension)
 	VALUES
-		(opId, name, description, UTC_TIMESTAMP(), imageFileExtension);
+		(UNHEX(newProjectId), name, description, UTC_TIMESTAMP(), imageFileExtension);
 	
     #create default root folder
 	INSERT INTO treeNode
 		(id, parent, project, name, nodeType)
 	VALUES
-		(opId, UNHEX(''), opId, 'root', 'folder');
+		(UNHEX(newProjectId), UNHEX(''), UNHEX(newProjectId), 'root', 'folder');
         
 	# add in owner permission
 	INSERT INTO permission
 		(project, user, role)
 	VALUES
-		(opId, UNHEX(forUserId), 'owner');
+		(UNHEX(newProjectId), UNHEX(forUserId), 'owner');
     
-	SELECT lex(id) AS id, name, description, created, imageFileExtension FROM project WHERE id = opId;
+	SELECT newProjectId AS id, name, description, created, imageFileExtension FROM project WHERE id = UNHEX(newProjectId);
 END$$
 DELIMITER ;
 

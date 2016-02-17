@@ -2,7 +2,7 @@ package user
 
 const (
 	FullNameAsc = sortBy("fullNameAsc")
-	FullNameDec = sortBy("fullNameDec")
+	FullNameDec = sortBy("fullNameDesc")
 )
 
 type sortBy string

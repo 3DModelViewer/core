@@ -14,5 +14,5 @@ type Project struct {
 
 type ProjectInUserContext struct {
 	Project
-	Role	string `json:"role"`
+	Role string `json:"role"`
 }

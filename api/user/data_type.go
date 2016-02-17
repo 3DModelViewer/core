@@ -5,17 +5,17 @@ type CurrentUser struct {
 	SuperUser  bool   `json:"superUser"`
 	UILanguage string `json:"uiLanguage"`
 	UITheme    string `json:"uiTheme"`
-	Locale   string `json:"locale"`
+	Locale     string `json:"locale"`
 	TimeFormat string `json:"timeFormat"`
 }
 
 type User struct {
-	Id          string `json:"id"`
-	Avatar      string `json:"avatar"`
-	FullName    string `json:"fullName"`
+	Id       string `json:"id"`
+	Avatar   string `json:"avatar"`
+	FullName string `json:"fullName"`
 }
 
-type UserWithDescription struct{
+type UserWithDescription struct {
 	User
 	Description string `json:"description"`
 }
