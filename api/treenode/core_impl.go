@@ -4,8 +4,9 @@ import (
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"github.com/robsix/json"
-	"github.com/twinj/uuid"
 	"mime/multipart"
+	"path/filepath"
+	"github.com/modelhub/db/util"
 )
 
 func newTreeNodeStore(createFolder createFolder, createDocument createDocument, createViewerState createViewerState, setName setName, move move, getChildren getChildren, getParents getParents, globalSearch globalSearch, projectSearch projectSearch, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
@@ -41,7 +42,7 @@ type treeNodeStore struct {
 }
 
 func (tns *treeNodeStore) CreateFolder(forUser string, parent string, name string) (*TreeNode, error) {
-	if treeNode, err := tns.createFolder(forUser, parent, nodeType, name); err != nil {
+	if treeNode, err := tns.createFolder(forUser, parent, name); err != nil {
 		tns.log.Error("TreeNodeStore.CreateFolder error: forUser: %q parent: %q name: %q error: %v", forUser, parent, name, err)
 		return treeNode, err
 	} else {
@@ -50,12 +51,30 @@ func (tns *treeNodeStore) CreateFolder(forUser string, parent string, name strin
 	}
 }
 
-func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name string, uploadComment string, fileExtension string, file multipart.File) (*TreeNode, error) {
-	if treeNode, err := tns.createDocument(forUser, parent, nodeType, name, file); err != nil {
-		tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q uploadComment: %q fileExtension: %q error: %v", forUser, parent, name, uploadComment, fileExtension, err)
+func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name string, uploadComment string, fileName string, file multipart.File) (*TreeNode, error) {
+
+	fileExtension := filepath.Ext(fileName)
+	if len(fileExtension) >= 1 {
+		fileExtension = fileExtension[1:] //cut of the .
+	}
+
+	fileType, _ := util.GetFileType(fileExtension)
+	newDocumentVersionId := util.NewId()
+
+	urn := ""
+
+	status := "wont_register"
+	if fileType == "lmv" {
+		status = "unregistered"
+	}
+
+
+
+	if treeNode, err := tns.createDocument(forUser, parent, name, newDocumentVersionId, uploadComment, fileExtension, urn, status); err != nil {
+		tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q uploadComment: %q fileName: %q error: %v", forUser, parent, name, uploadComment, fileName, err)
 		return treeNode, err
 	} else {
-		tns.log.Info("TreeNodeStore.CreateDocument success: forUser: %q parent: %q name: %q uploadComment: %q fileExtension: %q treeNode: %v", forUser, parent, name, uploadComment, fileExtension, treeNode)
+		tns.log.Info("TreeNodeStore.CreateDocument success: forUser: %q parent: %q name: %q uploadComment: %q fileName: %q treeNode: %v", forUser, parent, name, uploadComment, fileName, treeNode)
 		return treeNode, nil
 	}
 }
