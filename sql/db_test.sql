@@ -1692,14 +1692,14 @@ BEGIN
 	INSERT INTO treeNode
 		(id, parent, project, name, nodeType)
 	VALUES
-		(UNHEX(ashProjId), NULL, UNHEX(ashProjId), 'root', 'folder'),
-		(UNHEX(bobProjId), NULL, UNHEX(bobProjId), 'root', 'folder'),
-		(UNHEX(catProjId), NULL, UNHEX(catProjId), 'root', 'folder'),
+		(UNHEX(ashProjId), UNHEX(''), UNHEX(ashProjId), 'root', 'folder'),
+		(UNHEX(bobProjId), UNHEX(''), UNHEX(bobProjId), 'root', 'folder'),
+		(UNHEX(catProjId), UNHEX(''), UNHEX(catProjId), 'root', 'folder'),
 		(UNHEX(subFolder1Id), UNHEX(ashProjId), UNHEX(ashProjId), 'sub folder 1', 'folder'),
 		(UNHEX(subFolder2Id), UNHEX(subFolder1Id), UNHEX(ashProjId), 'sub folder 2', 'folder'),
 		(UNHEX(docId), UNHEX(subFolder2Id), UNHEX(ashProjId), 'doc', 'document');
 	
-    SELECT '2, sub folder 1, sub folder 2, root';
+    SELECT 'root, sub folder 1, sub folder 2';
 	CALL treeNodeGetParents(ashId, docId);
     SELECT 'nothing as bob is not a member of ashs project';
 	CALL treeNodeGetParents(bobId, docId);

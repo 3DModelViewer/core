@@ -35,7 +35,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45001'
 		SET
-			MESSAGE_TEXT = "Invalid ids argument",
+			MESSAGE_TEXT = 'Invalid ids argument',
             MYSQL_ERRNO = 45001;
 		RETURN FALSE;
     END IF;
@@ -84,6 +84,8 @@ CREATE TABLE project(
     PRIMARY KEY (id),
     FULLTEXT (name)
 );
+INSERT INTO project (id, name, description, created, imageFileExtension)
+VALUES (UNHEX(''), '', '', UTC_TIMESTAMP(), '');
 
 DROP TABLE IF EXISTS role;
 CREATE TABLE role(
@@ -155,6 +157,8 @@ CREATE TABLE treeNode(
     FOREIGN KEY (parent) REFERENCES treeNode(id) ON DELETE CASCADE,
     FOREIGN KEY (nodeType) REFERENCES treeNodeType(id) ON DELETE CASCADE
 );
+INSERT INTO treeNode (id, parent, project, name, nodeType)
+VALUES (UNHEX(''), NULL, UNHEX(''), '', 'folder');
 
 DROP TABLE IF EXISTS documentVersion;
 CREATE TABLE documentVersion(
@@ -213,7 +217,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: set permissions",
+			MESSAGE_TEXT = 'Unauthorized action: set permissions',
 			MYSQL_ERRNO = 45002;
 	ELSE
 		IF createTempIdsTable(users) THEN
@@ -241,7 +245,7 @@ BEGIN
 						SIGNAL SQLSTATE 
 							'45002'
 						SET
-							MESSAGE_TEXT = "Unauthorized action: set permissions",
+							MESSAGE_TEXT = 'Unauthorized action: set permissions',
 							MYSQL_ERRNO = 45002;
 					END IF;
 					IF addRole IS NULL OR addRole = '' THEN
@@ -278,7 +282,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: get role",
+			MESSAGE_TEXT = 'Unauthorized action: get role',
             MYSQL_ERRNO = 45002;
 		RETURN NULL;
 	ELSE
@@ -303,7 +307,7 @@ BEGIN
 	INSERT INTO user
 		(id, autodeskId, openId, username, avatar, fullName, email, superUser, lastLogin, description, uiLanguage, uiTheme, locale, timeFormat)
 	VALUES
-		(opId, autodeskId, openId, username, avatar, fullName, email, false, UTC_TIMESTAMP(), "", "en", "dark", "en-US", "llll")
+		(opId, autodeskId, openId, username, avatar, fullName, email, false, UTC_TIMESTAMP(), '', 'en', 'dark', 'en-US', 'llll')
 	ON DUPLICATE KEY UPDATE
 		id = id,
         openId = VALUES(openId),
@@ -415,11 +419,11 @@ BEGIN
 		SELECT COUNT(*) INTO totalResults FROM tempUserGetInProjectContext;
     
 		IF os >= totalResults THEN
-			SELECT totalResults, "" AS id, "" AS avatar, "" AS fullName, "" as role;
+			SELECT totalResults, '' AS id, '' AS avatar, '' AS fullName, '' as role;
 			SIGNAL SQLSTATE
 				'45004'
 			SET
-				MESSAGE_TEXT = "offset beyond the end of results set",
+				MESSAGE_TEXT = 'offset beyond the end of results set',
 				MYSQL_ERRNO = 45004;
 		ELSE IF sortBy = 'roleDesc' THEN
 			SELECT totalResults, lex(id) AS id, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY role DESC, fullName ASC LIMIT os, l;
@@ -439,7 +443,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: get user in project context",
+			MESSAGE_TEXT = 'Unauthorized action: get user in project context',
             MYSQL_ERRNO = 45002;
     END IF;
 END$$
@@ -486,11 +490,11 @@ BEGIN
 		SELECT COUNT(*) INTO totalResults FROM tempUserGetInProjectInviteContext;
     
 		IF os >= totalResults THEN
-			SELECT totalResults, "" AS id, "" AS avatar, "" AS fullName, "" as role;
+			SELECT totalResults, '' AS id, '' AS avatar, '' AS fullName, '' as role;
 			SIGNAL SQLSTATE
 				'45004'
 			SET
-				MESSAGE_TEXT = "offset beyond the end of results set",
+				MESSAGE_TEXT = 'offset beyond the end of results set',
 				MYSQL_ERRNO = 45004;
 		ELSE IF sortBy = 'roleDesc' THEN
 			SELECT totalResults, lex(id) AS id, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY role DESC, fullName ASC LIMIT os, l;
@@ -510,7 +514,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: get user in project invite context",
+			MESSAGE_TEXT = 'Unauthorized action: get user in project invite context',
             MYSQL_ERRNO = 45002;
     END IF;
 END$$
@@ -547,11 +551,11 @@ BEGIN
     SELECT COUNT(*) INTO totalResults FROM tempUserSearch;
 
     IF os >= totalResults THEN
-		SELECT totalResults, "" AS id, "" AS avatar, "" AS fullName;
+		SELECT totalResults, '' AS id, '' AS avatar, '' AS fullName;
         SIGNAL SQLSTATE
 			'45004'
 		SET
-			MESSAGE_TEXT = "offset beyond the end of results set",
+			MESSAGE_TEXT = 'offset beyond the end of results set',
             MYSQL_ERRNO = 45004;
 	ELSE IF sortBy = 'fullNameDesc' THEN
 		SELECT totalResults, lex(id) AS id, avatar, fullName FROM tempUserSearch ORDER BY fullName DESC LIMIT os, l;
@@ -584,7 +588,7 @@ BEGIN
 	INSERT INTO treeNode
 		(id, parent, project, name, nodeType)
 	VALUES
-		(opId, NULL, opId, 'root', 'folder');
+		(opId, UNHEX(''), opId, 'root', 'folder');
         
 	# add in owner permission
 	INSERT INTO permission
@@ -607,7 +611,7 @@ BEGIN
 		SIGNAL SQLSTATE
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: project delete",
+			MESSAGE_TEXT = 'Unauthorized action: project delete',
             MYSQL_ERRNO = 45002;
     END IF;
 END$$
@@ -624,7 +628,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: project set name",
+			MESSAGE_TEXT = 'Unauthorized action: project set name',
             MYSQL_ERRNO = 45002;
     END IF;
 END$$
@@ -641,7 +645,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: project set description",
+			MESSAGE_TEXT = 'Unauthorized action: project set description',
             MYSQL_ERRNO = 45002;
     END IF;
 END$$
@@ -658,7 +662,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: project set image file extension",
+			MESSAGE_TEXT = 'Unauthorized action: project set image file extension',
             MYSQL_ERRNO = 45002;
     END IF;
 END$$
@@ -762,7 +766,7 @@ BEGIN
 			SIGNAL SQLSTATE 
 				'45002'
 			SET
-				MESSAGE_TEXT = "Unauthorized action: get projects",
+				MESSAGE_TEXT = 'Unauthorized action: get projects',
 				MYSQL_ERRNO = 45002;
         END IF;		
     END IF;
@@ -797,7 +801,7 @@ BEGIN
         SIGNAL SQLSTATE
 			'45004'
 		SET
-			MESSAGE_TEXT = "offset beyond the end of results set",
+			MESSAGE_TEXT = 'offset beyond the end of results set',
             MYSQL_ERRNO = 45004;
     ELSE IF sortBy = 'createdDesc' THEN
 		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY created DESC LIMIT os, l;
@@ -869,7 +873,7 @@ BEGIN
         SIGNAL SQLSTATE
 			'45004'
 		SET
-			MESSAGE_TEXT = "offset beyond the end of results set",
+			MESSAGE_TEXT = 'offset beyond the end of results set',
             MYSQL_ERRNO = 45004;
     ELSE IF sortBy = 'roleDesc' THEN
 		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY role DESC LIMIT os, l;
@@ -947,7 +951,7 @@ BEGIN
         SIGNAL SQLSTATE
 			'45004'
 		SET
-			MESSAGE_TEXT = "offset beyond the end of results set",
+			MESSAGE_TEXT = 'offset beyond the end of results set',
             MYSQL_ERRNO = 45004;
     ELSE IF sortBy = 'roleDesc' THEN
 		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY role DESC LIMIT os, l;
@@ -995,14 +999,14 @@ BEGIN
 			SIGNAL SQLSTATE 
 				'45002'
 			SET
-				MESSAGE_TEXT = "Unauthorized action: treeNode create node",
+				MESSAGE_TEXT = 'Unauthorized action: treeNode create node',
 				MYSQL_ERRNO = 45002;
 		END IF;
     ELSE
 		SIGNAL SQLSTATE 
 			'45003'
 		SET
-			MESSAGE_TEXT = "Invalid action: place treeNodes under a none folder parent",
+			MESSAGE_TEXT = 'Invalid action: place treeNodes under a none folder parent',
             MYSQL_ERRNO = 45003;
     END IF;
 END$$
@@ -1049,7 +1053,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: treeNode set name",
+			MESSAGE_TEXT = 'Unauthorized action: treeNode set name',
             MYSQL_ERRNO = 45002;
     END IF;
 END$$
@@ -1080,14 +1084,14 @@ BEGIN
 						SIGNAL SQLSTATE 
 							'45003'
 						SET
-							MESSAGE_TEXT = "Invalid action: treeNode move root folder",
+							MESSAGE_TEXT = 'Invalid action: treeNode move root folder',
 							MYSQL_ERRNO = 45003;
                     END IF;
 				ELSE
 					SIGNAL SQLSTATE 
 						'45002'
 					SET
-						MESSAGE_TEXT = "Unauthorized action: treeNode cross project move",
+						MESSAGE_TEXT = 'Unauthorized action: treeNode cross project move',
 						MYSQL_ERRNO = 45002;
 				END IF;	
             END IF;
@@ -1095,14 +1099,14 @@ BEGIN
 			SIGNAL SQLSTATE 
 				'45003'
 			SET
-				MESSAGE_TEXT = "Invalid action: place treeNodes under a none folder parent",
+				MESSAGE_TEXT = 'Invalid action: place treeNodes under a none folder parent',
 				MYSQL_ERRNO = 45003;
 		END IF;
 	ELSE
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: treeNode move",
+			MESSAGE_TEXT = 'Unauthorized action: treeNode move',
 			MYSQL_ERRNO = 45002;
 	END IF;
     DROP TEMPORARY TABLE IF EXISTS tempIds;
@@ -1142,7 +1146,7 @@ BEGIN
 			SIGNAL SQLSTATE
 				'45004'
 			SET
-				MESSAGE_TEXT = "offset beyond the end of results set",
+				MESSAGE_TEXT = 'offset beyond the end of results set',
 				MYSQL_ERRNO = 45004;
             ELSE IF sortBy = 'nameDesc' THEN
 				SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType ORDER BY name DESC LIMIT os, l;
@@ -1154,14 +1158,14 @@ BEGIN
 			SIGNAL SQLSTATE 
 				'45002'
 			SET
-				MESSAGE_TEXT = "Unauthorized action: treeNode get children",
+				MESSAGE_TEXT = 'Unauthorized action: treeNode get children',
 				MYSQL_ERRNO = 45002;
 		END IF;
 	ELSE
 		SIGNAL SQLSTATE 
 			'45003'
 		SET
-			MESSAGE_TEXT = "Invalid action: get treeNodes from a none folder parent",
+			MESSAGE_TEXT = 'Invalid action: get treeNodes from a none folder parent',
             MYSQL_ERRNO = 45003;
 	END IF;
 END$$
@@ -1173,6 +1177,7 @@ CREATE PROCEDURE treeNodeGetParents(forUserId VARCHAR(32), treeNodeId VARCHAR(32
 BEGIN
 	DECLARE projectId BINARY(16) DEFAULT NULL;
 	DECLARE forUserRole VARCHAR(50) DEFAULT NULL;
+	DECLARE rootParent BINARY(16) DEFAULT UNHEX('');
     DECLARE currentParent BINARY(16) DEFAULT NULL;
     DECLARE currentName VARCHAR(50) DEFAULT NULL;
     DECLARE depthCounter INT DEFAULT 0;
@@ -1189,7 +1194,7 @@ BEGIN
 			name VARCHAR(50) NULL,
             PRIMARY KEY (depth)
 		);
-		WHILE currentParent IS NOT NULL DO
+		WHILE currentParent != rootParent DO
 			SELECT lex(id), parent, name INTO treeNodeId, currentParent, currentName FROM treeNode WHERE id = currentParent;
 			INSERT INTO tempTreeNodeGetParents (depth, id, parent, name) VALUES (depthCounter, treeNodeId, lex(currentParent), currentName);
             SET depthCounter = depthCounter + 1;
@@ -1199,7 +1204,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: treeNode get parents",
+			MESSAGE_TEXT = 'Unauthorized action: treeNode get parents',
 			MYSQL_ERRNO = 45002;
 	END IF;
 	
@@ -1243,7 +1248,7 @@ BEGIN
         SIGNAL SQLSTATE
 			'45004'
 		SET
-			MESSAGE_TEXT = "offset beyond the end of results set",
+			MESSAGE_TEXT = 'offset beyond the end of results set',
             MYSQL_ERRNO = 45004;
     ELSE IF sortBy = 'nameDesc' THEN
 		SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM tempTreeNodeGlobalSearch ORDER BY name DESC LIMIT os, l;
@@ -1296,7 +1301,7 @@ BEGIN
 			SIGNAL SQLSTATE
 				'45004'
 			SET
-				MESSAGE_TEXT = "offset beyond the end of results set",
+				MESSAGE_TEXT = 'offset beyond the end of results set',
 				MYSQL_ERRNO = 45004;
 		ELSE IF sortBy = 'nameDesc' THEN
 			SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM tempTreeNodeProjectSearch ORDER BY name DESC LIMIT os, l;
@@ -1329,7 +1334,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: documentVersion create",
+			MESSAGE_TEXT = 'Unauthorized action: documentVersion create',
 			MYSQL_ERRNO = 45002;
     END IF;
 END$$
@@ -1351,7 +1356,7 @@ BEGIN
 			SIGNAL SQLSTATE 
 				'45002'
 			SET
-				MESSAGE_TEXT = "Unauthorized action: documentVersion get cross project",
+				MESSAGE_TEXT = 'Unauthorized action: documentVersion get cross project',
 				MYSQL_ERRNO = 45002;
         END IF;		
     END IF;
@@ -1386,7 +1391,7 @@ BEGIN
 			SIGNAL SQLSTATE
 				'45004'
 			SET
-				MESSAGE_TEXT = "offset beyond the end of results set",
+				MESSAGE_TEXT = 'offset beyond the end of results set',
 				MYSQL_ERRNO = 45004;
 		ELSE IF sortBy = 'versionAsc' THEN
 			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, status FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version ASC LIMIT os, l;
@@ -1398,7 +1403,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: documentVersion get by document",
+			MESSAGE_TEXT = 'Unauthorized action: documentVersion get by document',
 			MYSQL_ERRNO = 45002;
     END IF;
 END$$
@@ -1432,7 +1437,7 @@ BEGIN
 				SIGNAL SQLSTATE 
 					'45002'
 				SET
-					MESSAGE_TEXT = "Unauthorized action: sheet get cross project",
+					MESSAGE_TEXT = 'Unauthorized action: sheet get cross project',
 					MYSQL_ERRNO = 45002;
 				
             END IF;
@@ -1440,7 +1445,7 @@ BEGIN
 			SIGNAL SQLSTATE 
 				'45002'
 			SET
-				MESSAGE_TEXT = "Unauthorized action: sheet get",
+				MESSAGE_TEXT = 'Unauthorized action: sheet get',
 				MYSQL_ERRNO = 45002;
         END IF;
     END IF;
@@ -1475,7 +1480,7 @@ BEGIN
 			SIGNAL SQLSTATE
 				'45004'
 			SET
-				MESSAGE_TEXT = "offset beyond the end of results set",
+				MESSAGE_TEXT = 'offset beyond the end of results set',
 				MYSQL_ERRNO = 45004;
 		ELSE IF sortBy = 'nameDesc' THEN
 			SELECT totalResults, lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM sheet WHERE documentVersion = UNHEX(documentVersionId) ORDER BY name DESC LIMIT os, l;
@@ -1487,7 +1492,7 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = "Unauthorized action: sheet get by documentVersion",
+			MESSAGE_TEXT = 'Unauthorized action: sheet get by documentVersion',
 			MYSQL_ERRNO = 45002;
     END IF;
 END$$
@@ -1533,7 +1538,7 @@ BEGIN
         SIGNAL SQLSTATE
 			'45004'
 		SET
-			MESSAGE_TEXT = "offset beyond the end of results set",
+			MESSAGE_TEXT = 'offset beyond the end of results set',
             MYSQL_ERRNO = 45004;
     ELSE IF sortBy = 'nameDesc' THEN
 		SELECT totalResults, lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM tempSheetGlobalSearch ORDER BY name DESC LIMIT os, l;
@@ -1586,7 +1591,7 @@ BEGIN
         SIGNAL SQLSTATE
 			'45004'
 		SET
-			MESSAGE_TEXT = "offset beyond the end of results set",
+			MESSAGE_TEXT = 'offset beyond the end of results set',
             MYSQL_ERRNO = 45004;
     ELSE IF sortBy = 'nameDesc' THEN
 		SELECT totalResults, lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM tempSheetGlobalSearch ORDER BY name DESC LIMIT os, l;
@@ -1643,7 +1648,7 @@ BEGIN
 			SIGNAL SQLSTATE
 				'45004'
 			SET
-				MESSAGE_TEXT = "offset beyond the end of results set",
+				MESSAGE_TEXT = 'offset beyond the end of results set',
 				MYSQL_ERRNO = 45004;
 		ELSE IF sortBy = 'nameDesc' THEN
 			SELECT totalResults, lex(id) AS id, lex(documentVersion) AS documentVersion, lex(project) AS project, name, baseUrn, path, thumbnails, role FROM tempSheetProjectSearch ORDER BY name DESC LIMIT os, l;
