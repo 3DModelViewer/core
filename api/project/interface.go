@@ -11,7 +11,6 @@ type setDescription func(forUser string, id string, newDescription string) error
 type setImageFileExtension func(forUser string, id string, newImageFileExtension string) error
 type updateUserPermissions func(forUser string, id string, users []string) error
 type processInvitation func(forUser string, id string) error
-type getRole func(forUser string, id string) (string, error)
 type get func(forUser string, ids []string) ([]*Project, error)
 type getInUserContext func(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error)
 type search func(forUser string, search string, offset int, limit int, sortBy sortBy) ([]*Project, int, error)

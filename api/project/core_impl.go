@@ -1,14 +1,14 @@
 package project
 
 import (
+	"errors"
 	"github.com/modelhub/db/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"mime/multipart"
-	"errors"
 )
 
-func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addOwners updateUserPermissions, addAdmins updateUserPermissions, addOrganisers updateUserPermissions, addContributors updateUserPermissions, addObservers updateUserPermissions, removeUsers updateUserPermissions, acceptInvitation processInvitation, declineInvitation processInvitation, getRole getRole, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
+func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addOwners updateUserPermissions, addAdmins updateUserPermissions, addOrganisers updateUserPermissions, addContributors updateUserPermissions, addObservers updateUserPermissions, removeUsers updateUserPermissions, acceptInvitation processInvitation, declineInvitation processInvitation, getRole util.GetRole, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
 	return &projectStore{
 		create:                 create,
 		delete:                 delete,
@@ -49,7 +49,7 @@ type projectStore struct {
 	removeUsers            updateUserPermissions
 	acceptInvitation       processInvitation
 	declineInvitation      processInvitation
-	getRole                getRole
+	getRole                util.GetRole
 	get                    get
 	getInUserContext       getInUserContext
 	getInUserInviteContext getInUserContext

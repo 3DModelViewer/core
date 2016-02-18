@@ -2,6 +2,7 @@ package project
 
 import (
 	"database/sql"
+	"github.com/modelhub/db/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"strings"
@@ -85,23 +86,6 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return err
 	}
 
-	getRole := func(forUser string, id string) (string, error) {
-		rows, err := db.Query("CALL projectGetRole(?, ?)", forUser, id)
-
-		if rows != nil {
-			defer rows.Close()
-			role := ""
-			for rows.Next() {
-				if err := rows.Scan(&role); err != nil {
-					return role, err
-				}
-			}
-			return role, err
-		}
-
-		return "", err
-	}
-
 	get := func(forUser string, ids []string) ([]*Project, error) {
 		rows, err := db.Query("CALL projectGet(?, ?)", forUser, strings.Join(ids, ","))
 
@@ -169,5 +153,5 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return nil, 0, err
 	}
 
-	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addOwners, addAdmins, addOrganisers, addContributors, addObservers, removeUsers, acceptInvitation, declineInvitation, getRole, get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
+	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addOwners, addAdmins, addOrganisers, addContributors, addObservers, removeUsers, acceptInvitation, declineInvitation, util.GetRoleFunc(db), get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
 }

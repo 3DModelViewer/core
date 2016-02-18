@@ -1,7 +1,7 @@
 package main
 
 import(
-	. "github.com/modelhub/db/api/user"
+	"github.com/modelhub/db/api/user"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/robsix/golog"
@@ -9,7 +9,9 @@ import(
 	"encoding/json"
 	"github.com/modelhub/vada"
 	"github.com/modelhub/db/api/project"
+	"github.com/modelhub/db/api/treenode"
 )
+
 const(
 	vadaHost = "https://developer.api.autodesk.com"
 	clientKey    = "vzZyhg9MZwhZhptG6JqCeR6gQorM8xvW"
@@ -20,11 +22,12 @@ const(
 	sqlConnectionString = "modelhub-api:M0d-3l-Hu8-@p1@tcp(localhost:3306)/modelhub?parseTime=true&loc=UTC"
 )
 func main(){
-	log := golog.NewConsoleLog(1)
+	log := golog.NewConsoleLog(0)
 	vada := vada.NewVadaClient(vadaHost, clientKey, clientSecret, log)
 	db, _ := sql.Open(sqlDriver, sqlConnectionString)
-	userStore := NewSqlUserStore(db, log)
+	userStore := user.NewSqlUserStore(db, log)
 	projectStore := project.NewSqlProjectStore(db, vada, ossBucketPrefix, ossBucketPolicy, log)
+	treenode.NewSqlTreeNodeStore(db, vada, ossBucketPrefix, log)
 
 	ash, err := userStore.Login("ash autodeskId", "ash openId", "ash username", "ash avatar", "ash fullName", "ash email")
 	b, _ := json.Marshal(ash)
@@ -45,15 +48,15 @@ func main(){
 	b, _ = json.Marshal(uwds)
 	log.Info("%v %s %v", uwds, string(b), err)
 
-	us, totalResults, err := userStore.Search("fullName", 0, 5, FullNameAsc)
+	us, totalResults, err := userStore.Search("fullName", 0, 5, user.FullNameAsc)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	us, totalResults, err = userStore.Search("fullName", 1, 5, FullNameAsc)
+	us, totalResults, err = userStore.Search("fullName", 1, 5, user.FullNameAsc)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	us, totalResults, err = userStore.Search("fullName", 2, 5, FullNameAsc)
+	us, totalResults, err = userStore.Search("fullName", 2, 5, user.FullNameAsc)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
@@ -61,11 +64,11 @@ func main(){
 //	b, _ = json.Marshal(us)
 //	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	us, totalResults, err = userStore.Search("fullName", 1, 1, FullNameAsc)
+	us, totalResults, err = userStore.Search("fullName", 1, 1, user.FullNameAsc)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	us, totalResults, err = userStore.Search("fullName", 0, 5, FullNameDec)
+	us, totalResults, err = userStore.Search("fullName", 0, 5, user.FullNameDec)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 

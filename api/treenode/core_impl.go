@@ -1,25 +1,28 @@
 package treenode
 
 import (
+	"errors"
+	"github.com/modelhub/db/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"github.com/robsix/json"
 	"mime/multipart"
 	"path/filepath"
-	"github.com/modelhub/db/util"
 )
 
-func newTreeNodeStore(createFolder createFolder, createDocument createDocument, createViewerState createViewerState, setName setName, move move, getChildren getChildren, getParents getParents, globalSearch globalSearch, projectSearch projectSearch, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
+func newTreeNodeStore(createFolder createFolder, createDocument createDocument, createViewerState createViewerState, setName setName, move move, get get, getChildren getChildren, getParents getParents, globalSearch globalSearch, projectSearch projectSearch, getRole util.GetRole, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
 	return &treeNodeStore{
 		createFolder:      createFolder,
 		createDocument:    createDocument,
 		createViewerState: createViewerState,
 		setName:           setName,
 		move:              move,
+		get:               get,
 		getChildren:       getChildren,
 		getParents:        getParents,
 		globalSearch:      globalSearch,
 		projectSearch:     projectSearch,
+		getRole:           getRole,
 		vada:              vada,
 		ossBucketPrefix:   ossBucketPrefix,
 		log:               log,
@@ -32,10 +35,12 @@ type treeNodeStore struct {
 	createViewerState createViewerState
 	setName           setName
 	move              move
+	get               get
 	getChildren       getChildren
 	getParents        getParents
 	globalSearch      globalSearch
 	projectSearch     projectSearch
+	getRole           util.GetRole
 	vada              vada.VadaClient
 	ossBucketPrefix   string
 	log               golog.Log
@@ -52,39 +57,53 @@ func (tns *treeNodeStore) CreateFolder(forUser string, parent string, name strin
 }
 
 func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name string, uploadComment string, fileName string, file multipart.File) (*TreeNode, error) {
+	if file == nil {
+		err := errors.New("file required")
+		tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q error: %v", forUser, parent, name, err)
+		return nil, err
+	}
+	defer file.Close()
+	var projectId string
+
+	if treeNodes, err := tns.get(forUser, []string{parent}); err != nil || treeNodes == nil {
+		tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q error: %v", forUser, parent, name, err)
+		return nil, err
+	} else {
+		projectId = treeNodes[0].Project
+		if role, err := tns.getRole(forUser, projectId); err != nil {
+			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q error: %v", forUser, parent, name, err)
+			return nil, err
+		} else if role != "owner" || role != "admin" || role != "organiser" || role != "contributor" {
+			err := errors.New("Unauthorized Action: treeNode create document")
+			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q error: %v", forUser, parent, name, err)
+			return nil, err
+		}
+	}
 
 	fileExtension := filepath.Ext(fileName)
 	if len(fileExtension) >= 1 {
 		fileExtension = fileExtension[1:] //cut of the .
 	}
 
-	fileType, _ := util.GetFileType(fileExtension)
-	newDocumentVersionId := util.NewId()
-
-	urn := ""
-
-	status := "wont_register"
-	if fileType == "lmv" {
-		status = "unregistered"
-	}
-
-
-
-	if treeNode, err := tns.createDocument(forUser, parent, name, newDocumentVersionId, uploadComment, fileExtension, urn, status); err != nil {
-		tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q uploadComment: %q fileName: %q error: %v", forUser, parent, name, uploadComment, fileName, err)
-		return treeNode, err
+	if newDocVerId, status, urn, err := util.DocumentUploadHelper(fileName, file, tns.ossBucketPrefix+projectId, tns.vada, tns.log); err != nil {
+		return nil, err
 	} else {
-		tns.log.Info("TreeNodeStore.CreateDocument success: forUser: %q parent: %q name: %q uploadComment: %q fileName: %q treeNode: %v", forUser, parent, name, uploadComment, fileName, treeNode)
-		return treeNode, nil
+		if treeNode, err := tns.createDocument(forUser, parent, name, newDocVerId, uploadComment, fileExtension, urn, status); err != nil {
+			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q uploadComment: %q fileName: %q error: %v", forUser, parent, name, uploadComment, fileName, err)
+			return treeNode, err
+		} else {
+			tns.log.Info("TreeNodeStore.CreateDocument success: forUser: %q parent: %q name: %q uploadComment: %q fileName: %q treeNode: %v", forUser, parent, name, uploadComment, fileName, treeNode)
+			return treeNode, nil
+		}
 	}
 }
 
 func (tns *treeNodeStore) CreateViewerState(forUser string, parent string, name string, createComment string, definition *json.Json) (*TreeNode, error) {
-	if treeNode, err := tns.createViewerState(forUser, parent, nodeType, name, definition); err != nil {
-		tns.log.Error("TreeNodeStore.CreateViewerState error: forUser: %q parent: %q name: %q createComment: %q definition: %v error: %v", forUser, parent, name, createComment, definition.ToString(), err)
+	if treeNode, err := tns.createViewerState(forUser, parent, name, createComment, definition); err != nil {
+		tns.log.Error("TreeNodeStore.CreateViewerState error: forUser: %q parent: %q name: %q createComment: %q definition: %v error: %v", forUser, parent, name, createComment, definition, err)
 		return treeNode, err
 	} else {
-		tns.log.Info("TreeNodeStore.CreateViewerState success: forUser: %q parent: %q name: %q createComment: %q definition: %v treeNode: %v", forUser, parent, name, createComment, definition.ToString(), treeNode)
+		tns.log.Info("TreeNodeStore.CreateViewerState success: forUser: %q parent: %q name: %q createComment: %q definition: %v treeNode: %v", forUser, parent, name, createComment, definition, treeNode)
 		return treeNode, nil
 	}
 }
@@ -105,6 +124,16 @@ func (tns *treeNodeStore) Move(forUser string, newParent string, ids []string) e
 	}
 	tns.log.Info("TreeNodeStore.Move success: forUser: %q newParent: %q ids: %v", forUser, newParent, ids)
 	return nil
+}
+
+func (tns *treeNodeStore) Get(forUser string, ids []string) ([]*TreeNode, error) {
+	if treeNodes, err := tns.get(forUser, ids); err != nil {
+		tns.log.Error("TreeNodeStore.Get error: forUser: %q ids: %v error: %v", forUser, ids, err)
+		return nil, err
+	} else {
+		tns.log.Info("TreeNodeStore.Get success: forUser: %q ids: %v", forUser, ids)
+		return treeNodes, nil
+	}
 }
 
 func (tns *treeNodeStore) GetChildren(forUser string, id string, nodeType nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error) {

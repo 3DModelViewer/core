@@ -980,7 +980,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS _treeNode_createNode;
 DELIMITER $$
-CREATE PROCEDURE _treeNode_createNode(forUserId VARCHAR(32), newTreeNodeId Binary(16), parentId VARCHAR(32), newNodeName VARCHAR(50), newNodeType VARCHAR(50))
+CREATE PROCEDURE _treeNode_createNode(forUserId VARCHAR(32), newTreeNodeId Binary(16), parentId VARCHAR(32), nodeName VARCHAR(50), newNodeType VARCHAR(50))
 BEGIN
 	DECLARE projectId BINARY(16) DEFAULT NULL;
     DECLARE parentNodeType VARCHAR(50) DEFAULT NULL;
@@ -992,7 +992,7 @@ BEGIN
         SET forUserRole = _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
 		IF (newNodeType = 'folder' AND forUserRole IN ('owner', 'admin', 'organiser')) OR (newNodeType != 'folder' AND forUserRole IN ('owner', 'admin', 'organiser', 'contributor')) THEN
 			INSERT INTO treeNode (id, parent, project, name, nodeType) VALUES (newTreeNodeId, UNHEX(parentId), projectId, newNodeName, newNodeType);
-			SELECT lex(newTreeNodeId) AS id, parentId AS parent, lex(projectId) AS project, newNodeName AS name, newNodeType AS nodeType;
+			SELECT lex(newTreeNodeId) AS id, parentId AS parent, lex(projectId) AS project, nodeName AS name, newNodeType AS nodeType;
 		ELSE 
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1111,6 +1111,30 @@ BEGIN
 END$$
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS treeNodeGet;
+DELIMITER $$
+CREATE PROCEDURE treeNodeGet(forUserId VARCHAR(32), treeNodes VARCHAR(3300))
+BEGIN
+	DECLARE projectId BINARY(16) DEFAULT NULL;
+    DECLARE distinctProjectsCount INT DEFAULT 0;
+    
+	IF createTempIdsTable(treeNodes) THEN
+		SELECT project INTO projectId FROM documentVersion WHERE id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
+        SELECT COUNT(DISTINCT project) INTO distinctProjectsCount FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
+        IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
+			SELECT lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode AS tn INNER JOIN tempIds AS t ON tn.id = t.id;
+        ELSE
+			SIGNAL SQLSTATE 
+				'45002'
+			SET
+				MESSAGE_TEXT = 'Unauthorized action: treeNode get cross project',
+				MYSQL_ERRNO = 45002;
+        END IF;		
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS tempIds;
+END$$
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS treeNodeGetChildren;
 DELIMITER $$
 CREATE PROCEDURE treeNodeGetChildren(forUserId VARCHAR(32), parentId VARCHAR(32), childNodeType VARCHAR(50), os INT, l INT, sortBy VARCHAR(50))
@@ -1197,7 +1221,7 @@ BEGIN
 			INSERT INTO tempTreeNodeGetParents (depth, id, parent, name) VALUES (depthCounter, treeNodeId, lex(currentParent), currentName);
             SET depthCounter = depthCounter + 1;
 		END WHILE;
-        SELECT id, parent, name FROM tempTreeNodeGetParents ORDER BY depth DESC;
+        SELECT id, parent, lex(project) AS project, name, 'folder' AS nodeType FROM tempTreeNodeGetParents ORDER BY depth DESC;
 	ELSE 
 		SIGNAL SQLSTATE 
 			'45002'

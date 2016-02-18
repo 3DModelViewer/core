@@ -105,7 +105,7 @@ var fileTypes = map[string]string{
 	"xpr":           "lmv",
 }
 
-func GetFileType(fileExtension string) (string, error) {
+func getFileType(fileExtension string) (string, error) {
 	if fileType, exists := fileTypes[fileExtension]; exists {
 		return fileType, nil
 	} else {
