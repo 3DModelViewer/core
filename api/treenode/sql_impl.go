@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) (TreeNodeStore, error) {
+func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
 
 	createFolder := func(forUser string, parent string, name string) (*TreeNode, error) {
 		rows, err := db.Query("CALL treeNodeCreateFolder(?, ?, ?)", forUser, parent, name)
@@ -18,7 +18,9 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		if rows != nil {
 			defer rows.Close()
 			for rows.Next() {
-				err = rows.Scan(&tn.Id, &tn.Parent, &tn.Project, &tn.Name, &tn.NodeType)
+				scanNodeType := ""
+				err = rows.Scan(&tn.Id, &tn.Parent, &tn.Project, &tn.Name, &scanNodeType)
+				tn.NodeType = nodeType(scanNodeType)
 			}
 		}
 
@@ -32,7 +34,9 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		if rows != nil {
 			defer rows.Close()
 			for rows.Next() {
-				err = rows.Scan(&tn.Id, &tn.Parent, &tn.Project, &tn.Name, &tn.NodeType)
+				scanNodeType := ""
+				err = rows.Scan(&tn.Id, &tn.Parent, &tn.Project, &tn.Name, &scanNodeType)
+				tn.NodeType = nodeType(scanNodeType)
 			}
 		}
 
@@ -62,9 +66,11 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 			tns := make([]*TreeNode, 0, len(ids))
 			for rows.Next() {
 				tn := TreeNode{}
-				if err = rows.Scan(&tn.Id, &tn.Parent, &tn.Project, &tn.Name, &tn.NodeType); err != nil {
+				scanNodeType := ""
+				if err = rows.Scan(&tn.Id, &tn.Parent, &tn.Project, &tn.Name, &scanNodeType); err != nil {
 					return tns, err
 				}
+				tn.NodeType = nodeType(scanNodeType)
 				tns = append(tns, &tn)
 			}
 			return tns, err
@@ -73,8 +79,8 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		return nil, err
 	}
 
-	getChildren := func(forUser string, id string, nodeType nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error) {
-		rows, err := db.Query("CALL treeNodeGetChildren(?, ?, ?, ?, ?, ?)", forUser, id, string(nodeType), offset, limit, string(sortBy))
+	getChildren := func(forUser string, id string, nt nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error) {
+		rows, err := db.Query("CALL treeNodeGetChildren(?, ?, ?, ?, ?, ?)", forUser, id, string(nt), offset, limit, string(sortBy))
 
 		if rows != nil {
 			defer rows.Close()
@@ -82,9 +88,11 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 			totalResults := 0
 			for rows.Next() {
 				tn := TreeNode{}
-				if err = rows.Scan(&totalResults, &tn.Id, &tn.Parent, &tn.Project, &tn.Name, &tn.NodeType); err != nil {
+				scanNodeType := ""
+				if err = rows.Scan(&totalResults, &tn.Id, &tn.Parent, &tn.Project, &tn.Name, &scanNodeType); err != nil {
 					return tns, totalResults, err
 				}
+				tn.NodeType = nodeType(scanNodeType)
 				tns = append(tns, &tn)
 			}
 			return tns, totalResults, err
@@ -101,9 +109,11 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 			tns := make([]*TreeNode, 0, 100)
 			for rows.Next() {
 				tn := TreeNode{}
-				if err = rows.Scan(&tn.Id, &tn.Parent, &tn.Project, &tn.Name, &tn.NodeType); err != nil {
+				scanNodeType := ""
+				if err = rows.Scan(&tn.Id, &tn.Parent, &tn.Project, &tn.Name, &scanNodeType); err != nil {
 					return tns, err
 				}
+				tn.NodeType = nodeType(scanNodeType)
 				tns = append(tns, &tn)
 			}
 			return tns, err
@@ -112,8 +122,8 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		return nil, err
 	}
 
-	globalSearch := func(forUser string, search string, nodeType nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error) {
-		rows, err := db.Query("CALL treeNodeGlobalSearch(?, ?, ?, ?, ?, ?)", forUser, search, string(nodeType), offset, limit, string(sortBy))
+	globalSearch := func(forUser string, search string, nt nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error) {
+		rows, err := db.Query("CALL treeNodeGlobalSearch(?, ?, ?, ?, ?, ?)", forUser, search, string(nt), offset, limit, string(sortBy))
 
 		if rows != nil {
 			defer rows.Close()
@@ -121,9 +131,11 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 			totalResults := 0
 			for rows.Next() {
 				tn := TreeNode{}
-				if err = rows.Scan(&totalResults, &tn.Id, &tn.Parent, &tn.Project, &tn.Name, &tn.NodeType); err != nil {
+				scanNodeType := ""
+				if err = rows.Scan(&totalResults, &tn.Id, &tn.Parent, &tn.Project, &tn.Name, &scanNodeType); err != nil {
 					return tns, totalResults, err
 				}
+				tn.NodeType = nodeType(scanNodeType)
 				tns = append(tns, &tn)
 			}
 			return tns, totalResults, err
@@ -132,8 +144,8 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		return nil, 0, err
 	}
 
-	projectSearch := func(forUser string, project string, search string, nodeType nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error) {
-		rows, err := db.Query("CALL treeNodeProjectSearch(?, ?, ?, ?, ?, ?, ?)", forUser, project, search, string(nodeType), offset, limit, string(sortBy))
+	projectSearch := func(forUser string, project string, search string, nt nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error) {
+		rows, err := db.Query("CALL treeNodeProjectSearch(?, ?, ?, ?, ?, ?, ?)", forUser, project, search, string(nt), offset, limit, string(sortBy))
 
 		if rows != nil {
 			defer rows.Close()
@@ -141,9 +153,11 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 			totalResults := 0
 			for rows.Next() {
 				tn := TreeNode{}
-				if err = rows.Scan(&totalResults, &tn.Id, &tn.Parent, &tn.Project, &tn.Name, &tn.NodeType); err != nil {
+				scanNodeType := ""
+				if err = rows.Scan(&totalResults, &tn.Id, &tn.Parent, &tn.Project, &tn.Name, &scanNodeType); err != nil {
 					return tns, totalResults, err
 				}
+				tn.NodeType = nodeType(scanNodeType)
 				tns = append(tns, &tn)
 			}
 			return tns, totalResults, err
@@ -152,5 +166,5 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		return nil, 0, err
 	}
 
-	return newTreeNodeStore(createFolder, createDocument, createViewerState, setName, move, get, getChildren, getParents, globalSearch, projectSearch, util.GetRoleFunc(db), vada, ossBucketPrefix, log), nil
+	return newTreeNodeStore(createFolder, createDocument, createViewerState, setName, move, get, getChildren, getParents, globalSearch, projectSearch, util.GetRoleFunc(db), vada, ossBucketPrefix, log)
 }

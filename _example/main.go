@@ -27,7 +27,7 @@ func main(){
 	db, _ := sql.Open(sqlDriver, sqlConnectionString)
 	userStore := user.NewSqlUserStore(db, log)
 	projectStore := project.NewSqlProjectStore(db, vada, ossBucketPrefix, ossBucketPolicy, log)
-	treenode.NewSqlTreeNodeStore(db, vada, ossBucketPrefix, log)
+	treeNodeStore := treenode.NewSqlTreeNodeStore(db, vada, ossBucketPrefix, log)
 
 	ash, err := userStore.Login("ash autodeskId", "ash openId", "ash username", "ash avatar", "ash fullName", "ash email")
 	b, _ := json.Marshal(ash)
@@ -83,6 +83,14 @@ func main(){
 	ps, totalResults, err := projectStore.Search(ash.Id, "ashs", 0, 5, project.NameAsc)
 	b, _ = json.Marshal(ps)
 	log.Info("%v %d %s %v", ps, totalResults, string(b), err)
+
+	sf1, _ := treeNodeStore.CreateFolder(ash.Id, p.Id, "sub folder 1")
+	sf2, _ := treeNodeStore.CreateFolder(ash.Id, sf1.Id, "sub folder 2")
+	_, _ = treeNodeStore.CreateFolder(ash.Id, sf1.Id, "sub folder 3")
+
+	parents, _ := treeNodeStore.GetParents(ash.Id, sf2.Id)
+	b, _ = json.Marshal(parents)
+	log.Info("%v %s %v", parents, string(b), err)
 
 	fmt.Scanln()
 }

@@ -980,7 +980,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS _treeNode_createNode;
 DELIMITER $$
-CREATE PROCEDURE _treeNode_createNode(forUserId VARCHAR(32), newTreeNodeId Binary(16), parentId VARCHAR(32), nodeName VARCHAR(50), newNodeType VARCHAR(50))
+CREATE PROCEDURE _treeNode_createNode(forUserId VARCHAR(32), newTreeNodeId Binary(16), parentId VARCHAR(32), newNodeName VARCHAR(50), newNodeType VARCHAR(50))
 BEGIN
 	DECLARE projectId BINARY(16) DEFAULT NULL;
     DECLARE parentNodeType VARCHAR(50) DEFAULT NULL;
@@ -992,7 +992,7 @@ BEGIN
         SET forUserRole = _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
 		IF (newNodeType = 'folder' AND forUserRole IN ('owner', 'admin', 'organiser')) OR (newNodeType != 'folder' AND forUserRole IN ('owner', 'admin', 'organiser', 'contributor')) THEN
 			INSERT INTO treeNode (id, parent, project, name, nodeType) VALUES (newTreeNodeId, UNHEX(parentId), projectId, newNodeName, newNodeType);
-			SELECT lex(newTreeNodeId) AS id, parentId AS parent, lex(projectId) AS project, nodeName AS name, newNodeType AS nodeType;
+			SELECT lex(newTreeNodeId) AS id, parentId AS parent, lex(projectId) AS project, newNodeName AS name, newNodeType AS nodeType;
 		ELSE 
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1067,6 +1067,14 @@ BEGIN
 	DECLARE treeNodesCount INT DEFAULT 0;
     DECLARE treeNodesInSameProjectCount INT DEFAULT 0;
     
+	DROP TEMPORARY TABLE IF EXISTS tempTreeNodeMoveParents;
+	CREATE TEMPORARY TABLE tempTreeNodeMoveParents(
+		id BINARY(16) NOT NULL,
+		PRIMARY KEY (id)
+	);
+    
+    #TODO work out if any of the nodes being moved to the new parents are the parent or any of its parents, if we dont do this check it will allow people to move folders into a loop structure that will be cut off from the rest of the file tree structure
+    
     SELECT project, nodeType INTO projectId, newParentNodeType FROM treeNode WHERE id = UNHEX(newParentId);
     SET forUserRole = _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
     
@@ -1108,6 +1116,7 @@ BEGIN
 			MYSQL_ERRNO = 45002;
 	END IF;
     DROP TEMPORARY TABLE IF EXISTS tempIds;
+	DROP TEMPORARY TABLE IF EXISTS tempTreeNodeMoveParents;
 END$$
 DELIMITER ;
 
@@ -1221,7 +1230,7 @@ BEGIN
 			INSERT INTO tempTreeNodeGetParents (depth, id, parent, name) VALUES (depthCounter, treeNodeId, lex(currentParent), currentName);
             SET depthCounter = depthCounter + 1;
 		END WHILE;
-        SELECT id, parent, lex(project) AS project, name, 'folder' AS nodeType FROM tempTreeNodeGetParents ORDER BY depth DESC;
+        SELECT id, parent, lex(projectId) AS project, name, 'folder' AS nodeType FROM tempTreeNodeGetParents ORDER BY depth DESC;
 	ELSE 
 		SIGNAL SQLSTATE 
 			'45002'
