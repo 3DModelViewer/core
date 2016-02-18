@@ -85,7 +85,7 @@ CREATE TABLE project(
     FULLTEXT (name)
 );
 INSERT INTO project (id, name, description, created, imageFileExtension)
-VALUES (UNHEX(''), '', '', UTC_TIMESTAMP(), '');
+VALUES (UNHEX('00000000000000000000000000000000'), '', '', UTC_TIMESTAMP(), '');
 
 DROP TABLE IF EXISTS role;
 CREATE TABLE role(
@@ -158,7 +158,7 @@ CREATE TABLE treeNode(
     FOREIGN KEY (nodeType) REFERENCES treeNodeType(id) ON DELETE CASCADE
 );
 INSERT INTO treeNode (id, parent, project, name, nodeType)
-VALUES (UNHEX(''), NULL, UNHEX(''), '', 'folder');
+VALUES (UNHEX('00000000000000000000000000000000'), NULL, UNHEX('00000000000000000000000000000000'), '', 'folder');
 
 DROP TABLE IF EXISTS documentVersion;
 CREATE TABLE documentVersion(
@@ -586,7 +586,7 @@ BEGIN
 	INSERT INTO treeNode
 		(id, parent, project, name, nodeType)
 	VALUES
-		(UNHEX(newProjectId), UNHEX(''), UNHEX(newProjectId), 'root', 'folder');
+		(UNHEX(newProjectId), UNHEX('00000000000000000000000000000000'), UNHEX(newProjectId), 'root', 'folder');
         
 	# add in owner permission
 	INSERT INTO permission
@@ -1066,6 +1066,9 @@ BEGIN
 	DECLARE forUserRole VARCHAR(50) DEFAULT NULL;
 	DECLARE treeNodesCount INT DEFAULT 0;
     DECLARE treeNodesInSameProjectCount INT DEFAULT 0;
+	DECLARE rootParent BINARY(16) DEFAULT UNHEX('00000000000000000000000000000000');
+    DECLARE currentParent BINARY(16) DEFAULT NULL;
+    DECLARE treeNodeId BINARY(16) DEFAULT NULL;
     
 	DROP TEMPORARY TABLE IF EXISTS tempTreeNodeMoveParents;
 	CREATE TEMPORARY TABLE tempTreeNodeMoveParents(
@@ -1073,9 +1076,7 @@ BEGIN
 		PRIMARY KEY (id)
 	);
     
-    #TODO work out if any of the nodes being moved to the new parents are the parent or any of its parents, if we dont do this check it will allow people to move folders into a loop structure that will be cut off from the rest of the file tree structure
-    
-    SELECT project, nodeType INTO projectId, newParentNodeType FROM treeNode WHERE id = UNHEX(newParentId);
+    SELECT project, parent, nodeType INTO projectId, currentParent, newParentNodeType FROM treeNode WHERE id = UNHEX(newParentId);
     SET forUserRole = _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
     
 	IF forUserRole IN ('owner', 'admin', 'organiser') THEN
@@ -1085,7 +1086,21 @@ BEGIN
                 SELECT COUNT(*) INTO treeNodesInSameProjectCount FROM treeNode AS tn INNER JOIN tempIds AS t ON tn.id = t.id WHERE tn.project = projectId;
 				IF treeNodesCount = treeNodesInSameProjectCount THEN
 					IF (SELECT COUNT(*) FROM treeNode AS tn INNER JOIN tempIds AS t ON tn.id = t.id WHERE tn.id = tn.project) = 0 THEN
-						UPDATE treeNode SET parent = UNHEX(newParentId) WHERE id IN (SELECT id FROM tempIds);
+						INSERT INTO tempTreeNodeMoveParents (id) VALUES (UNHEX(newParentId));
+						WHILE currentParent != rootParent DO
+							SELECT id, parent INTO treeNodeId, currentParent FROM treeNode WHERE id = currentParent;
+							INSERT INTO tempTreeNodeMoveParents (id) VALUES (treeNodeId);
+						END WHILE;
+                        
+                        IF (SELECT COUNT(*) FROM tempIds AS t INNER JOIN tempTreeNodeMoveParents AS tp ON t.id = tp.id) = 0 THEN
+							UPDATE treeNode SET parent = UNHEX(newParentId) WHERE id IN (SELECT id FROM tempIds);
+						ELSE
+							SIGNAL SQLSTATE 
+								'45003'
+							SET
+								MESSAGE_TEXT = 'Invalid action: treeNode move would result in looping folder state',
+								MYSQL_ERRNO = 45003;
+                        END IF;
 					ELSE
 						SIGNAL SQLSTATE 
 							'45003'
@@ -1208,7 +1223,7 @@ CREATE PROCEDURE treeNodeGetParents(forUserId VARCHAR(32), treeNodeId VARCHAR(32
 BEGIN
 	DECLARE projectId BINARY(16) DEFAULT NULL;
 	DECLARE forUserRole VARCHAR(50) DEFAULT NULL;
-	DECLARE rootParent BINARY(16) DEFAULT UNHEX('');
+	DECLARE rootParent BINARY(16) DEFAULT UNHEX('00000000000000000000000000000000');
     DECLARE currentParent BINARY(16) DEFAULT NULL;
     DECLARE currentName VARCHAR(50) DEFAULT NULL;
     DECLARE depthCounter INT DEFAULT 0;

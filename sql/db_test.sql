@@ -1524,16 +1524,15 @@ BEGIN
 	INSERT INTO treeNode
 		(id, parent, project, name, nodeType)
 	VALUES
-		(UNHEX(ashProjId), NULL, UNHEX(ashProjId), 'root', 'folder'),
-		(UNHEX(bobProjId), NULL, UNHEX(bobProjId), 'root', 'folder'),
-		(UNHEX(catProjId), NULL, UNHEX(catProjId), 'root', 'folder'),
+		(UNHEX(ashProjId), UNHEX('00000000000000000000000000000000'), UNHEX(ashProjId), 'root', 'folder'),
+		(UNHEX(bobProjId), UNHEX('00000000000000000000000000000000'), UNHEX(bobProjId), 'root', 'folder'),
+		(UNHEX(catProjId), UNHEX('00000000000000000000000000000000'), UNHEX(catProjId), 'root', 'folder'),
 		(UNHEX(subFolder1Id), UNHEX(ashProjId), UNHEX(ashProjId), 'sub folder 1', 'folder'),
 		(UNHEX(subFolder2Id), UNHEX(ashProjId), UNHEX(ashProjId), 'sub folder 2', 'folder'),
 		(UNHEX(docId), UNHEX(subFolder1Id), UNHEX(ashProjId), 'doc', 'document');
 	
     #ash trys to move her root folder to be under subfolder 1; expect: error, root folders can't be moved
-	CALL treeNodeMove(ashId, subFolder1Id, ashProjId);
-    IF (SELECT parent FROM treeNode WHERE id = UNHEX(ashProjId)) IS NOT NULL THEN
+    IF (SELECT parent FROM treeNode WHERE id = UNHEX(ashProjId)) != UNHEX('00000000000000000000000000000000') THEN
 		CALL STOP_TEST_FAIL();
     END IF;
     
@@ -1567,6 +1566,18 @@ BEGIN
 		CALL STOP_TEST_FAIL();
     END IF;
     IF (SELECT parent FROM treeNode WHERE id = UNHEX(subFolder2Id)) != UNHEX(ashProjId) THEN
+		CALL STOP_TEST_FAIL();
+    END IF;
+    
+    #ash trys to move subFolder2 to subFolder1; expect: success
+	CALL treeNodeMove(ashId, subFolder1Id, subFolder2Id);
+    IF (SELECT parent FROM treeNode WHERE id = UNHEX(subFolder2Id)) != UNHEX(subFolder1Id) THEN
+		CALL STOP_TEST_FAIL();
+    END IF;
+    
+    #ash trys to move subFolder1 to subFolder2; expect: error
+	CALL treeNodeMove(ashId, subFolder2Id, subFolder1Id);
+    IF (SELECT parent FROM treeNode WHERE id = UNHEX(subFolder2Id)) != UNHEX(subFolder1Id) THEN
 		CALL STOP_TEST_FAIL();
     END IF;
         
