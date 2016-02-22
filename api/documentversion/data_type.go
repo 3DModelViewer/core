@@ -6,7 +6,7 @@ import (
 
 type _documentVersion struct {
 	DocumentVersion
-	Urn       string `json:"urn"`
+	Urn string `json:"urn"`
 }
 
 type DocumentVersion struct {

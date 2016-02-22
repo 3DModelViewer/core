@@ -1376,6 +1376,7 @@ BEGIN
     IF forUserRole IN ('owner', 'admin', 'organiser', 'contributor') THEN
 		INSERT INTO documentVersion (id, document, version, project, uploaded, uploadComment, uploadedBy, fileExtension, urn, status)
         VALUES (UNHEX(documentVersionId), UNHEX(documentId), version, projectId, UTC_TIMESTAMP(), uploadComment, UNHEX(forUserId), fileExtension, urn, status);
+        SELECT lex(dv.id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, urn, status FROM documentVersion AS dv WHERE dv.id = UNHEX(documentVersionId);
 	ELSE
 		SIGNAL SQLSTATE 
 			'45002'

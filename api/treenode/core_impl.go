@@ -6,8 +6,8 @@ import (
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"github.com/robsix/json"
-	"path/filepath"
 	"io"
+	"path/filepath"
 )
 
 func newTreeNodeStore(createFolder createFolder, createDocument createDocument, createViewerState createViewerState, setName setName, move move, get get, getChildren getChildren, getParents getParents, globalSearch globalSearch, projectSearch projectSearch, getRole util.GetRole, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {

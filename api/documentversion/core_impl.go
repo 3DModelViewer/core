@@ -5,9 +5,9 @@ import (
 	"github.com/modelhub/db/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
-	"path/filepath"
-	"net/http"
 	"io"
+	"net/http"
+	"path/filepath"
 )
 
 func newDocumentVersionStore(create create, get get, getForDocument getForDocument, getRole util.GetRole, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) DocumentVersionStore {
@@ -116,15 +116,15 @@ func convertToPublicFormat(dvs []*_documentVersion) []*DocumentVersion {
 	publicDvs := make([]*DocumentVersion, 0, len(dvs))
 	for _, dv := range dvs {
 		publicDvs = append(publicDvs, &DocumentVersion{
-			Id            :dv.Id,
-			Document      :dv.Document,
-			Version       :dv.Version,
-			Project       :dv.Project,
-			Uploaded      :dv.Uploaded,
-			UploadComment :dv.UploadComment,
-			UploadedBy    :dv.UploadedBy,
-			FileExtension :dv.FileExtension,
-			Status        :dv.Status,
+			Id:            dv.Id,
+			Document:      dv.Document,
+			Version:       dv.Version,
+			Project:       dv.Project,
+			Uploaded:      dv.Uploaded,
+			UploadComment: dv.UploadComment,
+			UploadedBy:    dv.UploadedBy,
+			FileExtension: dv.FileExtension,
+			Status:        dv.Status,
 		})
 	}
 	return publicDvs

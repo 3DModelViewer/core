@@ -1,8 +1,8 @@
 package documentversion
 
 import (
-	"net/http"
 	"io"
+	"net/http"
 )
 
 type create func(forUser string, document string, documentVersionId string, uploadComment string, fileExtension string, urn string, status string) (*DocumentVersion, error)

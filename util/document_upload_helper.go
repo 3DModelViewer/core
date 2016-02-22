@@ -5,8 +5,8 @@ import (
 	"errors"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
-	"path/filepath"
 	"io"
+	"path/filepath"
 )
 
 func DocumentUploadHelper(fileName string, file io.ReadCloser, ossBucket string, vada vada.VadaClient, log golog.Log) (newDocVerId string, status string, urn string, err error) {
