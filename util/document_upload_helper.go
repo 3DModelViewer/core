@@ -5,11 +5,11 @@ import (
 	"errors"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
-	"mime/multipart"
 	"path/filepath"
+	"io"
 )
 
-func DocumentUploadHelper(fileName string, file multipart.File, ossBucket string, vada vada.VadaClient, log golog.Log) (newDocVerId string, status string, urn string, err error) {
+func DocumentUploadHelper(fileName string, file io.ReadCloser, ossBucket string, vada vada.VadaClient, log golog.Log) (newDocVerId string, status string, urn string, err error) {
 	if file == nil {
 		err := errors.New("file required")
 		log.Error("DocumentUploadHelper error: %v", err)

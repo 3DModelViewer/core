@@ -2,7 +2,7 @@ package treenode
 
 import (
 	"github.com/robsix/json"
-	"mime/multipart"
+	"io"
 )
 
 type createFolder func(forUser string, parent string, name string) (*TreeNode, error)
@@ -18,7 +18,7 @@ type projectSearch func(forUser string, project string, search string, nodeType 
 
 type TreeNodeStore interface {
 	CreateFolder(forUser string, parent string, name string) (*TreeNode, error)
-	CreateDocument(forUser string, parent string, name string, uploadComment string, fileName string, file multipart.File) (*TreeNode, error)
+	CreateDocument(forUser string, parent string, name string, uploadComment string, fileName string, file io.ReadCloser) (*TreeNode, error)
 	CreateViewerState(forUser string, parent string, name string, createComment string, definition *json.Json) (*TreeNode, error)
 	SetName(forUser string, id string, newName string) error
 	Move(forUser string, newParent string, ids []string) error

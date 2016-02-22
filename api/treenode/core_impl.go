@@ -6,8 +6,8 @@ import (
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"github.com/robsix/json"
-	"mime/multipart"
 	"path/filepath"
+	"io"
 )
 
 func newTreeNodeStore(createFolder createFolder, createDocument createDocument, createViewerState createViewerState, setName setName, move move, get get, getChildren getChildren, getParents getParents, globalSearch globalSearch, projectSearch projectSearch, getRole util.GetRole, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
@@ -56,7 +56,7 @@ func (tns *treeNodeStore) CreateFolder(forUser string, parent string, name strin
 	}
 }
 
-func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name string, uploadComment string, fileName string, file multipart.File) (*TreeNode, error) {
+func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name string, uploadComment string, fileName string, file io.ReadCloser) (*TreeNode, error) {
 	if file == nil {
 		err := errors.New("file required")
 		tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q error: %v", forUser, parent, name, err)

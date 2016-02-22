@@ -1,7 +1,7 @@
 package project
 
 import (
-	"mime/multipart"
+	"io"
 )
 
 type create func(forUser string, id, name string, description string, imageFileExtension string) (*Project, error)
@@ -17,11 +17,11 @@ type search func(forUser string, search string, offset int, limit int, sortBy so
 
 type ProjectStore interface {
 	//writes
-	Create(forUser string, name string, description string, imageName string, image multipart.File) (*Project, error)
+	Create(forUser string, name string, description string, imageName string, image io.ReadCloser) (*Project, error)
 	Delete(forUser string, id string) error
 	SetName(forUser string, id string, newName string) error
 	SetDescription(forUser string, id string, newDescription string) error
-	SetImage(forUser string, id string, name string, image multipart.File) error
+	SetImage(forUser string, id string, name string, image io.ReadCloser) error
 	//permissions
 	AddOwners(forUser string, id string, users []string) error
 	AddAdmins(forUser string, id string, users []string) error

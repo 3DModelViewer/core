@@ -5,7 +5,7 @@ import (
 	"github.com/modelhub/db/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
-	"mime/multipart"
+	"io"
 )
 
 func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addOwners updateUserPermissions, addAdmins updateUserPermissions, addOrganisers updateUserPermissions, addContributors updateUserPermissions, addObservers updateUserPermissions, removeUsers updateUserPermissions, acceptInvitation processInvitation, declineInvitation processInvitation, getRole util.GetRole, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
@@ -60,7 +60,7 @@ type projectStore struct {
 	log                    golog.Log
 }
 
-func (ps *projectStore) Create(forUser string, name string, description string, imageName string, image multipart.File) (*Project, error) {
+func (ps *projectStore) Create(forUser string, name string, description string, imageName string, image io.ReadCloser) (*Project, error) {
 	newProjectId := util.NewId()
 	var imageFileExtension string
 
@@ -120,7 +120,7 @@ func (ps *projectStore) SetDescription(forUser string, id string, newDescription
 	return nil
 }
 
-func (ps *projectStore) SetImage(forUser string, id string, name string, image multipart.File) error {
+func (ps *projectStore) SetImage(forUser string, id string, name string, image io.ReadCloser) error {
 
 	role, err := ps.getRole(forUser, id)
 	if err != nil {

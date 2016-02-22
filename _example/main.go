@@ -10,6 +10,7 @@ import(
 	"github.com/modelhub/vada"
 	"github.com/modelhub/db/api/project"
 	"github.com/modelhub/db/api/treenode"
+	"github.com/modelhub/db/api/documentversion"
 )
 
 const(
@@ -28,6 +29,7 @@ func main(){
 	userStore := user.NewSqlUserStore(db, log)
 	projectStore := project.NewSqlProjectStore(db, vada, ossBucketPrefix, ossBucketPolicy, log)
 	treeNodeStore := treenode.NewSqlTreeNodeStore(db, vada, ossBucketPrefix, log)
+	documentversion.NewSqlDocumentVersionStore(db, vada, ossBucketPrefix, log)
 
 	ash, err := userStore.Login("ash autodeskId", "ash openId", "ash username", "ash avatar", "ash fullName", "ash email")
 	b, _ := json.Marshal(ash)

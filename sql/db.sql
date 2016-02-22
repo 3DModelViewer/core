@@ -1397,7 +1397,7 @@ BEGIN
 		SELECT project INTO projectId FROM documentVersion WHERE id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
         SELECT COUNT(DISTINCT project) INTO distinctProjectsCount FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
         IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
-			SELECT lex(dv.id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, status FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
+			SELECT lex(dv.id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, urn, status FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
         ELSE
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1440,9 +1440,9 @@ BEGIN
 				MESSAGE_TEXT = 'offset beyond the end of results set',
 				MYSQL_ERRNO = 45004;
 		ELSE IF sortBy = 'versionAsc' THEN
-			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, status FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version ASC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, urn, status FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version ASC LIMIT os, l;
 		ELSE
-			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, status FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version DESC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, urn, status FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version DESC LIMIT os, l;
         END IF;
         END IF;
     ELSE 
