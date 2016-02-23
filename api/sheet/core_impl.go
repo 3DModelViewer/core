@@ -15,26 +15,26 @@ import (
 
 func newSheetStore(setName setName, get get, getForDocumentVersion getForDocumentVersion, globalSearch globalSearch, projectSearch projectSearch, getRole util.GetRole, vada vada.VadaClient, log golog.Log) SheetStore {
 	return &sheetStore{
-		setName:          setName,
-		get:             get,
-		getForDocumentVersion:  getForDocumentVersion,
-		getRole:         getRole,
-		globalSearch: globalSearch,
-		projectSearch: projectSearch,
-		vada:            vada,
-		log:             log,
+		setName: setName,
+		get:     get,
+		getForDocumentVersion: getForDocumentVersion,
+		getRole:               getRole,
+		globalSearch:          globalSearch,
+		projectSearch:         projectSearch,
+		vada:                  vada,
+		log:                   log,
 	}
 }
 
 type sheetStore struct {
-	setName                setName
-	get             	   get
-	getForDocumentVersion  getForDocumentVersion
-	getRole         	   util.GetRole
-	globalSearch 		   globalSearch
-	projectSearch 		   projectSearch
-	vada            	   vada
-	log             	   golog.Log
+	setName               setName
+	get                   get
+	getForDocumentVersion getForDocumentVersion
+	getRole               util.GetRole
+	globalSearch          globalSearch
+	projectSearch         projectSearch
+	vada                  vada
+	log                   golog.Log
 }
 
 func (dvs *documentVersionStore) Get(forUser string, ids []string) ([]*DocumentVersion, error) {

@@ -8,28 +8,36 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"time"
 )
 
-func newDocumentVersionStore(create create, get get, getForDocument getForDocument, getRole util.GetRole, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) DocumentVersionStore {
+func newDocumentVersionStore(create create, get get, getForDocument getForDocument, getRole util.GetRole, bulkSetStatus bulkSetStatus, bulkSaveSheets bulkSaveSheets, statusCheckTimeout time.Duration, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) DocumentVersionStore {
 	return &documentVersionStore{
-		create:          create,
-		get:             get,
-		getForDocument:  getForDocument,
-		getRole:         getRole,
-		vada:            vada,
-		ossBucketPrefix: ossBucketPrefix,
-		log:             log,
+		create:             create,
+		get:                get,
+		getForDocument:     getForDocument,
+		getRole:            getRole,
+		bulkSetStatus:   bulkSetStatus,
+		bulkSaveSheets:     bulkSaveSheets,
+		statusCheckTimeout: statusCheckTimeout,
+		ossBucketPrefix:    ossBucketPrefix,
+		vada:               vada,
+		bulkSaveSheets:     bulkSaveSheets,
+		log:                log,
 	}
 }
 
 type documentVersionStore struct {
-	create          create
-	get             get
-	getForDocument  getForDocument
-	getRole         util.GetRole
-	vada            vada.VadaClient
-	ossBucketPrefix string
-	log             golog.Log
+	create             create
+	get                get
+	getForDocument     getForDocument
+	getRole            util.GetRole
+	bulkSetStatus bulkSetStatus
+	bulkSaveSheets     bulkSaveSheets
+	statusCheckTimeout time.Duration
+	vada               vada.VadaClient
+	ossBucketPrefix    string
+	log                golog.Log
 }
 
 func (dvs *documentVersionStore) Create(forUser string, document string, uploadComment string, fileName string, file io.ReadCloser) (*DocumentVersion, error) {
@@ -80,6 +88,7 @@ func (dvs *documentVersionStore) Get(forUser string, ids []string) ([]*DocumentV
 		return nil, err
 	} else {
 		dvs.log.Info("DocumentVersionStore.Get success: forUser: %q ids: %v", forUser, ids)
+		performStatusCheck(docVers, dvs.bulkSetStatus, dvs.bulkSaveSheets, dvs.statusCheckTimeout, dvs.vada, dvs.log)
 		return convertToPublicFormat(docVers), nil
 	}
 }
@@ -90,6 +99,7 @@ func (dvs *documentVersionStore) GetForDocument(forUser string, document string,
 		return convertToPublicFormat(docVers), totalResults, err
 	} else {
 		dvs.log.Info("DocumentVersionStore.GetForDocument success: forUser: %q document: %q offset: %d limit: %d sortBy: %q totalResults: %d", forUser, document, offset, limit, sortBy, totalResults)
+		performStatusCheck(docVers, dvs.bulkSetStatus, dvs.bulkSaveSheets, dvs.statusCheckTimeout, dvs.vada, dvs.log)
 		return convertToPublicFormat(docVers), totalResults, nil
 	}
 }

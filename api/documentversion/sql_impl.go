@@ -6,9 +6,11 @@ import (
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"strings"
+	"github.com/modelhub/db/api/sheet"
+	"time"
 )
 
-func NewSqlDocumentVersionStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) DocumentVersionStore {
+func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) DocumentVersionStore {
 
 	create := func(forUser string, document string, documentVersion string, uploadComment, fileExtension string, urn string, status string) (*DocumentVersion, error) {
 		rows, err := db.Query("CALL documentVersionCreate(?, ?, ?, ?, ?, ?, ?)", forUser, document, documentVersion, uploadComment, fileExtension, urn, status)
@@ -64,5 +66,33 @@ func NewSqlDocumentVersionStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefi
 		return nil, 0, err
 	}
 
-	return newDocumentVersionStore(create, get, getForDocument, util.GetRoleFunc(db), vada, ossBucketPrefix, log)
+	bulkSetStatus := func(docVers []*_documentVersion) error {
+		if len(docVers) > 0 {
+			query := ""
+			args := make([]interface{}, 0, len(docVers)*2)
+			for _, docVer := range docVers {
+				query += "CALL documentVersionSetStatus(?, ?);"
+				args = append(args, docVer.Id, docVer.Status)
+			}
+			_, err := db.Exec(query, args...)
+			return err
+		}
+		return nil
+	}
+
+	bulkSaveSheets := func(sheets []*sheet.Sheet_) error {
+		if len(sheets) > 0 {
+			query := ""
+			args := make([]interface{}, 0, len(sheets)*7)
+			for _, sheet := range sheets {
+				query += "CALL sheetCreate(?, ?, ?, ?, ?, ?, ?);"
+				args = append(args, sheet.Id, sheet.Project, sheet.Name, sheet.BaseUrn, sheet.Manifest, strings.Join(sheet.Thumbnails, ","), sheet.Role)
+			}
+			_, err := db.Exec(query, args...)
+			return err
+		}
+		return nil
+	}
+
+	return newDocumentVersionStore(create, get, getForDocument, util.GetRoleFunc(db), bulkSetStatus, bulkSaveSheets, statusCheckTimeout, vada, ossBucketPrefix, log)
 }

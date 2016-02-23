@@ -1,14 +1,14 @@
 package documentversion
 
-import(
+import (
 	"errors"
+	"github.com/modelhub/db/api/sheet"
 	"github.com/modelhub/db/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	. "github.com/robsix/json"
 	"strings"
 	"time"
-	"github.com/modelhub/db/api/sheet"
 )
 
 func convertToPublicFormat(dvs []*_documentVersion) []*DocumentVersion {
@@ -29,14 +29,14 @@ func convertToPublicFormat(dvs []*_documentVersion) []*DocumentVersion {
 	return publicDvs
 }
 
-func performStatusCheck(dvs []*_documentVersion, bulkStatusUpdate bulkStatusUpdate, bulkSaveSheets bulkSaveSheets, statusCheckTimeOut time.Duration, vada vada.VadaClient, log golog.Log) []error {
+func performStatusCheck(dvs []*_documentVersion, bulkStatusUpdate bulkSetStatus, bulkSaveSheets bulkSaveSheets, statusCheckTimeOut time.Duration, vada vada.VadaClient, log golog.Log) []error {
 	errChan := make(chan error)
 	changeChan := make(chan *_documentVersion)
 	successChan := make(chan *Json)
 	timeOutChan := time.After(statusCheckTimeOut)
 	checkCount := 0
 	for _, e := range dvs {
-		if e.Status == "registered" ||e.Status == "pending" ||e.Status == "inprogress" {
+		if e.Status == "registered" || e.Status == "pending" || e.Status == "inprogress" {
 			go func(dv _documentVersion) {
 				log.Info("DocumentVersionStore performStatusCheck for docVer: %q ", dv.Id)
 				statusJson, err := vada.GetDocumentInfo(util.ToBase64(dv.Urn), "")
@@ -130,7 +130,7 @@ func getObjectsWithProperties(json *Json, matcher map[string]string) []*Json {
 			addToMatches(obj)
 			return
 		}
-		for _, child := range obj.MustArray([]interface{}{}, "children") {
+		for _, child := range obj.MustSlice([]interface{}{}, "children") {
 			recurseThroughChildren(FromInterface(child))
 		}
 	}
