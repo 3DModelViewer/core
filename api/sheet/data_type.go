@@ -11,6 +11,6 @@ type Sheet struct {
 	Project         string   `json:"project"`
 	Name            string   `json:"name"`
 	Thumbnails      []string `json:"thumbnails"`
-	Manifest 		string   `json:"manifest"`
+	Manifest        string   `json:"manifest"`
 	Role            string   `json:"role"`
 }

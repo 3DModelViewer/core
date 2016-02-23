@@ -1,7 +1,7 @@
 package user
 
 import (
-	"github.com/modelhub/db/api/project"
+	"github.com/modelhub/core/api/project"
 	"github.com/robsix/golog"
 )
 

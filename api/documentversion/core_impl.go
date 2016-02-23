@@ -2,7 +2,7 @@ package documentversion
 
 import (
 	"errors"
-	"github.com/modelhub/db/util"
+	"github.com/modelhub/core/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"io"
@@ -17,7 +17,7 @@ func newDocumentVersionStore(create create, get get, getForDocument getForDocume
 		get:                get,
 		getForDocument:     getForDocument,
 		getRole:            getRole,
-		bulkSetStatus:   bulkSetStatus,
+		bulkSetStatus:      bulkSetStatus,
 		bulkSaveSheets:     bulkSaveSheets,
 		statusCheckTimeout: statusCheckTimeout,
 		ossBucketPrefix:    ossBucketPrefix,
@@ -32,7 +32,7 @@ type documentVersionStore struct {
 	get                get
 	getForDocument     getForDocument
 	getRole            util.GetRole
-	bulkSetStatus bulkSetStatus
+	bulkSetStatus      bulkSetStatus
 	bulkSaveSheets     bulkSaveSheets
 	statusCheckTimeout time.Duration
 	vada               vada.VadaClient

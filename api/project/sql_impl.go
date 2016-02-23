@@ -2,7 +2,7 @@ package project
 
 import (
 	"database/sql"
-	"github.com/modelhub/db/util"
+	"github.com/modelhub/core/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"strings"

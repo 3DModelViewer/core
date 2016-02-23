@@ -2,10 +2,11 @@ package project
 
 import (
 	"errors"
-	"github.com/modelhub/db/util"
+	"github.com/modelhub/core/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"io"
+	"net/http"
 )
 
 func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addOwners updateUserPermissions, addAdmins updateUserPermissions, addOrganisers updateUserPermissions, addContributors updateUserPermissions, addObservers updateUserPermissions, removeUsers updateUserPermissions, acceptInvitation processInvitation, declineInvitation processInvitation, getRole util.GetRole, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
@@ -237,6 +238,25 @@ func (ps *projectStore) GetRole(forUser string, id string) (string, error) {
 	} else {
 		ps.log.Info("ProjectStore.GetRole success: forUser: %q id: %q role: %q", forUser, id, role)
 		return role, nil
+	}
+}
+
+func (ps *projectStore) GetImage(forUser string, id string) (*http.Response, error) {
+	if projects, err := ps.get(forUser, []string{id}); err != nil || len(projects) == 0 {
+		ps.log.Error("ProjectStore.GetImage error: forUser: %q id: %q error: %v", forUser, id, err)
+		return nil, err
+	} else if projects[0].ImageFileExtension == "" {
+		err := errors.New("project has no image file")
+		ps.log.Warning("ProjectStore.GetImage error: forUser: %q id: %q error: %v", forUser, id, err)
+		return nil, err
+	} else {
+		if res, err := ps.vada.GetFile(id+"."+projects[0].ImageFileExtension, ps.ossBucketPrefix+id); err != nil {
+			ps.log.Error("ProjectStore.GetImage error: forUser: %q id: %q error: %v", forUser, id, err)
+			return res, err
+		} else {
+			ps.log.Info("ProjectStore.GetImage success: forUser: %q id: %q", forUser, id)
+			return res, err
+		}
 	}
 }
 

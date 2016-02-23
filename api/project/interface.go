@@ -2,6 +2,7 @@ package project
 
 import (
 	"io"
+	"net/http"
 )
 
 type create func(forUser string, id, name string, description string, imageFileExtension string) (*Project, error)
@@ -33,6 +34,7 @@ type ProjectStore interface {
 	DeclineInvitation(forUser string, id string) error
 	GetRole(forUser string, id string) (string, error)
 	//gets
+	GetImage(forUser string, id string) (*http.Response, error)
 	Get(forUser string, ids []string) ([]*Project, error)
 	GetInUserContext(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error)
 	GetInUserInviteContext(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error)

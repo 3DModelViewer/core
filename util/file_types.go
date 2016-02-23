@@ -17,8 +17,6 @@ func GetImageFileExtension(imageName string) (string, error) {
 		return "gif", nil
 	case strings.HasSuffix(imageName, ".webp"):
 		return "webp", nil
-	case strings.HasSuffix(imageName, ".bmp"):
-		return "bmp", nil
 	}
 	return "", errors.New("no valid image file extension found")
 }
@@ -35,7 +33,6 @@ var fileTypes = map[string]string{
 	"jpg":  "image",
 	"gif":  "image",
 	"webp": "image",
-	"bmp":  "image",
 	//video
 	"mp4":  "video",
 	"ogg":  "video",

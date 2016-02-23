@@ -2,13 +2,12 @@ package sheet
 
 import (
 	"database/sql"
-	"github.com/modelhub/db/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"strings"
 )
 
-func NewSqlDocumentVersionStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) DocumentVersionStore {
+func NewSqlSheetStore(db *sql.DB, vada vada.VadaClient, log golog.Log) SheetStore {
 
 	create := func(forUser string, document string, documentVersion string, uploadComment, fileExtension string, urn string, status string) (*DocumentVersion, error) {
 		rows, err := db.Query("CALL documentVersionCreate(?, ?, ?, ?, ?, ?, ?)", forUser, document, documentVersion, uploadComment, fileExtension, urn, status)
@@ -25,20 +24,20 @@ func NewSqlDocumentVersionStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefi
 		return &dv, err
 	}
 
-	get := func(forUser string, ids []string) ([]*_documentVersion, error) {
+	get := func(forUser string, ids []string) ([]*Sheet_, error) {
 		rows, err := db.Query("CALL documentVersionGet(?, ?)", forUser, strings.Join(ids, ","))
 
 		if rows != nil {
 			defer rows.Close()
-			dvs := make([]*_documentVersion, 0, len(ids))
+			ss := make([]*Sheet_, 0, len(ids))
 			for rows.Next() {
-				dv := _documentVersion{}
-				if err = rows.Scan(&dv.Id, &dv.Document, &dv.Version, &dv.Project, &dv.Uploaded, &dv.UploadComment, &dv.UploadedBy, &dv.FileExtension, &dv.Urn, &dv.Status); err != nil {
-					return dvs, err
+				s := Sheet_{}
+				if err = rows.Scan(&s.Id, &s.Document, &s.Version, &s.Project, &s.Uploaded, &s.UploadComment, &s.UploadedBy, &s.FileExtension, &s.Urn, &s.Status); err != nil {
+					return ss, err
 				}
-				dvs = append(dvs, &dv)
+				ss = append(ss, &s)
 			}
-			return dvs, err
+			return ss, err
 		}
 
 		return nil, err
@@ -64,5 +63,5 @@ func NewSqlDocumentVersionStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefi
 		return nil, 0, err
 	}
 
-	return newDocumentVersionStore(create, get, getForDocument, util.GetRoleFunc(db), vada, ossBucketPrefix, log)
+	return newSheetStore(setName, get, getForDocumentVersion, globalSearch, projectSearch, vada, log)
 }

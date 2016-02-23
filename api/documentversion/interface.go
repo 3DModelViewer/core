@@ -1,7 +1,7 @@
 package documentversion
 
 import (
-	"github.com/modelhub/db/api/sheet"
+	"github.com/modelhub/core/api/sheet"
 	"io"
 	"net/http"
 )

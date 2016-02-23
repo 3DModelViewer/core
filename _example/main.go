@@ -1,16 +1,16 @@
 package main
 
 import(
-	"github.com/modelhub/db/api/user"
+	"github.com/modelhub/core/api/user"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/robsix/golog"
 	"fmt"
 	"encoding/json"
 	"github.com/modelhub/vada"
-	"github.com/modelhub/db/api/project"
-	"github.com/modelhub/db/api/treenode"
-	"github.com/modelhub/db/api/documentversion"
+	"github.com/modelhub/core/api/project"
+	"github.com/modelhub/core/api/treenode"
+	"github.com/modelhub/core/api/documentversion"
 )
 
 const(

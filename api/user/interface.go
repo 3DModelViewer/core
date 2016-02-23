@@ -1,7 +1,7 @@
 package user
 
 import (
-	"github.com/modelhub/db/api/project"
+	"github.com/modelhub/core/api/project"
 )
 
 type login func(autodeskId string, openId string, username string, avatar string, fullName string, email string) (*CurrentUser, error)

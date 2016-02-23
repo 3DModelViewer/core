@@ -2,7 +2,7 @@ package user
 
 import (
 	"database/sql"
-	"github.com/modelhub/db/api/project"
+	"github.com/modelhub/core/api/project"
 	"github.com/robsix/golog"
 	"strings"
 )

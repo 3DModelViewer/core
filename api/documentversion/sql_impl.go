@@ -2,11 +2,11 @@ package documentversion
 
 import (
 	"database/sql"
-	"github.com/modelhub/db/util"
+	"github.com/modelhub/core/api/sheet"
+	"github.com/modelhub/core/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"strings"
-	"github.com/modelhub/db/api/sheet"
 	"time"
 )
 
@@ -68,10 +68,9 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 
 	bulkSetStatus := func(docVers []*_documentVersion) error {
 		if len(docVers) > 0 {
-			query := ""
+			query := strings.Repeat("CALL documentVersionSetStatus(?, ?);", len(docVers))
 			args := make([]interface{}, 0, len(docVers)*2)
 			for _, docVer := range docVers {
-				query += "CALL documentVersionSetStatus(?, ?);"
 				args = append(args, docVer.Id, docVer.Status)
 			}
 			_, err := db.Exec(query, args...)
@@ -82,10 +81,9 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 
 	bulkSaveSheets := func(sheets []*sheet.Sheet_) error {
 		if len(sheets) > 0 {
-			query := ""
+			query := strings.Repeat("CALL sheetCreate(?, ?, ?, ?, ?, ?, ?);", len(sheets))
 			args := make([]interface{}, 0, len(sheets)*7)
 			for _, sheet := range sheets {
-				query += "CALL sheetCreate(?, ?, ?, ?, ?, ?, ?);"
 				args = append(args, sheet.Id, sheet.Project, sheet.Name, sheet.BaseUrn, sheet.Manifest, strings.Join(sheet.Thumbnails, ","), sheet.Role)
 			}
 			_, err := db.Exec(query, args...)
