@@ -22,7 +22,6 @@ func newDocumentVersionStore(create create, get get, getForDocument getForDocume
 		statusCheckTimeout: statusCheckTimeout,
 		ossBucketPrefix:    ossBucketPrefix,
 		vada:               vada,
-		bulkSaveSheets:     bulkSaveSheets,
 		log:                log,
 	}
 }

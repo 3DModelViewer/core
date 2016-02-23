@@ -37,7 +37,7 @@ func performStatusCheck(dvs []*_documentVersion, bulkStatusUpdate bulkSetStatus,
 	checkCount := 0
 	for _, e := range dvs {
 		if e.Status == "registered" || e.Status == "pending" || e.Status == "inprogress" {
-			go func(dv _documentVersion) {
+			go func(dv *_documentVersion) {
 				log.Info("DocumentVersionStore performStatusCheck for docVer: %q ", dv.Id)
 				statusJson, err := vada.GetDocumentInfo(util.ToBase64(dv.Urn), "")
 				if err != nil {
@@ -97,7 +97,7 @@ func performStatusCheck(dvs []*_documentVersion, bulkStatusUpdate bulkSetStatus,
 	}
 	if len(successes) > 0 {
 		if err := extractAndSaveSheets(successes, bulkSaveSheets); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, err...)
 		}
 	}
 	if len(errs) != 0 {
@@ -141,16 +141,16 @@ func getObjectsWithProperties(json *Json, matcher map[string]string) []*Json {
 func extractSheetsFromDocJson(docVer string, project string, sheetMatcher map[string]string, manifestMatcher map[string]string, json *Json) ([]*sheet.Sheet_, error) {
 	var extractedSheets []*sheet.Sheet_
 	growthFactor := 10
-	addToExtractedSheets := func(sheet *sheet.Sheet_) {
+	addToExtractedSheets := func(s *sheet.Sheet_) {
 		if len(extractedSheets) == cap(extractedSheets) {
 			extractedSheets = append(make([]*sheet.Sheet_, 0, len(extractedSheets)+growthFactor), extractedSheets...)
 		}
-		extractedSheets = append(extractedSheets, sheet)
+		extractedSheets = append(extractedSheets, s)
 	}
 
 	sheets := getObjectsWithProperties(json, sheetMatcher)
-	for _, sheet := range sheets {
-		manifestObj := getObjectsWithProperties(sheet, manifestMatcher)
+	for _, s := range sheets {
+		manifestObj := getObjectsWithProperties(s, manifestMatcher)
 		if len(manifestObj) == 0 {
 			return nil, errors.New("DocumentVersionStore etractSheetsFromDocJson: No manifest node found")
 		} else if len(manifestObj) > 1 {
@@ -175,7 +175,7 @@ func extractSheetsFromDocJson(docVer string, project string, sheetMatcher map[st
 				baseUrn = fullUrnAndPath[:idx]
 				manifest = fullUrnAndPath[idx:]
 			}
-			thumbnailObjs := getObjectsWithProperties(sheet, map[string]string{
+			thumbnailObjs := getObjectsWithProperties(s, map[string]string{
 				"role": "thumbnail",
 			})
 			for _, thumbObj := range thumbnailObjs {
@@ -190,13 +190,15 @@ func extractSheetsFromDocJson(docVer string, project string, sheetMatcher map[st
 				}
 			}
 			addToExtractedSheets(&sheet.Sheet_{
-				DocumentVersion: docVer,
-				Project:         project,
-				Name:            sheet.MustString("", "name"),
-				Role:            sheet.MustString("", "role"),
-				Thumbnails:      thumbnails,
+				Sheet: sheet.Sheet{
+					DocumentVersion: docVer,
+					Project:         project,
+					Name:            s.MustString("", "name"),
+					Role:            s.MustString("", "role"),
+					Thumbnails:      thumbnails,
+					Manifest:            manifest,
+				},
 				BaseUrn:         baseUrn,
-				Path:            manifest,
 			})
 		}
 	}
@@ -209,10 +211,10 @@ func extractAndSaveSheets(documents []*Json, bulkSaveSheets bulkSaveSheets) []er
 	for _, doc := range documents {
 		if docVer, err := doc.String(documentVersionJsonProperty); err != nil {
 			errs = append(errs, err)
-			return err
+			return errs
 		} else if project, err := doc.String(projectJsonProperty); err != nil {
 			errs = append(errs, err)
-			return err
+			return errs
 		} else {
 			for _, json := range documents {
 				sheetMatcher := map[string]string{
