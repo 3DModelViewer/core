@@ -84,12 +84,12 @@ func (dvs *documentVersionStore) Get(forUser string, ids []string) ([]*DocumentV
 	}
 }
 
-func (dvs *documentVersionStore) GetForDocument(forUser string, id string, offset int, limit int, sortBy sortBy) ([]*DocumentVersion, int, error) {
-	if docVers, totalResults, err := dvs.getForDocument(forUser, id, offset, limit, sortBy); err != nil {
-		dvs.log.Error("DocumentVersionStore.GetForDocument error: forUser: %q id: %q offset: %d limit: %d sortBy: %q error: %v", forUser, id, offset, limit, sortBy, err)
+func (dvs *documentVersionStore) GetForDocument(forUser string, document string, offset int, limit int, sortBy sortBy) ([]*DocumentVersion, int, error) {
+	if docVers, totalResults, err := dvs.getForDocument(forUser, document, offset, limit, sortBy); err != nil {
+		dvs.log.Error("DocumentVersionStore.GetForDocument error: forUser: %q document: %q offset: %d limit: %d sortBy: %q error: %v", forUser, document, offset, limit, sortBy, err)
 		return convertToPublicFormat(docVers), totalResults, err
 	} else {
-		dvs.log.Info("DocumentVersionStore.GetForDocument success: forUser: %q id: %q offset: %d limit: %d sortBy: %q totalResults: %d", forUser, id, offset, limit, sortBy, totalResults)
+		dvs.log.Info("DocumentVersionStore.GetForDocument success: forUser: %q document: %q offset: %d limit: %d sortBy: %q totalResults: %d", forUser, document, offset, limit, sortBy, totalResults)
 		return convertToPublicFormat(docVers), totalResults, nil
 	}
 }
@@ -110,22 +110,4 @@ func (dvs *documentVersionStore) GetSeedFile(forUser string, id string) (*http.R
 		docVer := docVers[0]
 		return dvs.vada.GetFile(docVer.Id+"."+docVer.FileExtension, dvs.ossBucketPrefix+docVer.Project)
 	}
-}
-
-func convertToPublicFormat(dvs []*_documentVersion) []*DocumentVersion {
-	publicDvs := make([]*DocumentVersion, 0, len(dvs))
-	for _, dv := range dvs {
-		publicDvs = append(publicDvs, &DocumentVersion{
-			Id:            dv.Id,
-			Document:      dv.Document,
-			Version:       dv.Version,
-			Project:       dv.Project,
-			Uploaded:      dv.Uploaded,
-			UploadComment: dv.UploadComment,
-			UploadedBy:    dv.UploadedBy,
-			FileExtension: dv.FileExtension,
-			Status:        dv.Status,
-		})
-	}
-	return publicDvs
 }

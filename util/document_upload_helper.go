@@ -38,7 +38,7 @@ func DocumentUploadHelper(fileName string, file io.ReadCloser, ossBucket string,
 
 	if fileType == "lmv" {
 		log.Info("DocumentUploadHelper registering file: %q", newDocVerId+"."+fileExtension)
-		b64Urn := toBase64(urn)
+		b64Urn := ToBase64(urn)
 		_, err = vada.RegisterFile(b64Urn)
 		if err != nil {
 			return newDocVerId, "failed_to_register", urn, err
@@ -52,6 +52,6 @@ func DocumentUploadHelper(fileName string, file io.ReadCloser, ossBucket string,
 	return newDocVerId, status, urn, err
 }
 
-func toBase64(str string) string {
+func ToBase64(str string) string {
 	return base64.StdEncoding.EncodeToString([]byte(str))
 }
