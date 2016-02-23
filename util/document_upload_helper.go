@@ -3,7 +3,7 @@ package util
 import (
 	"encoding/base64"
 	"errors"
-	"github.com/modelhub/vada"
+	"github.com/modelhub/core/vada"
 	"github.com/robsix/golog"
 	"io"
 	"path/filepath"

@@ -7,7 +7,7 @@ import(
 	"github.com/robsix/golog"
 	"fmt"
 	"encoding/json"
-	"github.com/modelhub/vada"
+	"github.com/modelhub/core/vada"
 	"github.com/modelhub/core/api/project"
 	"github.com/modelhub/core/api/treenode"
 	"github.com/modelhub/core/api/documentversion"

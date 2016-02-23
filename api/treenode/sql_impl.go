@@ -3,7 +3,7 @@ package treenode
 import (
 	"database/sql"
 	"github.com/modelhub/core/util"
-	"github.com/modelhub/vada"
+	"github.com/modelhub/core/vada"
 	"github.com/robsix/golog"
 	"github.com/robsix/json"
 	"strings"

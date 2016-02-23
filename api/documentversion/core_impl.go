@@ -3,7 +3,7 @@ package documentversion
 import (
 	"errors"
 	"github.com/modelhub/core/util"
-	"github.com/modelhub/vada"
+	"github.com/modelhub/core/vada"
 	"github.com/robsix/golog"
 	"io"
 	"net/http"
