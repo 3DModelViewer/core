@@ -11,6 +11,7 @@ import(
 	"github.com/modelhub/core/api/project"
 	"github.com/modelhub/core/api/treenode"
 	"github.com/modelhub/core/api/documentversion"
+	"time"
 )
 
 const(
@@ -29,7 +30,7 @@ func main(){
 	userStore := user.NewSqlUserStore(db, log)
 	projectStore := project.NewSqlProjectStore(db, vada, ossBucketPrefix, ossBucketPolicy, log)
 	treeNodeStore := treenode.NewSqlTreeNodeStore(db, vada, ossBucketPrefix, log)
-	documentversion.NewSqlDocumentVersionStore(db, vada, ossBucketPrefix, log)
+	documentversion.NewSqlDocumentVersionStore(db, 5*time.Second, vada, ossBucketPrefix, log)
 
 	ash, err := userStore.Login("ash autodeskId", "ash openId", "ash username", "ash avatar", "ash fullName", "ash email")
 	b, _ := json.Marshal(ash)
