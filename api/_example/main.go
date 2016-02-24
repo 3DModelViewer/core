@@ -71,7 +71,7 @@ func main(){
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	us, totalResults, err = userStore.Search("fullName", 0, 5, user.FullNameDec)
+	us, totalResults, err = userStore.Search("fullName", 0, 5, user.FullNameDesc)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 

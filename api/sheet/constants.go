@@ -1,8 +1,8 @@
 package sheet
 
 const (
-	NameAsc = sortBy("nameAsc")
-	NameDec = sortBy("nameDec")
+	NameAsc  = sortBy("nameAsc")
+	NameDesc = sortBy("nameDesc")
 )
 
 type sortBy string

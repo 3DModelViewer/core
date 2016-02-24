@@ -1,8 +1,8 @@
 package treenode
 
 const (
-	NameAsc = sortBy("nameAsc")
-	NameDec = sortBy("nameDesc")
+	NameAsc  = sortBy("nameAsc")
+	NameDesc = sortBy("nameDesc")
 
 	Any         = nodeType("any") //used for results filtering only
 	Folder      = nodeType("folder")

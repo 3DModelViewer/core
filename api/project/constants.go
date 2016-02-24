@@ -1,10 +1,10 @@
 package project
 
 const (
-	NameAsc    = sortBy("nameAsc")
-	NameDec    = sortBy("nameDesc")
-	CreatedAsc = sortBy("createdAsc")
-	CreatedDec = sortBy("createdDesc")
+	NameAsc     = sortBy("nameAsc")
+	NameDesc    = sortBy("nameDesc")
+	CreatedAsc  = sortBy("createdAsc")
+	CreatedDesc = sortBy("createdDesc")
 
 	Owner       = Role("owner")
 	Admin       = Role("admin")
