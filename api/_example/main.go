@@ -123,7 +123,7 @@ func main(){
 	})
 
 	http.HandleFunc("/download", func(w http.ResponseWriter, r *http.Request){
-		res, _ := docVerStore.GetSeedFile("user1", docVer.Id)
+		res, _ := docVerStore.GetSeedFile(ash.Id, docVer.Id)
 		io.Copy(w, res.Body)
 	})
 

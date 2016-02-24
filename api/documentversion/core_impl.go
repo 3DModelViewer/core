@@ -56,7 +56,7 @@ func (dvs *documentVersionStore) Create(forUser string, document string, uploadC
 		if role, err := dvs.getRole(forUser, projectId); err != nil {
 			dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q fileName: %q error: %v", forUser, document, fileName, err)
 			return nil, err
-		} else if role != "owner" || role != "admin" || role != "organiser" || role != "contributor" {
+		} else if !(role == "owner" || role == "admin" || role == "organiser" || role == "contributor") {
 			err := errors.New("Unauthorized Action: treeNode create document")
 			dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q fileName: %q error: %v", forUser, document, fileName, err)
 			return nil, err
@@ -111,12 +111,18 @@ func (dvs *documentVersionStore) GetSeedFile(forUser string, id string) (*http.R
 		if role, err := dvs.getRole(forUser, docVers[0].Project); err != nil {
 			dvs.log.Error("DocumentVersionStore.GetSeedFile error: forUser: %q id: %q error: %v", forUser, id, err)
 			return nil, err
-		} else if role != "owner" || role != "admin" || role != "organiser" || role != "contributor" {
+		} else if !(role == "owner" || role == "admin" || role == "organiser" || role == "contributor") {
 			err := errors.New("Unauthorized Action: treeNode create document")
 			dvs.log.Error("DocumentVersionStore.GetSeedFile error: forUser: %q id: %q error: %v", forUser, id, err)
 			return nil, err
 		}
 		docVer := docVers[0]
-		return dvs.vada.GetFile(docVer.Id+"."+docVer.FileExtension, dvs.ossBucketPrefix+docVer.Project)
+		if res, err := dvs.vada.GetFile(docVer.Id+"."+docVer.FileExtension, dvs.ossBucketPrefix+docVer.Project); err != nil {
+			dvs.log.Error("DocumentVersionStore.GetSeedFile error: forUser: %q id: %q error: %v", forUser, id, err)
+			return res, err
+		} else {
+			dvs.log.Info("DocumentVersionStore.GetSeedFile success: forUser: %q id: %q", forUser, id)
+			return res, err
+		}
 	}
 }

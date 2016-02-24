@@ -101,6 +101,7 @@ func performStatusCheck(dvs []*_documentVersion, bulkStatusUpdate bulkSetStatus,
 		}
 	}
 	if len(errs) != 0 {
+		log.Error("DocumentVersionStore performStatusCheck error: %v", errs)
 		return errs
 	} else {
 		return nil

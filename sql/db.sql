@@ -1125,10 +1125,10 @@ BEGIN
     DECLARE distinctProjectsCount INT DEFAULT 0;
     
 	IF createTempIdsTable(treeNodes) THEN
-		SELECT project INTO projectId FROM documentVersion WHERE id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
-        SELECT COUNT(DISTINCT project) INTO distinctProjectsCount FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
+		SELECT project INTO projectId FROM treeNode WHERE id = (SELECT id FROM tempIds LIMIT 1);
+        SELECT COUNT(DISTINCT project) INTO distinctProjectsCount FROM treeNode AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
         IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
-			SELECT lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode AS tn INNER JOIN tempIds AS t ON tn.id = t.id;
+			SELECT lex(tn.id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode AS tn INNER JOIN tempIds AS t ON tn.id = t.id;
         ELSE
 			SIGNAL SQLSTATE 
 				'45002'

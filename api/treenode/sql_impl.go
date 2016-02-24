@@ -72,7 +72,7 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 	}
 
 	get := func(forUser string, ids []string) ([]*TreeNode, error) {
-		return getter("CALL treeNodeGetChildren(?, ?)", len(ids), forUser, strings.Join(ids, ","))
+		return getter("CALL treeNodeGet(?, ?)", len(ids), forUser, strings.Join(ids, ","))
 	}
 
 	getChildren := func(forUser string, id string, nt nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error) {

@@ -75,7 +75,7 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 			query := strings.Repeat("CALL sheetCreate(?, ?, ?, ?, ?, ?, ?);", len(sheets))
 			args := make([]interface{}, 0, len(sheets)*7)
 			for _, sheet := range sheets {
-				args = append(args, sheet.Id, sheet.Project, sheet.Name, sheet.BaseUrn, sheet.Manifest, strings.Join(sheet.Thumbnails, ","), sheet.Role)
+				args = append(args, sheet.DocumentVersion, sheet.Project, sheet.Name, sheet.BaseUrn, sheet.Manifest, strings.Join(sheet.Thumbnails, ","), sheet.Role)
 			}
 			return util.SqlExec(db, query, args...)
 		}

@@ -73,7 +73,7 @@ func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name str
 		if role, err := tns.getRole(forUser, projectId); err != nil {
 			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q error: %v", forUser, parent, name, err)
 			return nil, err
-		} else if role != "owner" || role != "admin" || role != "organiser" || role != "contributor" {
+		} else if !(role == "owner" || role == "admin" || role == "organiser" || role == "contributor") {
 			err := errors.New("Unauthorized Action: treeNode create document")
 			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q error: %v", forUser, parent, name, err)
 			return nil, err
