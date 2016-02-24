@@ -60,7 +60,7 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 
 	bulkSetStatus := func(docVers []*_documentVersion) error {
 		if len(docVers) > 0 {
-			query := strings.Repeat("CALL documentVersionSetStatus(?, ?);", len(docVers))
+			query := strings.Repeat("CALL documentVersionSetStatus(?, ?); ", len(docVers))
 			args := make([]interface{}, 0, len(docVers)*2)
 			for _, docVer := range docVers {
 				args = append(args, docVer.Id, docVer.Status)
@@ -72,7 +72,7 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 
 	bulkSaveSheets := func(sheets []*sheet.Sheet_) error {
 		if len(sheets) > 0 {
-			query := strings.Repeat("CALL sheetCreate(?, ?, ?, ?, ?, ?, ?);", len(sheets))
+			query := strings.Repeat("CALL sheetCreate(?, ?, ?, ?, ?, ?, ?); ", len(sheets))
 			args := make([]interface{}, 0, len(sheets)*7)
 			for _, sheet := range sheets {
 				args = append(args, sheet.DocumentVersion, sheet.Project, sheet.Name, sheet.BaseUrn, sheet.Manifest, strings.Join(sheet.Thumbnails, ","), sheet.Role)
