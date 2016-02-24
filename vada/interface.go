@@ -1,14 +1,14 @@
 package vada
 
-import(
+import (
 	. "github.com/robsix/json"
-	"net/http"
 	"io"
+	"net/http"
 )
 
 type VadaClient interface {
 	CreateBucket(bucketKey string, policyKey BucketPolicy) (*Json, error)
-	DeleteBucket(bucketKey string) (error)
+	DeleteBucket(bucketKey string) error
 	GetBucketDetails(bucketKey string) (*Json, error)
 	GetSupportedFormats() (*Json, error)
 	UploadFile(objectKey string, bucketKey string, file io.ReadCloser) (*Json, error)

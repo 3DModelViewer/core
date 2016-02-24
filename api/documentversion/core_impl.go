@@ -76,7 +76,7 @@ func (dvs *documentVersionStore) Create(forUser string, document string, uploadC
 			return nil, err
 		} else {
 			dvs.log.Info("DocumentVersionStore.Create success: forUser: %q document: %q uploadComment: %q fileName: %q", forUser, document, uploadComment, fileName)
-			return dv, nil
+			return convertToPublicFormat([]*_documentVersion{dv})[0], nil
 		}
 	}
 }

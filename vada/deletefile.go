@@ -5,7 +5,7 @@ import (
 )
 
 func deleteFile(host string, objectKey string, bucketKey string, accessToken string) error {
-	url, err := url.Parse(host + "/oss/v2/buckets/"+bucketKey+"/objects/")
+	url, err := url.Parse(host + "/oss/v2/buckets/" + bucketKey + "/objects/")
 	if err != nil {
 		return err
 	}

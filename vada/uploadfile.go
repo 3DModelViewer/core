@@ -2,13 +2,13 @@ package vada
 
 import (
 	sj "github.com/robsix/json"
-	"net/url"
 	"io"
+	"net/url"
 )
 
 func uploadFile(host string, objectKey string, bucketKey string, file io.ReadCloser, accessToken string) (ret *sj.Json, err error) {
 	defer file.Close()
-	url, err := url.Parse(host + "/oss/v2/buckets/"+bucketKey+"/objects/")
+	url, err := url.Parse(host + "/oss/v2/buckets/" + bucketKey + "/objects/")
 	if err != nil {
 		return nil, err
 	}

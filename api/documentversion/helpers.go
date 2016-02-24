@@ -196,9 +196,9 @@ func extractSheetsFromDocJson(docVer string, project string, sheetMatcher map[st
 					Name:            s.MustString("", "name"),
 					Role:            s.MustString("", "role"),
 					Thumbnails:      thumbnails,
-					Manifest:            manifest,
+					Manifest:        manifest,
 				},
-				BaseUrn:         baseUrn,
+				BaseUrn: baseUrn,
 			})
 		}
 	}

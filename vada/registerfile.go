@@ -1,13 +1,13 @@
 package vada
 
 import (
-	sj "github.com/robsix/json"
 	"encoding/base64"
+	sj "github.com/robsix/json"
 	"strings"
 )
 
 func registerFile(host string, b64Urn string, accessToken string) (ret *sj.Json, err error) {
-	data, err := sj.FromString(`{"urn":"`+b64Urn+`"}`)
+	data, err := sj.FromString(`{"urn":"` + b64Urn + `"}`)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func registerFile(host string, b64Urn string, accessToken string) (ret *sj.Json,
 		return nil, err
 	}
 
-	req, err := newRequest("POST", host + "/viewingservice/v1/register", reader, accessToken, "application/json")
+	req, err := newRequest("POST", host+"/viewingservice/v1/register", reader, accessToken, "application/json")
 	if err != nil {
 		return nil, err
 	}

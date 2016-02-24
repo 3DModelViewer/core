@@ -10,7 +10,7 @@ func getDocumentInfo(host string, b64Urn string, guid string, accessToken string
 		queryString = "?guid=" + guid
 	}
 
-	req, err := newRequest("GET", host + "/viewingservice/v1/"+b64Urn+"/all"+queryString, nil, accessToken, "")
+	req, err := newRequest("GET", host+"/viewingservice/v1/"+b64Urn+"/all"+queryString, nil, accessToken, "")
 	if err != nil {
 		return nil, err
 	}

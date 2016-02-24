@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/robsix/golog"
+	. "github.com/robsix/json"
 	"io"
 	"net/http"
 	"sync"
 	"time"
-	. "github.com/robsix/json"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 
 func NewVadaClient(vadaHost string, clientKey string, clientSecret string, log golog.Log) VadaClient {
 	return &vadaClient{
-		host:	  vadaHost,
+		host:         vadaHost,
 		clientKey:    clientKey,
 		clientSecret: clientSecret,
 		log:          log,
@@ -26,7 +26,7 @@ func NewVadaClient(vadaHost string, clientKey string, clientSecret string, log g
 }
 
 type vadaClient struct {
-	host			   string
+	host               string
 	clientKey          string
 	clientSecret       string
 	accessToken        string

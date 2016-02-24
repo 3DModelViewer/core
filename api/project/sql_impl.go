@@ -10,147 +10,123 @@ import (
 
 func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
 
-	create := func(forUser string, id string, name string, description string, imageFileExtension string) (*Project, error) {
-		rows, err := db.Query("CALL projectCreate(?, ?, ?, ?, ?)", forUser, id, name, description, imageFileExtension)
-
-		if rows != nil {
-			defer rows.Close()
+	getter := func(query string, colLen int, args ...interface{}) ([]*Project, error) {
+		ps := make([]*Project, 0, colLen)
+		rowsScan := func(rows *sql.Rows) error {
 			p := Project{}
-			for rows.Next() {
-				if err := rows.Scan(&p.Id, &p.Name, &p.Description, &p.Created, &p.ImageFileExtension); err != nil {
-					return &p, err
-				}
+			if err := rows.Scan(&p.Id, &p.Name, &p.Description, &p.Created, &p.ImageFileExtension); err != nil {
+				return err
 			}
-			return &p, err
+			ps = append(ps, &p)
+			return nil
 		}
+		return ps, util.SqlQuery(db, rowsScan, query, args...)
+	}
 
-		return nil, err
+	offsetGetter := func(query string, args ...interface{}) ([]*Project, int, error) {
+		ps := make([]*Project, 0, util.DefaultSqlOffsetQueryLimit)
+		totalResults := 0
+		rowsScan := func(rows *sql.Rows) error {
+			if util.RowsContainsOnlyTotalResults(&totalResults, rows) {
+				return nil
+			}
+			p := Project{}
+			if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Description, &p.Created, &p.ImageFileExtension); err != nil {
+				return err
+			}
+			ps = append(ps, &p)
+			return nil
+		}
+		return ps, totalResults, util.SqlQuery(db, rowsScan, query, args...)
+	}
+
+	offsetGetterInUserContext := func(query string, args ...interface{}) ([]*ProjectInUserContext, int, error) {
+		ps := make([]*ProjectInUserContext, 0, util.DefaultSqlOffsetQueryLimit)
+		totalResults := 0
+		rowsScan := func(rows *sql.Rows) error {
+			if util.RowsContainsOnlyTotalResults(&totalResults, rows) {
+				return nil
+			}
+			p := ProjectInUserContext{}
+			if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Description, &p.Created, &p.ImageFileExtension, &p.Role); err != nil {
+				return err
+			}
+			ps = append(ps, &p)
+			return nil
+		}
+		return ps, totalResults, util.SqlQuery(db, rowsScan, query, args...)
+	}
+
+	create := func(forUser string, id string, name string, description string, imageFileExtension string) (*Project, error) {
+		if ps, err := getter("CALL projectCreate(?, ?, ?, ?, ?)", 1, forUser, id, name, description, imageFileExtension); len(ps) == 1 {
+			return ps[0], err
+		} else {
+			return nil, err
+		}
 	}
 
 	delete := func(forUser string, id string) error {
-		_, err := db.Exec("CALL projectDelete(?, ?)", forUser, id)
-		return err
+		return util.SqlExec(db, "CALL projectDelete(?, ?)", forUser, id)
 	}
 
 	setName := func(forUser string, id string, newName string) error {
-		_, err := db.Exec("CALL projectSetName(?, ?, ?)", forUser, id, newName)
-		return err
+		return util.SqlExec(db, "CALL projectSetName(?, ?, ?)", forUser, id, newName)
 	}
 
 	setDescription := func(forUser string, id string, newDescription string) error {
-		_, err := db.Exec("CALL projectSetDescription(?, ?, ?)", forUser, id, newDescription)
-		return err
+		return util.SqlExec(db, "CALL projectSetDescription(?, ?, ?)", forUser, id, newDescription)
 	}
 
 	setImageFileExtension := func(forUser string, id string, newImageFileExtension string) error {
-		_, err := db.Exec("CALL projectSetImageFileExtension(?, ?, ?)", forUser, id, newImageFileExtension)
-		return err
-	}
-
-	updateUserPermissions := func(sql string, forUser string, id string, users []string) error {
-		_, err := db.Exec(sql, forUser, id, strings.Join(users, ","))
-		return err
+		return util.SqlExec(db, "CALL projectSetImageFileExtension(?, ?, ?)", forUser, id, newImageFileExtension)
 	}
 
 	addOwners := func(forUser string, id string, users []string) error {
-		return updateUserPermissions("CALL projectAddOwners(?, ?, ?)", forUser, id, users)
+		return util.SqlExec(db, "CALL projectAddOwners(?, ?, ?)", forUser, id, users)
 	}
 
 	addAdmins := func(forUser string, id string, users []string) error {
-		return updateUserPermissions("CALL projectAddAdmins(?, ?, ?)", forUser, id, users)
+		return util.SqlExec(db, "CALL projectAddAdmins(?, ?, ?)", forUser, id, users)
 	}
 
 	addOrganisers := func(forUser string, id string, users []string) error {
-		return updateUserPermissions("CALL projectAddOrganisers(?, ?, ?)", forUser, id, users)
+		return util.SqlExec(db, "CALL projectAddOrganisers(?, ?, ?)", forUser, id, users)
 	}
 
 	addContributors := func(forUser string, id string, users []string) error {
-		return updateUserPermissions("CALL projectAddContributors(?, ?, ?)", forUser, id, users)
+		return util.SqlExec(db, "CALL projectAddContributors(?, ?, ?)", forUser, id, users)
 	}
 
 	addObservers := func(forUser string, id string, users []string) error {
-		return updateUserPermissions("CALL projectAddObservers(?, ?, ?)", forUser, id, users)
+		return util.SqlExec(db, "CALL projectAddObservers(?, ?, ?)", forUser, id, users)
 	}
 
 	removeUsers := func(forUser string, id string, users []string) error {
-		return updateUserPermissions("CALL projectRemoveUsers(?, ?, ?)", forUser, id, users)
+		return util.SqlExec(db, "CALL projectRemoveUsers(?, ?, ?)", forUser, id, users)
 	}
 
 	acceptInvitation := func(forUser string, id string) error {
-		_, err := db.Exec("CALL projectAcceptInvitation(?, ?)", forUser, id)
-		return err
+		return util.SqlExec(db, "CALL projectAcceptInvitation(?, ?)", forUser, id)
 	}
 
 	declineInvitation := func(forUser string, id string) error {
-		_, err := db.Exec("CALL projectDeclineInvitation(?, ?)", forUser, id)
-		return err
+		return util.SqlExec(db, "CALL projectDeclineInvitation(?, ?)", forUser, id)
 	}
 
 	get := func(forUser string, ids []string) ([]*Project, error) {
-		rows, err := db.Query("CALL projectGet(?, ?)", forUser, strings.Join(ids, ","))
-
-		if rows != nil {
-			defer rows.Close()
-			ps := make([]*Project, 0, 100)
-			for rows.Next() {
-				p := Project{}
-				if err := rows.Scan(&p.Id, &p.Name, &p.Description, &p.Created, &p.ImageFileExtension); err != nil {
-					return ps, err
-				}
-				ps = append(ps, &p)
-			}
-			return ps, err
-		}
-
-		return nil, err
-	}
-
-	_getInUserContext := func(sql string, forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
-		rows, err := db.Query(sql, forUser, user, role, offset, limit, string(sortBy))
-
-		if rows != nil {
-			defer rows.Close()
-			totalResults := 0
-			ps := make([]*ProjectInUserContext, 0, 100)
-			for rows.Next() {
-				p := ProjectInUserContext{}
-				if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Description, &p.Created, &p.ImageFileExtension); err != nil {
-					return ps, totalResults, err
-				}
-				ps = append(ps, &p)
-			}
-			return ps, totalResults, err
-		}
-
-		return nil, 0, err
+		return getter("CALL projectGet(?, ?)", len(ids), forUser, strings.Join(ids, ","))
 	}
 
 	getInUserContext := func(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
-		return _getInUserContext("CALL projectGetInUserContext(?, ?, ?, ?, ?, ?)", forUser, user, role, offset, limit, sortBy)
+		return offsetGetterInUserContext("CALL projectGetInUserContext(?, ?, ?, ?, ?, ?)", forUser, user, role, offset, limit, string(sortBy))
 	}
 
 	getInUserInviteContext := func(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
-		return _getInUserContext("CALL projectGetInUserInviteContext(?, ?, ?, ?, ?, ?)", forUser, user, role, offset, limit, sortBy)
+		return offsetGetterInUserContext("CALL projectGetInUserInviteContext(?, ?, ?, ?, ?, ?)", forUser, user, role, offset, limit, string(sortBy))
 	}
 
 	search := func(forUser string, search string, offset int, limit int, sortBy sortBy) ([]*Project, int, error) {
-		rows, err := db.Query("CALL projectSearch(?, ?, ?, ?, ?)", forUser, search, offset, limit, string(sortBy))
-
-		if rows != nil {
-			defer rows.Close()
-			totalResults := 0
-			ps := make([]*Project, 0, 100)
-			for rows.Next() {
-				p := Project{}
-				if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Description, &p.Created, &p.ImageFileExtension); err != nil {
-					return ps, totalResults, err
-				}
-				ps = append(ps, &p)
-			}
-			return ps, totalResults, err
-		}
-
-		return nil, 0, err
+		return offsetGetter("CALL projectSearch(?, ?, ?, ?, ?)", forUser, search, offset, limit, string(sortBy))
 	}
 
 	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addOwners, addAdmins, addOrganisers, addContributors, addObservers, removeUsers, acceptInvitation, declineInvitation, util.GetRoleFunc(db), get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)

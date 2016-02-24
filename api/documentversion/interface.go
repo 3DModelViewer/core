@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-type create func(forUser string, document string, documentVersionId string, uploadComment string, fileExtension string, urn string, status string) (*DocumentVersion, error)
+type create func(forUser string, document string, documentVersionId string, uploadComment string, fileExtension string, urn string, status string) (*_documentVersion, error)
 type get func(forUser string, ids []string) ([]*_documentVersion, error)
 type getForDocument func(forUser string, document string, offset int, limit int, sortBy sortBy) ([]*_documentVersion, int, error)
 type bulkSetStatus func([]*_documentVersion) error

@@ -757,59 +757,6 @@ BEGIN
 END$$
 DELIMITER ;
 
-DROP PROCEDURE IF EXISTS projectSearch;
-DELIMITER $$
-CREATE PROCEDURE projectSearch(forUserId VARCHAR(32), search VARCHAR(100), os INT, l INT, sortBy VARCHAR(50))
-BEGIN
-    DECLARE totalResults INT;
-    
-	IF os < 0 THEN
-		SET os = 0;
-	END IF;
-    
-	IF l < 0 THEN
-		SET l = 0;
-	END IF;
-    
-	IF l > 100 THEN
-		SET l = 100;
-	END IF;
-    
-	DROP TEMPORARY TABLE IF EXISTS tempProjectSearch;
-	CREATE TEMPORARY TABLE tempProjectSearch(
-		id BINARY(16) NOT NULL,
-		name VARCHAR(100) NULL,
-		description VARCHAR(250) NULL,
-		created DATETIME NOT NULL,
-		imageFileExtension VARCHAR(10) NULL,
-		PRIMARY KEY (id),
-		INDEX (name),
-		INDEX (created)
-	);
-    
-	INSERT INTO tempProjectSearch SELECT p.id, name, p.description, p.created, p.imageFileExtension FROM project AS p INNER JOIN permission AS perm ON p.id = perm.project WHERE perm.user = UNHEX(forUserId) AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE);
-    
-    SELECT COUNT(*) INTO totalResults FROM tempProjectSearch;
-    
-    IF os >= totalResults OR l = 0 THEN
-		SELECT totalResults;
-    ELSE IF sortBy = 'createdDesc' THEN
-		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY created DESC LIMIT os, l;
-    ELSE IF sortBy = 'createdAsc' THEN
-		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY created ASC LIMIT os, l;
-    ELSE IF sortBy = 'nameDesc' THEN
-		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY name DESC LIMIT os, l;
-    ELSE
-		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY name ASC LIMIT os, l;
-	END IF;
-    END IF;
-    END IF;
-    END IF;
-    
-	DROP TEMPORARY TABLE IF EXISTS tempProjectSearch;
-END$$
-DELIMITER ;
-
 DROP PROCEDURE IF EXISTS projectGetInUserContext;
 DELIMITER $$
 CREATE PROCEDURE projectGetInUserContext(forUserId VARCHAR(32), userId VARCHAR(32), filterRole VARCHAR(50), os int, l int, sortBy VARCHAR(50))
@@ -953,6 +900,59 @@ BEGIN
     END IF;
 	
     DROP TEMPORARY TABLE IF EXISTS tempProjectGetInUserInviteContext;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS projectSearch;
+DELIMITER $$
+CREATE PROCEDURE projectSearch(forUserId VARCHAR(32), search VARCHAR(100), os INT, l INT, sortBy VARCHAR(50))
+BEGIN
+    DECLARE totalResults INT;
+    
+	IF os < 0 THEN
+		SET os = 0;
+	END IF;
+    
+	IF l < 0 THEN
+		SET l = 0;
+	END IF;
+    
+	IF l > 100 THEN
+		SET l = 100;
+	END IF;
+    
+	DROP TEMPORARY TABLE IF EXISTS tempProjectSearch;
+	CREATE TEMPORARY TABLE tempProjectSearch(
+		id BINARY(16) NOT NULL,
+		name VARCHAR(100) NULL,
+		description VARCHAR(250) NULL,
+		created DATETIME NOT NULL,
+		imageFileExtension VARCHAR(10) NULL,
+		PRIMARY KEY (id),
+		INDEX (name),
+		INDEX (created)
+	);
+    
+	INSERT INTO tempProjectSearch SELECT p.id, name, p.description, p.created, p.imageFileExtension FROM project AS p INNER JOIN permission AS perm ON p.id = perm.project WHERE perm.user = UNHEX(forUserId) AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE);
+    
+    SELECT COUNT(*) INTO totalResults FROM tempProjectSearch;
+    
+    IF os >= totalResults OR l = 0 THEN
+		SELECT totalResults;
+    ELSE IF sortBy = 'createdDesc' THEN
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY created DESC LIMIT os, l;
+    ELSE IF sortBy = 'createdAsc' THEN
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY created ASC LIMIT os, l;
+    ELSE IF sortBy = 'nameDesc' THEN
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY name DESC LIMIT os, l;
+    ELSE
+		SELECT totalResults, lex(id) AS id, name, description, created, imageFileExtension FROM tempProjectSearch ORDER BY name ASC LIMIT os, l;
+	END IF;
+    END IF;
+    END IF;
+    END IF;
+    
+	DROP TEMPORARY TABLE IF EXISTS tempProjectSearch;
 END$$
 DELIMITER ;
 

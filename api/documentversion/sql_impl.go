@@ -12,58 +12,50 @@ import (
 
 func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) DocumentVersionStore {
 
-	create := func(forUser string, document string, documentVersion string, uploadComment, fileExtension string, urn string, status string) (*DocumentVersion, error) {
-		rows, err := db.Query("CALL documentVersionCreate(?, ?, ?, ?, ?, ?, ?)", forUser, document, documentVersion, uploadComment, fileExtension, urn, status)
-
-		dv := DocumentVersion{}
-		if rows != nil {
-			defer rows.Close()
-			for rows.Next() {
-				urn := ""
-				err = rows.Scan(&dv.Id, &dv.Document, &dv.Version, &dv.Project, &dv.Uploaded, &dv.UploadComment, &dv.UploadedBy, &dv.FileExtension, &urn, &dv.Status)
+	getter := func(query string, colLen int, args ...interface{}) ([]*_documentVersion, error) {
+		dvs := make([]*_documentVersion, 0, colLen)
+		rowsScan := func(rows *sql.Rows) error {
+			dv := _documentVersion{}
+			if err := rows.Scan(&dv.Id, &dv.Document, &dv.Version, &dv.Project, &dv.Uploaded, &dv.UploadComment, &dv.UploadedBy, &dv.FileExtension, &dv.Urn, &dv.Status); err != nil {
+				return err
 			}
+			dvs = append(dvs, &dv)
+			return nil
 		}
+		return dvs, util.SqlQuery(db, rowsScan, query, args...)
+	}
 
-		return &dv, err
+	offsetGetter := func(query string, args ...interface{}) ([]*_documentVersion, int, error) {
+		dvs := make([]*_documentVersion, 0, util.DefaultSqlOffsetQueryLimit)
+		totalResults := 0
+		rowsScan := func(rows *sql.Rows) error {
+			if util.RowsContainsOnlyTotalResults(&totalResults, rows) {
+				return nil
+			}
+			dv := _documentVersion{}
+			if err := rows.Scan(&totalResults, &dv.Id, &dv.Document, &dv.Version, &dv.Project, &dv.Uploaded, &dv.UploadComment, &dv.UploadedBy, &dv.FileExtension, &dv.Urn, &dv.Status); err != nil {
+				return err
+			}
+			dvs = append(dvs, &dv)
+			return nil
+		}
+		return dvs, totalResults, util.SqlQuery(db, rowsScan, query, args...)
+	}
+
+	create := func(forUser string, document string, documentVersion string, uploadComment, fileExtension string, urn string, status string) (*_documentVersion, error) {
+		if dvs, err := getter("CALL documentVersionCreate(?, ?, ?, ?, ?, ?, ?)", 1, forUser, document, documentVersion, uploadComment, fileExtension, urn, status); len(dvs) == 1 {
+			return dvs[0], err
+		} else {
+			return nil, err
+		}
 	}
 
 	get := func(forUser string, ids []string) ([]*_documentVersion, error) {
-		rows, err := db.Query("CALL documentVersionGet(?, ?)", forUser, strings.Join(ids, ","))
-
-		if rows != nil {
-			defer rows.Close()
-			dvs := make([]*_documentVersion, 0, len(ids))
-			for rows.Next() {
-				dv := _documentVersion{}
-				if err = rows.Scan(&dv.Id, &dv.Document, &dv.Version, &dv.Project, &dv.Uploaded, &dv.UploadComment, &dv.UploadedBy, &dv.FileExtension, &dv.Urn, &dv.Status); err != nil {
-					return dvs, err
-				}
-				dvs = append(dvs, &dv)
-			}
-			return dvs, err
-		}
-
-		return nil, err
+		return getter("CALL documentVersionGet(?, ?)", len(ids), forUser, strings.Join(ids, ","))
 	}
 
 	getForDocument := func(forUser string, document string, offset int, limit int, sortBy sortBy) ([]*_documentVersion, int, error) {
-		rows, err := db.Query("CALL documentVersionGetForDocument(?, ?, ?, ?, ?)", forUser, document, offset, limit, string(sortBy))
-
-		if rows != nil {
-			defer rows.Close()
-			dvs := make([]*_documentVersion, 0, 100)
-			totalResults := 0
-			for rows.Next() {
-				dv := _documentVersion{}
-				if err = rows.Scan(&totalResults, &dv.Id, &dv.Document, &dv.Version, &dv.Project, &dv.Uploaded, &dv.UploadComment, &dv.UploadedBy, &dv.FileExtension, &dv.Urn, &dv.Status); err != nil {
-					return dvs, totalResults, err
-				}
-				dvs = append(dvs, &dv)
-			}
-			return dvs, totalResults, err
-		}
-
-		return nil, 0, err
+		return offsetGetter("CALL documentVersionGetForDocument(?, ?, ?, ?, ?)", forUser, document, offset, limit, string(sortBy))
 	}
 
 	bulkSetStatus := func(docVers []*_documentVersion) error {
@@ -73,8 +65,7 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 			for _, docVer := range docVers {
 				args = append(args, docVer.Id, docVer.Status)
 			}
-			_, err := db.Exec(query, args...)
-			return err
+			return util.SqlExec(db, query, args...)
 		}
 		return nil
 	}
@@ -86,8 +77,7 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 			for _, sheet := range sheets {
 				args = append(args, sheet.Id, sheet.Project, sheet.Name, sheet.BaseUrn, sheet.Manifest, strings.Join(sheet.Thumbnails, ","), sheet.Role)
 			}
-			_, err := db.Exec(query, args...)
-			return err
+			return util.SqlExec(db, query, args...)
 		}
 		return nil
 	}

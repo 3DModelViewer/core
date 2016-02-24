@@ -2,8 +2,8 @@ package vada
 
 import (
 	"errors"
-	"regexp"
 	. "github.com/robsix/json"
+	"regexp"
 )
 
 func createBucket(host string, bucketKey string, policyKey BucketPolicy, accessToken string) (ret *Json, err error) {
@@ -12,7 +12,7 @@ func createBucket(host string, bucketKey string, policyKey BucketPolicy, accessT
 		return nil, errors.New("invalid bucket name: " + bucketKey + " must match regexp: " + bucketValidationRegexp)
 	}
 
-	data, err := FromString(`{"bucketKey":"`+bucketKey+`","policyKey":"`+string(policyKey)+`"}`)
+	data, err := FromString(`{"bucketKey":"` + bucketKey + `","policyKey":"` + string(policyKey) + `"}`)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +22,7 @@ func createBucket(host string, bucketKey string, policyKey BucketPolicy, accessT
 		return nil, err
 	}
 
-	req, err := newRequest("POST", host + "/oss/v2/buckets", reader, accessToken, "application/json")
+	req, err := newRequest("POST", host+"/oss/v2/buckets", reader, accessToken, "application/json")
 	if err != nil {
 		return nil, err
 	}

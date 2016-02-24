@@ -19,7 +19,7 @@ type accessToken struct {
 
 func getAccessToken(host string, key string, secret string) (*accessToken, error) {
 	form := url.Values{"client_id": {key}, "client_secret": {secret}, "grant_type": {"client_credentials"}}
-	req, err := newRequest("POST", host + "/authentication/v1/authenticate", strings.NewReader(form.Encode()), "", "application/x-www-form-urlencoded")
+	req, err := newRequest("POST", host+"/authentication/v1/authenticate", strings.NewReader(form.Encode()), "", "application/x-www-form-urlencoded")
 	if err != nil {
 		return nil, err
 	}
