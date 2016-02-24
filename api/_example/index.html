@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>upload test</title>
+    <meta charset="utf-8">
+    <script>
+        function uploadFile(){
+            var data = new FormData();
+            fileInput = document.getElementById("file");
+            data.append("file", fileInput.files[0], fileInput.files[0].name);
+            var http = new XMLHttpRequest();
+            http.open("POST", "/upload", true);
+            http.send(data);
+            http.onload = function() {
+                el = document.getElementById("upload-resp");
+                el.innerHTML = http.responseText
+                console.log(http);
+            }
+        }
+        function getDocVers(){
+            var http = new XMLHttpRequest();
+            http.open("GET", "/getDocVers?cacheBuster="+Math.random(), true);
+            http.send();
+            http.onload = function() {
+                el = document.getElementById("doc-vers");
+                el.innerHTML = http.responseText
+                console.log(http);
+            }
+        }
+    </script>
+</head>
+<body>
+<div>
+    <input id="file" type="file" name="file">
+    <button onclick="uploadFile()">Upload File</button>
+</div>
+<div>
+    <button onclick="getDocVer()">Get Doc Ver</button>
+    <a href="/download" download="YOU_SUCK.pdf">download</a>
+    <div id="upload-resp"></div>
+    <div id="doc-vers"></div>
+</div>
+</body>
+</html>

@@ -5,13 +5,15 @@ import(
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/robsix/golog"
-	"fmt"
 	"encoding/json"
 	"github.com/modelhub/core/vada"
 	"github.com/modelhub/core/api/project"
 	"github.com/modelhub/core/api/treenode"
 	"github.com/modelhub/core/api/documentversion"
 	"time"
+	"net/http"
+	"io"
+	"os"
 )
 
 const(
@@ -30,7 +32,7 @@ func main(){
 	userStore := user.NewSqlUserStore(db, log)
 	projectStore := project.NewSqlProjectStore(db, vada, ossBucketPrefix, ossBucketPolicy, log)
 	treeNodeStore := treenode.NewSqlTreeNodeStore(db, vada, ossBucketPrefix, log)
-	documentversion.NewSqlDocumentVersionStore(db, 5*time.Second, vada, ossBucketPrefix, log)
+	docVerStore := documentversion.NewSqlDocumentVersionStore(db, 5*time.Second, vada, ossBucketPrefix, log)
 
 	ash, err := userStore.Login("ash autodeskId", "ash openId", "ash username", "ash avatar", "ash fullName", "ash email")
 	b, _ := json.Marshal(ash)
@@ -63,9 +65,9 @@ func main(){
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-//	us, totalResults, err = userStore.Search("fullName", 3, 5, FullNameAsc)
-//	b, _ = json.Marshal(us)
-//	log.Info("%v %d %s %v", us, totalResults, string(b), err)
+	us, totalResults, err = userStore.Search("fullName", 3, 5, user.FullNameAsc)
+	b, _ = json.Marshal(us)
+	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
 	us, totalResults, err = userStore.Search("fullName", 1, 1, user.FullNameAsc)
 	b, _ = json.Marshal(us)
@@ -75,11 +77,11 @@ func main(){
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	p, err := projectStore.Create(ash.Id, "ashs project 1", "ash description 1", "", nil)
-	b, _ = json.Marshal(p)
-	log.Info("%v %d %s %v", p, totalResults, string(b), err)
+	ashsProject, err := projectStore.Create(ash.Id, "ashs project 1", "ash description 1", "", nil)
+	b, _ = json.Marshal(ashsProject)
+	log.Info("%v %d %s %v", ashsProject, totalResults, string(b), err)
 
-	p, err = projectStore.Create(ash.Id, "ashs project 2", "ash description 2", "", nil)
+	p, err := projectStore.Create(ash.Id, "ashs project 2", "ash description 2", "", nil)
 	b, _ = json.Marshal(p)
 	log.Info("%v %d %s %v", p, totalResults, string(b), err)
 
@@ -95,5 +97,47 @@ func main(){
 	b, _ = json.Marshal(parents)
 	log.Info("%v %s %v", parents, string(b), err)
 
-	fmt.Scanln()
+	var doc *treenode.TreeNode
+	var docVer *documentversion.DocumentVersion
+
+	http.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request){
+		file, header, _ := r.FormFile("file")
+		if doc == nil {
+			doc, err = treeNodeStore.CreateDocument(ash.Id, sf2.Id, header.Filename, "test comment blah", header.Filename, file)
+			b, _ = json.Marshal(doc)
+			log.Info("%v %s %v", doc, string(b), err)
+			writeJson(w, doc)
+		} else {
+			docVer, err = docVerStore.Create(ash.Id, doc.Id, "test comment 2 wahwah", header.Filename, file)
+			b, _ = json.Marshal(docVer)
+			log.Info("%v %s %v", docVer, string(b), err)
+			writeJson(w, docVer)
+		}
+	})
+
+	http.HandleFunc("/getDocVers", func(w http.ResponseWriter, r *http.Request){
+		docVers, totalResults, err := docVerStore.GetForDocument(ash.Id, doc.Id, 0, 10, documentversion.VersionAsc)
+		b, _ = json.Marshal(docVers)
+		log.Info("%d %v %s %v", totalResults, docVers, string(b), err)
+		writeJson(w, docVers)
+	})
+
+	http.HandleFunc("/download", func(w http.ResponseWriter, r *http.Request){
+		res, _ := docVerStore.GetSeedFile("user1", docVer.Id)
+		io.Copy(w, res.Body)
+	})
+
+	wd, _ := os.Getwd()
+	fs := http.FileServer(http.Dir(wd))
+	http.Handle("/", fs)
+
+	log.Info("Server Listening on localhost:8080")
+	http.ListenAndServe(":8080", nil)
+}
+
+func writeJson(w http.ResponseWriter, obj interface{}) error {
+	js, err := json.Marshal(obj)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+	return err
 }
