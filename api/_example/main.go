@@ -124,7 +124,10 @@ func main(){
 
 	http.HandleFunc("/download", func(w http.ResponseWriter, r *http.Request){
 		res, _ := docVerStore.GetSeedFile(ash.Id, docVer.Id)
-		io.Copy(w, res.Body)
+		if res != nil && res.Body != nil {
+			defer res.Body.Close()
+			io.Copy(w, res.Body)
+		}
 	})
 
 	wd, _ := os.Getwd()
