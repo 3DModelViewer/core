@@ -41,7 +41,7 @@ func DocumentUploadHelper(fileName string, file io.ReadCloser, ossBucket string,
 		b64Urn := ToBase64(urn)
 		_, err = vada.RegisterFile(b64Urn)
 		if err != nil {
-			return newDocVerId, "failed_to_register", urn, err
+			status = "failed_to_register"
 		} else {
 			status = "registered"
 		}

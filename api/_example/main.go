@@ -23,7 +23,7 @@ const(
 	ossBucketPrefix = "transient_01"
 	ossBucketPolicy = vada.Transient
 	sqlDriver = "mysql"
-	sqlConnectionString = "modelhub-api:M0d-3l-Hu8-@p1@tcp(localhost:3306)/modelhub?parseTime=true&loc=UTC"
+	sqlConnectionString = "modelhub-api:M0d-3l-Hu8-@p1@tcp(localhost:3306)/modelhub?parseTime=true&loc=UTC&multiStatements=true"
 )
 func main(){
 	log := golog.NewConsoleLog(0)

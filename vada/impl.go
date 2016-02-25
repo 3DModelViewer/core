@@ -197,6 +197,9 @@ func doAdhocJsonRequest(req *http.Request) (ret *Json, err error) {
 	client := http.DefaultClient
 	resp, err := client.Do(req)
 	if resp != nil {
+		if resp.Body != nil {
+			defer resp.Body.Close()
+		}
 		err = checkResponse(resp, err)
 		if err == nil {
 			ret, err = FromReadCloser(resp.Body)

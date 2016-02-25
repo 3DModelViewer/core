@@ -36,9 +36,23 @@ func performStatusCheck(dvs []*_documentVersion, bulkStatusUpdate bulkSetStatus,
 	timeOutChan := time.After(statusCheckTimeOut)
 	checkCount := 0
 	for _, e := range dvs {
-		if e.Status == "registered" || e.Status == "pending" || e.Status == "inprogress" {
+		if e.Status == "registered" || e.Status == "pending" || e.Status == "inprogress" || e.Status == "failed_to_register" {
 			go func(dv *_documentVersion) {
 				log.Info("DocumentVersionStore performStatusCheck for docVer: %q ", dv.Id)
+				if dv.Status == "failed_to_register"{
+					log.Info("DocumentVersionStore attempt re-registering of failed file: %q", dv.Id+"."+dv.FileExtension)
+					b64Urn := util.ToBase64(dv.Urn)
+					_, err := vada.RegisterFile(b64Urn)
+					if err != nil {
+						log.Error("DocumentVersionStore performStatusCheck, re-registering of failed file error: %v", err)
+						errChan <- err
+						return
+					} else {
+						dv.Status = "registered"
+						changeChan <- dv
+						return
+					}
+				}
 				statusJson, err := vada.GetDocumentInfo(util.ToBase64(dv.Urn), "")
 				if err != nil {
 					errChan <- err
@@ -78,9 +92,12 @@ func performStatusCheck(dvs []*_documentVersion, bulkStatusUpdate bulkSetStatus,
 				errs = append(errs, err)
 			}
 		case dv := <-changeChan:
-			checkCount--
+			if dv.Status != "success" {
+				checkCount--
+			}
 			changes = append(changes, dv)
 		case statusJson := <-successChan:
+			checkCount--
 			successes = append(successes, statusJson)
 		case <-timeOutChan:
 			log.Warning("DocumentVersionStore performStatusCheck timed out after %v with %s open updates awaiting response", statusCheckTimeOut, checkCount)
@@ -217,29 +234,27 @@ func extractAndSaveSheets(documents []*Json, bulkSaveSheets bulkSaveSheets) []er
 			errs = append(errs, err)
 			return errs
 		} else {
-			for _, json := range documents {
-				sheetMatcher := map[string]string{
-					"type": "geometry",
-					"role": "3d",
-				}
-				manifestMatcher := map[string]string{
-					"mime": "application/autodesk-svf",
-				}
-				for i := 0; i < 2; i++ {
-					if i == 1 {
-						sheetMatcher = map[string]string{
-							"type": "geometry",
-							"role": "2d",
-						}
-						manifestMatcher = map[string]string{
-							"mime": "application/autodesk-f2d",
-						}
+			sheetMatcher := map[string]string{
+				"type": "geometry",
+				"role": "3d",
+			}
+			manifestMatcher := map[string]string{
+				"mime": "application/autodesk-svf",
+			}
+			for i := 0; i < 2; i++ {
+				if i == 1 {
+					sheetMatcher = map[string]string{
+						"type": "geometry",
+						"role": "2d",
 					}
-					if nextBatchOfsheets, err := extractSheetsFromDocJson(docVer, project, sheetMatcher, manifestMatcher, json); err != nil {
-						errs = append(errs, err)
-					} else if len(nextBatchOfsheets) > 0 {
-						sheets = append(sheets, nextBatchOfsheets...)
+					manifestMatcher = map[string]string{
+						"mime": "application/autodesk-f2d",
 					}
+				}
+				if nextBatchOfsheets, err := extractSheetsFromDocJson(docVer, project, sheetMatcher, manifestMatcher, doc); err != nil {
+					errs = append(errs, err)
+				} else if len(nextBatchOfsheets) > 0 {
+					sheets = append(sheets, nextBatchOfsheets...)
 				}
 			}
 		}
