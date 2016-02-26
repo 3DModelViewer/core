@@ -766,6 +766,7 @@ paths:
           type: file
       tags:
         - treeNode
+        - documentVersion
       responses:
         200:
           schema:
@@ -1173,6 +1174,198 @@ paths:
       responses:
         200:
           description: Will contain the file, use on an <a> to download  
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /sheet/setName:
+    post:
+      summary: set the sheet name.
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: The sheet id.
+              name:
+                type: string
+                description: The new name for the sheet.
+                maxLength: 100
+          required: true
+      tags:
+        - sheet
+      responses:
+        200:
+          description: Operation was successful  
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /sheet/getItem/{id}/{path}:
+    get:
+      summary: Get document version seed file.
+      parameters:
+        - in: path
+          name: id
+          type: string
+          description: The sheet id
+          required: true
+        - in: path
+          name: path
+          type: string
+          description: The item path
+          required: true
+      tags:
+        - sheet
+      responses:
+        200:
+          description: Will contain the sheet item, used mainly by lmv for getting pack files and the ui for downloading sheet thumbnail images  
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /sheet/getForDocumentVersion:
+    post:
+      summary: Get a list of sheets for a given documentVersion.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: The documentVersion id to get sheets of.
+              offset:
+                type: integer
+                description: The offset to start extracting results from.
+              limit:
+                type: integer
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["nameAsc", "nameDesc"]
+          required: true
+      tags:
+        - sheet
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: integer
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items: 
+                  $ref: '#/definitions/sheet'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /sheet/globalSearch:
+    post:
+      summary: Get a list of sheets mathing a given search.
+      description: |
+        * matches across all projects the user has access too.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              search:
+                type: string
+                description: The search to match on.
+              offset:
+                type: integer
+                description: The offset to start extracting results from.
+              limit:
+                type: integer
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["nameAsc", "nameDesc"]
+          required: true
+      tags:
+        - sheet
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: integer
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items: 
+                  $ref: '#/definitions/sheet'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /sheet/projectSearch:
+    post:
+      summary: Get a list of sheets mathing a given search.
+      description: |
+        * matches only for the specified project.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              project:
+                type: string
+                description: The project id.
+              search:
+                type: string
+                description: The search to match on.
+              offset:
+                type: integer
+                description: The offset to start extracting results from.
+              limit:
+                type: integer
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["nameAsc", "nameDesc"]
+          required: true
+      tags:
+        - sheet
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: integer
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items: 
+                  $ref: '#/definitions/sheet'
         default:
           description: Unexpected error
           schema:
