@@ -211,7 +211,7 @@ BEGIN
 	DECLARE n INT DEFAULT 0;
     DECLARE os INT DEFAULT 0;
     
-	IF (SELECT COUNT(*) FROM role WHERE id = addRole) = 0 THEN
+	IF addRole IS NOT NULL && (SELECT COUNT(*) FROM role WHERE id = addRole) = 0 THEN
 		SIGNAL SQLSTATE 
 			'45003'
 		SET
