@@ -1,0 +1,937 @@
+swagger: '2.0'
+info:
+  title: Modelhub Platform
+  description: Provides full read/write functionality for user/project/treeNode/documentVersion/sheet entities
+  version: "1.0.0"
+host: modelhub.io
+schemes:
+  - https
+basePath: /api/v1
+produces:
+  - application/json
+paths:
+  /user/login:
+    post:
+      summary: Logs the user in to the modelhub platform
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              autodeskId:
+                type: string
+                description: The users unique autodesk oxygen id.
+              openId:
+                type: string
+                description: The users autodesk account openId.
+              username:
+                type: string
+                description: The users username.
+              avatar:
+                type: string
+                description: The url for the users autodesk profile picture.
+              fullName:
+                type: string
+                description: The users full name.
+              email:
+                type: string
+                description: The users email.
+          required: true
+      tags:
+        - user
+      responses:
+        200:
+          schema:
+            $ref: '#/definitions/currentUser'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /user/setDescription:
+    post:
+      summary: Set the users public profile description
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              description:
+                type: string
+                description: The users new public profile description.
+                maxLength: 250
+          required: true
+      tags:
+        - user
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /user/setUILanguage:
+    post:
+      summary: Set the users preferred language code for UI.
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              uiLanguage:
+                type: string
+                description: The users preferred language code for UI.
+                maxLength: 10
+          required: true
+      tags:
+        - user
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /user/setUITheme:
+    post:
+      summary: Set the users preferred theme for the UI.
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              uiTheme:
+                type: string
+                description: The users preferred theme for the UI.
+                enum: ["light", "dark"]
+                maxLength: 10
+          required: true
+      tags:
+        - user
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /user/setLocale:
+    post:
+      summary: Set the users locale, mainly used for rendering datetime strings.
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              locale:
+                type: string
+                description: The users locale.
+                maxLength: 10
+          required: true
+      tags:
+        - user
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /user/setTimeFormat:
+    post:
+      summary: Set the users preferred time format.
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              timeFormat:
+                type: string
+                description: The users preferred time format.
+                maxLength: 20
+          required: true
+      tags:
+        - user
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /user/get:
+    post:
+      summary: Get a list of users public profile info.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              ids:
+                type: array
+                items:
+                  type: string
+                maxItems: 100
+                description: The user ids to get.
+          required: true
+      tags:
+        - user
+      responses:
+        200:
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/userWithDescription'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /user/getInProjectContext:
+    post:
+      summary: Get a list of users within a given project context.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              project:
+                type: string
+                description: The project id context.
+              role:
+                type: string
+                description: The role to filter on.
+                enum: ["any", "owner", "admin", "organiser", "contributor", "observer"]
+              offset:
+                type: int
+                description: The offset to start extracting results from.
+              limit:
+                type: int
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["fullNameAsc", "fullNameDesc"]
+          required: true
+      tags:
+        - user
+        - project
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: int
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items:
+                  $ref: '#/definitions/userInProjectContext'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /user/getInProjectInviteContext:
+    post:
+      summary: Get a list of invited users within a given project context.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              project:
+                type: string
+                description: The project id context.
+              role:
+                type: string
+                description: The role to filter on.
+                enum: ["any", "owner", "admin", "organiser", "contributor", "observer"]
+              offset:
+                type: int
+                description: The offset to start extracting results from.
+              limit:
+                type: int
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["fullNameAsc", "fullNameDesc"]
+          required: true
+      tags:
+        - user
+        - project
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: int
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items:
+                  $ref: '#/definitions/userInProjectContext'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /user/search:
+    post:
+      summary: Get a list of users matching a given search.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              search:
+                type: string
+                description: The users modelhub id.
+              role:
+                type: string
+                description: The role to filter on.
+                enum: ["any", "owner", "admin", "organiser", "contributor", "observer"]
+              offset:
+                type: int
+                description: The offset to start extracting results from.
+              limit:
+                type: int
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["fullNameAsc", "fullNameDesc"]
+          required: true
+      tags:
+        - user
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: int
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items:
+                  $ref: '#/definitions/user'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/create:
+    post:
+      summary: Create a new project.
+      description: |
+          Creates a new project with the additional transparent consequences a) the user creating it is automatically assigned the "owner" role within it, b) a folder treeNode is created with name "root" and has the same id as that of the project itself.
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - in: formData
+          name: forUser
+          description: the users modelhub id
+          required: true
+          type: string
+        - in: formData
+          name: name
+          description: the projects name
+          required: true
+          type: string
+        - in: formData
+          name: description
+          description: the projects description
+          required: false
+          type: string
+        - in: formData
+          name: file
+          description: image file for the project profile
+          required: false
+          type: file
+      tags:
+        - project
+      responses:
+        200:
+          schema:
+            $ref: '#/definitions/project'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/setName:
+    post:
+      summary: set the project name.
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              id:
+                type: string
+                description: The project id.
+              name:
+                type: string
+                description: The new name for the project.
+                maxLength: 100
+          required: true
+      tags:
+        - project
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/setDescription:
+    post:
+      summary: set the project description.
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              id:
+                type: string
+                description: The project id.
+              description:
+                type: string
+                description: The new description for the project.
+                maxLength: 250
+          required: true
+      tags:
+        - project
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/setImage:
+    post:
+      summary: Set the project image.
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - in: formData
+          name: forUser
+          description: the users modelhub id
+          required: true
+          type: string
+        - in: formData
+          name: id
+          description: the project id
+          required: true
+          type: string
+        - in: formData
+          name: file
+          description: image file for the project profile
+          required: false
+          type: file
+      tags:
+        - project
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/addUsers:
+    post:
+      summary: Add users to the project with a specified role.
+      description: |
+         * Only owners and admins can call this endpoint for a project.
+         * Project owners can assign any role to anyone
+         * Project admins can only assign roles organiser/contributor/observer
+         * There must always be atleast one owner on a project
+         * Existing members will have their role changed automatically
+         * New memers will receive an invite to the project with the given role
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              id:
+                type: string
+                description: The project id.
+              role:
+                type: string
+                description: the role the users are being assigned to within the project.
+                enum: ["owner", "admin", "organiser", "contributor", "observer"]
+              users:
+                type: array
+                items: string
+                description: The user ids to add.
+                maxItems: 100
+          required: true
+      tags:
+        - project
+        - permission
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/removeUsers:
+    post:
+      summary: Remove users to the project with a specified role.
+      description: |
+         * Only owners and admins can call this endpoint for a project.
+         * Project owners can remove anyone
+         * Project admins can only remove users with roles organiser/contributor/observer
+         * There must always be atleast one owner on a project
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              id:
+                type: string
+                description: The project id.
+              users:
+                type: array
+                items: string
+                description: The user ids to add.
+                maxItems: 100
+          required: true
+      tags:
+        - project
+        - permission
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/acceptInvitation:
+    post:
+      summary: Accept a project invite.
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              id:
+                type: string
+                description: The project id.
+          required: true
+      tags:
+        - project
+        - permission
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/declineInvitation:
+    post:
+      summary: Decline a project invite.
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              id:
+                type: string
+                description: The project id.
+          required: true
+      tags:
+        - project
+        - permission
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/getImage/{id}.{ext}:
+    post:
+      summary: Decline a project invite.
+      parameters:
+        - in: path
+          name: id
+          type: string
+          description: The project id
+          required: true
+        - in: path
+          name: ext
+          type: string
+          description: The image extension
+          required: true
+      tags:
+        - project
+      responses:
+        200:
+          description: Operation was successful
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/get:
+    post:
+      summary: Get a list of projects.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              ids:
+                type: array
+                items:
+                  type: string
+                maxItems: 100
+                description: The project ids to get.
+          required: true
+      tags:
+        - project
+      responses:
+        200:
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/project'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/getInUserContext:
+    post:
+      summary: Get a list of projects within a given user context.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              user:
+                type: string
+                description: The user id context.
+              role:
+                type: string
+                description: The role to filter on.
+                enum: ["any", "owner", "admin", "organiser", "contributor", "observer"]
+              offset:
+                type: int
+                description: The offset to start extracting results from.
+              limit:
+                type: int
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["nameAsc", "nameDesc", "createdAsc", "createdDesc"]
+          required: true
+      tags:
+        - user
+        - project
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: int
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items:
+                  $ref: '#/definitions/projectInUserContext'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/getInUserInviteContext:
+    post:
+      summary: Get a list of projects within a given user invite context.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              user:
+                type: string
+                description: The user id invite context.
+              role:
+                type: string
+                description: The role to filter on.
+                enum: ["any", "owner", "admin", "organiser", "contributor", "observer"]
+              offset:
+                type: int
+                description: The offset to start extracting results from.
+              limit:
+                type: int
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["nameAsc", "nameDesc", "createdAsc", "createdDesc"]
+          required: true
+      tags:
+        - user
+        - project
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: int
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items:
+                  $ref: '#/definitions/projectInUserContext'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /project/search:
+    post:
+      summary: Get a list of projects matching a given search.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              search:
+                type: string
+                description: The user id invite context.
+              offset:
+                type: int
+                description: The offset to start extracting results from.
+              limit:
+                type: int
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["nameAsc", "nameDesc", "createdAsc", "createdDesc"]
+          required: true
+      tags:
+        - project
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: int
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items:
+                  $ref: '#/definitions/project'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+definitions:
+  user:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The users modelhub id.
+      avatar:
+        type: string
+        description: The url for the users autodesk profile image.
+      fullName:
+        type: string
+        description: The users full name.
+  userWithDescription:
+    type: object
+    allOf:
+    - $ref: '#/definitions/user'
+    - type: object
+      properties:
+        description:
+          type: string
+          description: The users public profile description
+  currentUser:
+    type: object
+    allOf:
+    - $ref: '#/definitions/userWithDescription'
+    - type: object
+      properties:
+        superUser:
+          type: bool
+          description: specifies if the user has superUser status
+        uiLanguage:
+          type: string
+          description: The users preferred language for UI
+        uiTheme:
+          type: string
+          description: The users preferred UI theme
+        locale:
+          type: string
+          description: The users locale, mainly used for datetime string formatting
+        timeFormat:
+          type: string
+          description: The users preferred time format
+  userInProjectContext:
+    type: object
+    allOf:
+    - $ref: '#/definitions/user'
+    - type: object
+      properties:
+        role:
+          type: string
+          description: The users role in the given project context
+  project:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The projects id
+      name:
+        type: string
+        description: The projects name
+      description:
+        type: string
+        description: The projects description
+      created:
+        type: string
+        description: The datetime when the project was created in RFC 3339 format
+      imageFileExtension:
+        type: string
+        description: The projects image file extension
+  projectInUserContext:
+    type: object
+    allOf:
+    - $ref: '#/definitions/project'
+    - type: object
+      properties:
+        role:
+          type: string
+          description: The role in the project for the given user context
+  error:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
