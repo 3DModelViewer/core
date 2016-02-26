@@ -638,7 +638,7 @@ paths:
           schema:
             $ref: '#/definitions/error'
   /project/getImage/{id}.{ext}:
-    post:
+    get:
       summary: Decline a project invite.
       parameters:
         - in: path
