@@ -15,8 +15,6 @@ paths:
       summary: Logs the user in to the modelhub platform
       consumes:
         - application/json
-      produces:
-        - application/json
       parameters:
         - in: body
           schema:
@@ -45,6 +43,20 @@ paths:
         - user
       responses:
         200:
+          description: Sets session cookie header required for all other endpoints
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /user/getCurrent:
+    post:
+      summary: Gets the current user
+      produces:
+        - application/json
+      tags:
+        - user
+      responses:
+        200:
           schema:
             $ref: '#/definitions/currentUser'
         default:
@@ -61,9 +73,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               description:
                 type: string
                 description: The users new public profile description.
@@ -88,9 +97,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               uiLanguage:
                 type: string
                 description: The users preferred language code for UI.
@@ -115,9 +121,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               uiTheme:
                 type: string
                 description: The users preferred theme for the UI.
@@ -143,9 +146,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               locale:
                 type: string
                 description: The users locale.
@@ -170,9 +170,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               timeFormat:
                 type: string
                 description: The users preferred time format.
@@ -230,9 +227,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               project:
                 type: string
                 description: The project id context.
@@ -283,9 +277,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               project:
                 type: string
                 description: The project id context.
@@ -384,11 +375,6 @@ paths:
         - application/json
       parameters:
         - in: formData
-          name: forUser
-          description: the users modelhub id
-          required: true
-          type: string
-        - in: formData
           name: name
           description: the projects name
           required: true
@@ -423,9 +409,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               id:
                 type: string
                 description: The project id.
@@ -453,9 +436,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               id:
                 type: string
                 description: The project id.
@@ -479,11 +459,6 @@ paths:
       consumes:
         - application/x-www-form-urlencoded
       parameters:
-        - in: formData
-          name: forUser
-          description: the users modelhub id
-          required: true
-          type: string
         - in: formData
           name: id
           description: the project id
@@ -520,9 +495,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               id:
                 type: string
                 description: The project id.
@@ -561,9 +533,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               id:
                 type: string
                 description: The project id.
@@ -593,9 +562,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               id:
                 type: string
                 description: The project id.
@@ -620,9 +586,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               id:
                 type: string
                 description: The project id.
@@ -672,9 +635,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               ids:
                 type: array
                 items:
@@ -706,9 +666,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               user:
                 type: string
                 description: The user id context.
@@ -759,9 +716,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               user:
                 type: string
                 description: The user id invite context.
@@ -812,9 +766,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               search:
                 type: string
                 description: The user id invite context.
@@ -860,9 +811,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               parent:
                 type: string
                 description: The parent node id.
@@ -890,11 +838,6 @@ paths:
       produces:
         - application/json
       parameters:
-        - in: formData
-          name: forUser
-          description: the users modelhub id
-          required: true
-          type: string
         - in: formData
           name: parent
           description: the parent node id
@@ -935,9 +878,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               id:
                 type: string
                 description: The node id.
@@ -962,6 +902,7 @@ paths:
         * Parent must be of type folder
         * Can't move a root folder
         * Can't move a folder to one of its own subfolders
+        * Can't perform cross project moves
       consumes:
         - application/json
       produces:
@@ -971,9 +912,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               parent:
                 type: string
                 description: The node id.
@@ -1004,9 +942,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               ids:
                 type: array
                 items: string
@@ -1037,9 +972,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               id:
                 type: string
                 description: The node id to get children of.
@@ -1089,9 +1021,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               id:
                 type: array
                 items: string
@@ -1124,9 +1053,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               search:
                 type: string
                 description: The search to match on.
@@ -1178,9 +1104,6 @@ paths:
           schema:
             type: object
             properties:
-              forUser:
-                type: string
-                description: The users modelhub id.
               project:
                 type: string
                 description: The project id.
