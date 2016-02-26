@@ -1242,6 +1242,34 @@ definitions:
       name:
         type: string
         description: The nodes name
+  documentVersion:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The docVer id
+      document:
+        type: string
+        description: The document node id
+      version:
+        type: string
+        description: The version number
+      uploaded:
+        type: string
+        description: The datetime when the docVer was created in RFC 3339 format
+      uploadComment:
+        type: string
+        description: The upload comment
+      uploadedBy:
+        type: string
+        description: The modelhub id of the uploading user
+      fileExtension:
+        type: string
+        description: The original uploaded file extension
+      status:
+        type: string
+        description: The translation status of the docVer
+        enum: ["wont_register", "failed_to_register", "registered", "pending", "inprogress", "success", "failed"]
   error:
     type: object
     properties:
