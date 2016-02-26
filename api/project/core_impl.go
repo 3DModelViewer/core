@@ -9,18 +9,14 @@ import (
 	"net/http"
 )
 
-func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addOwners updateUserPermissions, addAdmins updateUserPermissions, addOrganisers updateUserPermissions, addContributors updateUserPermissions, addObservers updateUserPermissions, removeUsers updateUserPermissions, acceptInvitation processInvitation, declineInvitation processInvitation, getRole util.GetRole, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
+func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addUsers addUsers, removeUsers removeUsers, acceptInvitation processInvitation, declineInvitation processInvitation, getRole util.GetRole, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
 	return &projectStore{
 		create:                 create,
 		delete:                 delete,
 		setName:                setName,
 		setDescription:         setDescription,
 		setImageFileExtension:  setImageFileExtension,
-		addOwners:              addOwners,
-		addAdmins:              addAdmins,
-		addOrganisers:          addOrganisers,
-		addContributors:        addContributors,
-		addObservers:           addObservers,
+		addUsers:              addUsers,
 		removeUsers:            removeUsers,
 		acceptInvitation:       acceptInvitation,
 		declineInvitation:      declineInvitation,
@@ -42,12 +38,8 @@ type projectStore struct {
 	setName                setName
 	setDescription         setDescription
 	setImageFileExtension  setImageFileExtension
-	addOwners              updateUserPermissions
-	addAdmins              updateUserPermissions
-	addOrganisers          updateUserPermissions
-	addContributors        updateUserPermissions
-	addObservers           updateUserPermissions
-	removeUsers            updateUserPermissions
+	addUsers       addUsers
+	removeUsers     removeUsers
 	acceptInvitation       processInvitation
 	declineInvitation      processInvitation
 	getRole                util.GetRole
@@ -159,48 +151,12 @@ func (ps *projectStore) SetImage(forUser string, id string, name string, image i
 	return nil
 }
 
-func (ps *projectStore) AddOwners(forUser string, id string, users []string) error {
-	if err := ps.addOwners(forUser, id, users); err != nil {
-		ps.log.Error("ProjectStore.AddOwners error: forUser: %q id: %q users: %v error: %v", forUser, id, users, err)
+func (ps *projectStore) AddUsers(forUser string, id string, role Role, users []string) error {
+	if err := ps.addUsers(forUser, id, role, users); err != nil {
+		ps.log.Error("ProjectStore.AddUsers error: forUser: %q id: %q role: %q users: %v error: %v", forUser, id, role, users, err)
 		return err
 	}
-	ps.log.Info("ProjectStore.AddOwners success: forUser: %q id: %q users: %v", forUser, id, users)
-	return nil
-}
-
-func (ps *projectStore) AddAdmins(forUser string, id string, users []string) error {
-	if err := ps.addAdmins(forUser, id, users); err != nil {
-		ps.log.Error("ProjectStore.AddAdmins error: forUser: %q id: %q users: %v error: %v", forUser, id, users, err)
-		return err
-	}
-	ps.log.Info("ProjectStore.AddAdmins success: forUser: %q id: %q users: %v", forUser, id, users)
-	return nil
-}
-
-func (ps *projectStore) AddOrganisers(forUser string, id string, users []string) error {
-	if err := ps.addOrganisers(forUser, id, users); err != nil {
-		ps.log.Error("ProjectStore.AddOrganisers error: forUser: %q id: %q users: %v error: %v", forUser, id, users, err)
-		return err
-	}
-	ps.log.Info("ProjectStore.AddOrganisers success: forUser: %q id: %q users: %v", forUser, id, users)
-	return nil
-}
-
-func (ps *projectStore) AddContributors(forUser string, id string, users []string) error {
-	if err := ps.addContributors(forUser, id, users); err != nil {
-		ps.log.Error("ProjectStore.AddContributors error: forUser: %q id: %q users: %v error: %v", forUser, id, users, err)
-		return err
-	}
-	ps.log.Info("ProjectStore.AddContributors success: forUser: %q id: %q users: %v", forUser, id, users)
-	return nil
-}
-
-func (ps *projectStore) AddObservers(forUser string, id string, users []string) error {
-	if err := ps.addObservers(forUser, id, users); err != nil {
-		ps.log.Error("ProjectStore.AddObservers error: forUser: %q id: %q users: %v error: %v", forUser, id, users, err)
-		return err
-	}
-	ps.log.Info("ProjectStore.AddObservers success: forUser: %q id: %q users: %v", forUser, id, users)
+	ps.log.Info("ProjectStore.AddUsers success: forUser: %q id: %q role: %q users: %v", forUser, id, role, users)
 	return nil
 }
 

@@ -211,6 +211,14 @@ BEGIN
 	DECLARE n INT DEFAULT 0;
     DECLARE os INT DEFAULT 0;
     
+	IF (SELECT COUNT(*) FROM role WHERE id = addRole) = 0 THEN
+		SIGNAL SQLSTATE 
+			'45003'
+		SET
+			MESSAGE_TEXT = 'Invalid action: set permissions with unknown role',
+			MYSQL_ERRNO = 45003;
+    END IF;
+    
     SELECT role INTO forUserRole FROM permission WHERE user = UNHEX(forUserId) AND project = UNHEX(projectId);
     
     IF forUserRole IS NULL OR (forUserRole NOT IN ('owner', 'admin')) OR (forUserRole = 'admin' AND (addRole IN ('owner', 'admin'))) THEN
@@ -651,43 +659,11 @@ BEGIN
 END$$
 DELIMITER ;
 
-DROP PROCEDURE IF EXISTS projectAddOwners;
+DROP PROCEDURE IF EXISTS projectAddUsers;
 DELIMITER $$
-CREATE PROCEDURE projectAddOwners(forUserId VARCHAR(32), projectId VARCHAR(32), users VARCHAR(3300))
+CREATE PROCEDURE projectAddUsers(forUserId VARCHAR(32), projectId VARCHAR(32), role VARCHAR(50), users VARCHAR(3300))
 BEGIN
-	CALL _permission_set(forUserId, projectId, users, 'owner');
-END$$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS projectAddAdmins;
-DELIMITER $$
-CREATE PROCEDURE projectAddAdmins(forUserId VARCHAR(32), projectId VARCHAR(32), users VARCHAR(3300))
-BEGIN
-	CALL _permission_set(forUserId, projectId, users, 'admin');
-END$$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS projectAddOrganisers;
-DELIMITER $$
-CREATE PROCEDURE projectAddOrganisers(forUserId VARCHAR(32), projectId VARCHAR(32), users VARCHAR(3300))
-BEGIN
-	CALL _permission_set(forUserId, projectId, users, 'organiser');
-END$$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS projectAddContributors;
-DELIMITER $$
-CREATE PROCEDURE projectAddContributors(forUserId VARCHAR(32), projectId VARCHAR(32), users VARCHAR(3300))
-BEGIN
-	CALL _permission_set(forUserId, projectId, users, 'contributor');
-END$$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS projectAddObservers;
-DELIMITER $$
-CREATE PROCEDURE projectAddObservers(forUserId VARCHAR(32), projectId VARCHAR(32), users VARCHAR(3300))
-BEGIN
-	CALL _permission_set(forUserId, projectId, users, 'observer');
+	CALL _permission_set(forUserId, projectId, users, role);
 END$$
 DELIMITER ;
 

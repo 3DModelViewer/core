@@ -81,24 +81,8 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return util.SqlExec(db, "CALL projectSetImageFileExtension(?, ?, ?)", forUser, id, newImageFileExtension)
 	}
 
-	addOwners := func(forUser string, id string, users []string) error {
-		return util.SqlExec(db, "CALL projectAddOwners(?, ?, ?)", forUser, id, users)
-	}
-
-	addAdmins := func(forUser string, id string, users []string) error {
-		return util.SqlExec(db, "CALL projectAddAdmins(?, ?, ?)", forUser, id, users)
-	}
-
-	addOrganisers := func(forUser string, id string, users []string) error {
-		return util.SqlExec(db, "CALL projectAddOrganisers(?, ?, ?)", forUser, id, users)
-	}
-
-	addContributors := func(forUser string, id string, users []string) error {
-		return util.SqlExec(db, "CALL projectAddContributors(?, ?, ?)", forUser, id, users)
-	}
-
-	addObservers := func(forUser string, id string, users []string) error {
-		return util.SqlExec(db, "CALL projectAddObservers(?, ?, ?)", forUser, id, users)
+	addUsers := func(forUser string, id string, role Role, users []string) error {
+		return util.SqlExec(db, "CALL projectAddUsers(?, ?, ?, ?)", forUser, id, role, users)
 	}
 
 	removeUsers := func(forUser string, id string, users []string) error {
@@ -129,5 +113,5 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return offsetGetter("CALL projectSearch(?, ?, ?, ?, ?)", forUser, search, offset, limit, string(sortBy))
 	}
 
-	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addOwners, addAdmins, addOrganisers, addContributors, addObservers, removeUsers, acceptInvitation, declineInvitation, util.GetRoleFunc(db), get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
+	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addUsers, removeUsers, acceptInvitation, declineInvitation, util.GetRoleFunc(db), get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
 }
