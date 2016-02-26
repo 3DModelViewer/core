@@ -212,7 +212,7 @@ paths:
         200:
           schema:
             type: array
-            items:
+            items: 
               $ref: '#/definitions/userWithDescription'
         default:
           description: Unexpected error
@@ -844,6 +844,379 @@ paths:
                 description: The extracted results given the initial query/filter/offset/limit/sortBy
                 items: 
                   $ref: '#/definitions/project'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /treeNode/createFolder:
+    post:
+      summary: Create a new folder node.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              parent:
+                type: string
+                description: The parent node id.
+              name:
+                type: string
+                description: The name of the new folder.
+          required: true
+      tags:
+        - treeNode
+      responses:
+        200:
+          schema:
+            $ref: '#/definitions/treeNode'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /treeNode/createDocument:
+    post:
+      summary: Create a new document node.
+      description: |
+          Creates a new document node with associated initial documentVersion 1
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - in: formData
+          name: forUser
+          description: the users modelhub id
+          required: true
+          type: string
+        - in: formData
+          name: parent
+          description: the parent node id
+          required: true
+          type: string
+        - in: formData
+          name: name
+          description: the document name
+          required: true
+          type: string
+        - in: formData
+          name: uploadComment
+          description: the documentVersion upload comment
+          required: false
+          type: string
+        - in: formData
+          name: file
+          description: document file
+          required: true
+          type: file
+      tags:
+        - treeNode
+      responses:
+        200:
+          schema:
+            $ref: '#/definitions/treeNode'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /treeNode/setName:
+    post:
+      summary: set the node name.
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              id:
+                type: string
+                description: The node id.
+              name:
+                type: string
+                description: The new name for the node.
+                maxLength: 100
+          required: true
+      tags:
+        - treeNode
+      responses:
+        200:
+          description: Operation was successful  
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /treeNode/move:
+    post:
+      summary: move a set of nodes to a new parent.
+      description: |
+        * Parent must be of type folder
+        * Can't move a root folder
+        * Can't move a folder to one of its own subfolders
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              parent:
+                type: string
+                description: The node id.
+              ids:
+                type: array
+                items: string
+                description: The node ids to be moved.
+                maxItems: 100
+          required: true
+      tags:
+        - treeNode
+      responses:
+        200:
+          description: Operation was successful  
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /treeNode/get:
+    post:
+      summary: get a set of nodes.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              ids:
+                type: array
+                items: string
+                description: The node ids to get.
+                maxItems: 100
+          required: true
+      tags:
+        - treeNode
+      responses:
+        200:
+          schema:
+            type: array
+            items: 
+              $ref: '#/definitions/treeNode' 
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /treeNode/getChildren:
+    post:
+      summary: Get a list of child nodes.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              id:
+                type: string
+                description: The node id to get children of.
+              nodeType:
+                type: string
+                description: The nodeType to filter on.
+                enum: ["any", "folder", "document", "viewerState"]
+              offset:
+                type: int
+                description: The offset to start extracting results from.
+              limit:
+                type: int
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["nameAsc", "nameDesc"]
+          required: true
+      tags:
+        - treeNode
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: int
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items: 
+                  $ref: '#/definitions/treeNode'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /treeNode/getParents:
+    post:
+      summary: Get the full list of parent nodes in order, starting from the root folder.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              id:
+                type: array
+                items: string
+                description: The node id to get parents of.
+                maxItems: 100
+          required: true
+      tags:
+        - treeNode
+      responses:
+        200:
+          schema:
+            type: array
+            items: 
+              $ref: '#/definitions/treeNode' 
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /treeNode/globalSearch:
+    post:
+      summary: Get a list of nodes mathing a given search.
+      description: |
+        * matches across all projects the user has access too.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              search:
+                type: string
+                description: The search to match on.
+              nodeType:
+                type: string
+                description: The nodeType to filter on.
+                enum: ["any", "folder", "document", "viewerState"]
+              offset:
+                type: int
+                description: The offset to start extracting results from.
+              limit:
+                type: int
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["nameAsc", "nameDesc"]
+          required: true
+      tags:
+        - treeNode
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: int
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items: 
+                  $ref: '#/definitions/treeNode'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /treeNode/projectSearch:
+    post:
+      summary: Get a list of nodes mathing a given search.
+      description: |
+        * matches only for the specified project.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              forUser:
+                type: string
+                description: The users modelhub id.
+              project:
+                type: string
+                description: The project id.
+              search:
+                type: string
+                description: The search to match on.
+              nodeType:
+                type: string
+                description: The nodeType to filter on.
+                enum: ["any", "folder", "document", "viewerState"]
+              offset:
+                type: int
+                description: The offset to start extracting results from.
+              limit:
+                type: int
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["nameAsc", "nameDesc"]
+          required: true
+      tags:
+        - treeNode
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: int
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items: 
+                  $ref: '#/definitions/treeNode'
         default:
           description: Unexpected error
           schema:
