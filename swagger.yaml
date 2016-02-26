@@ -265,7 +265,7 @@ paths:
               results:
                 type: array
                 description: The extracted results given the initial query/filter/offset/limit/sortBy
-                items:
+                items: 
                   $ref: '#/definitions/userInProjectContext'
         default:
           description: Unexpected error
@@ -318,7 +318,7 @@ paths:
               results:
                 type: array
                 description: The extracted results given the initial query/filter/offset/limit/sortBy
-                items:
+                items: 
                   $ref: '#/definitions/userInProjectContext'
         default:
           description: Unexpected error
@@ -367,7 +367,7 @@ paths:
               results:
                 type: array
                 description: The extracted results given the initial query/filter/offset/limit/sortBy
-                items:
+                items: 
                   $ref: '#/definitions/user'
         default:
           description: Unexpected error
@@ -438,7 +438,7 @@ paths:
         - project
       responses:
         200:
-          description: Operation was successful
+          description: Operation was successful  
         default:
           description: Unexpected error
           schema:
@@ -468,7 +468,7 @@ paths:
         - project
       responses:
         200:
-          description: Operation was successful
+          description: Operation was successful  
         default:
           description: Unexpected error
           schema:
@@ -498,7 +498,7 @@ paths:
         - project
       responses:
         200:
-          description: Operation was successful
+          description: Operation was successful  
         default:
           description: Unexpected error
           schema:
@@ -541,7 +541,7 @@ paths:
         - permission
       responses:
         200:
-          description: Operation was successful
+          description: Operation was successful  
         default:
           description: Unexpected error
           schema:
@@ -578,7 +578,7 @@ paths:
         - permission
       responses:
         200:
-          description: Operation was successful
+          description: Operation was successful  
         default:
           description: Unexpected error
           schema:
@@ -605,7 +605,7 @@ paths:
         - permission
       responses:
         200:
-          description: Operation was successful
+          description: Operation was successful  
         default:
           description: Unexpected error
           schema:
@@ -632,7 +632,7 @@ paths:
         - permission
       responses:
         200:
-          description: Operation was successful
+          description: Operation was successful  
         default:
           description: Unexpected error
           schema:
@@ -655,7 +655,7 @@ paths:
         - project
       responses:
         200:
-          description: Operation was successful
+          description: Operation was successful  
         default:
           description: Unexpected error
           schema:
@@ -688,7 +688,7 @@ paths:
         200:
           schema:
             type: array
-            items:
+            items: 
               $ref: '#/definitions/project'
         default:
           description: Unexpected error
@@ -741,7 +741,7 @@ paths:
               results:
                 type: array
                 description: The extracted results given the initial query/filter/offset/limit/sortBy
-                items:
+                items: 
                   $ref: '#/definitions/projectInUserContext'
         default:
           description: Unexpected error
@@ -794,7 +794,7 @@ paths:
               results:
                 type: array
                 description: The extracted results given the initial query/filter/offset/limit/sortBy
-                items:
+                items: 
                   $ref: '#/definitions/projectInUserContext'
         default:
           description: Unexpected error
@@ -842,7 +842,7 @@ paths:
               results:
                 type: array
                 description: The extracted results given the initial query/filter/offset/limit/sortBy
-                items:
+                items: 
                   $ref: '#/definitions/project'
         default:
           description: Unexpected error
@@ -863,7 +863,7 @@ definitions:
         description: The users full name.
   userWithDescription:
     type: object
-    allOf:
+    allOf: 
     - $ref: '#/definitions/user'
     - type: object
       properties:
@@ -872,7 +872,7 @@ definitions:
           description: The users public profile description
   currentUser:
     type: object
-    allOf:
+    allOf: 
     - $ref: '#/definitions/userWithDescription'
     - type: object
       properties:
@@ -893,7 +893,7 @@ definitions:
           description: The users preferred time format
   userInProjectContext:
     type: object
-    allOf:
+    allOf: 
     - $ref: '#/definitions/user'
     - type: object
       properties:
@@ -920,13 +920,32 @@ definitions:
         description: The projects image file extension
   projectInUserContext:
     type: object
-    allOf:
+    allOf: 
     - $ref: '#/definitions/project'
     - type: object
       properties:
         role:
           type: string
           description: The role in the project for the given user context
+  treeNode:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The nodes id
+      parent:
+        type: string
+        description: The nodes parent node id
+      project:
+        type: string
+        description: The nodes project id
+      nodeType:
+        type: string
+        description: The nodes type
+        enum: ["folder", "document", "viewerState"]
+      name:
+        type: string
+        description: The nodes name
   error:
     type: object
     properties:
