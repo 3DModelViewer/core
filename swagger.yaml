@@ -1252,8 +1252,11 @@ definitions:
         type: string
         description: The document node id
       version:
-        type: string
+        type: int
         description: The version number
+      project:
+        type: string
+        description: The project id
       uploaded:
         type: string
         description: The datetime when the docVer was created in RFC 3339 format
@@ -1270,6 +1273,32 @@ definitions:
         type: string
         description: The translation status of the docVer
         enum: ["wont_register", "failed_to_register", "registered", "pending", "inprogress", "success", "failed"]
+  sheet:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The sheet id
+      documentVersion:
+        type: string
+        description: The documentVersion id
+      project:
+        type: string
+        description: The project id
+      name:
+        type: string
+        description: The sheet name
+      thumbnails:
+        type: array
+        items: string
+        description: The thumnail paths associated with the sheet
+      manifest:
+        type: string
+        description: The manifest path for the sheet (svf/f2d file)
+      role:
+        type: string
+        description: The role of the sheet
+        enum: ["2d", "3d"]
   error:
     type: object
     properties:
