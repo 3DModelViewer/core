@@ -63,9 +63,9 @@ paths:
           description: Unexpected error
           schema:
             $ref: '#/definitions/error'
-  /user/setDescription:
+  /user/setProperty:
     post:
-      summary: Set the users public profile description
+      summary: Set one of the users settable properties.
       consumes:
         - application/json
       parameters:
@@ -73,107 +73,13 @@ paths:
           schema:
             type: object
             properties:
-              description:
+              name:
                 type: string
-                description: The users new public profile description.
-                maxLength: 250
-          required: true
-      tags:
-        - user
-      responses:
-        200:
-          description: Operation was successful
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/error'
-  /user/setUILanguage:
-    post:
-      summary: Set the users preferred language code for UI.
-      consumes:
-        - application/json
-      parameters:
-        - in: body
-          schema:
-            type: object
-            properties:
-              uiLanguage:
+                description: The name of the property to set.
+                enum: ["description", "uiLanguage", "uiTheme", "locale", "timeFormat"]
+              value:
                 type: string
-                description: The users preferred language code for UI.
-                maxLength: 10
-          required: true
-      tags:
-        - user
-      responses:
-        200:
-          description: Operation was successful
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/error'
-  /user/setUITheme:
-    post:
-      summary: Set the users preferred theme for the UI.
-      consumes:
-        - application/json
-      parameters:
-        - in: body
-          schema:
-            type: object
-            properties:
-              uiTheme:
-                type: string
-                description: The users preferred theme for the UI.
-                enum: ["light", "dark"]
-                maxLength: 10
-          required: true
-      tags:
-        - user
-      responses:
-        200:
-          description: Operation was successful
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/error'
-  /user/setLocale:
-    post:
-      summary: Set the users locale, mainly used for rendering datetime strings.
-      consumes:
-        - application/json
-      parameters:
-        - in: body
-          schema:
-            type: object
-            properties:
-              locale:
-                type: string
-                description: The users locale.
-                maxLength: 10
-          required: true
-      tags:
-        - user
-      responses:
-        200:
-          description: Operation was successful
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/error'
-  /user/setTimeFormat:
-    post:
-      summary: Set the users preferred time format.
-      consumes:
-        - application/json
-      parameters:
-        - in: body
-          schema:
-            type: object
-            properties:
-              timeFormat:
-                type: string
-                description: The users preferred time format.
-                maxLength: 20
+                description: The new property value.
           required: true
       tags:
         - user
@@ -602,7 +508,7 @@ paths:
             $ref: '#/definitions/error'
   /project/getImage/{id}.{ext}:
     get:
-      summary: Decline a project invite.
+      summary: Get the project image.
       parameters:
         - in: path
           name: id
@@ -1140,6 +1046,133 @@ paths:
                 description: The extracted results given the initial query/filter/offset/limit/sortBy
                 items: 
                   $ref: '#/definitions/treeNode'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /documentVersion/create:
+    post:
+      summary: Create a new document version.
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - in: formData
+          name: document
+          description: the document id
+          required: true
+          type: string
+        - in: formData
+          name: uploadComment
+          description: the upload comment
+          required: false
+          type: string
+        - in: formData
+          name: file
+          description: document file for new version
+          required: true
+          type: file
+      tags:
+        - documentVersion
+      responses:
+        200:
+          schema:
+            $ref: '#/definitions/documentVersion'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /documentVersion/get:
+    post:
+      summary: Get a list of documentVersions.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              ids:
+                type: array
+                items:
+                  type: string
+                maxItems: 100
+                description: The documentVersion ids to get.
+          required: true
+      tags:
+        - documentVersion
+      responses:
+        200:
+          schema:
+            type: array
+            items: 
+              $ref: '#/definitions/documentVersion'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /documentVersion/getForDocument:
+    post:
+      summary: Get a list of documentVersions for a given document.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: The document id to get versions of.
+              offset:
+                type: integer
+                description: The offset to start extracting results from.
+              limit:
+                type: integer
+                description: The maximum number of results to return.
+              sortBy:
+                type: string
+                description: sort by field.
+                enum: ["versionAsc", "versionDesc"]
+          required: true
+      tags:
+        - documentVersion
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              totalResults:
+                type: integer
+                description: The total number of results found in the query
+              results:
+                type: array
+                description: The extracted results given the initial query/filter/offset/limit/sortBy
+                items: 
+                  $ref: '#/definitions/documentVersion'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/error'
+  /documentVersion/getSeedFile/{id}:
+    get:
+      summary: Get document version seed file.
+      parameters:
+        - in: path
+          name: id
+          type: string
+          description: The documentVersion id
+          required: true
+      tags:
+        - documentVersion
+      responses:
+        200:
+          description: Will contain the file, use on an <a> to download  
         default:
           description: Unexpected error
           schema:
