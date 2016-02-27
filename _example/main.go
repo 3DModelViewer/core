@@ -1,15 +1,15 @@
 package main
 
 import(
-	"github.com/modelhub/core/api/user"
+	"github.com/modelhub/core/user"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/robsix/golog"
 	"encoding/json"
-	"github.com/modelhub/core/vada"
-	"github.com/modelhub/core/api/project"
-	"github.com/modelhub/core/api/treenode"
-	"github.com/modelhub/core/api/documentversion"
+	"github.com/modelhub/vada"
+	"github.com/modelhub/core/project"
+	"github.com/modelhub/core/treenode"
+	"github.com/modelhub/core/documentversion"
 	"time"
 	"net/http"
 	"io"

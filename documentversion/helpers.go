@@ -2,9 +2,9 @@ package documentversion
 
 import (
 	"errors"
-	"github.com/modelhub/core/api/sheet"
+	"github.com/modelhub/core/sheet"
 	"github.com/modelhub/core/util"
-	"github.com/modelhub/core/vada"
+	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	. "github.com/robsix/json"
 	"strings"
@@ -39,7 +39,7 @@ func performStatusCheck(dvs []*_documentVersion, bulkStatusUpdate bulkSetStatus,
 		if e.Status == "registered" || e.Status == "pending" || e.Status == "inprogress" || e.Status == "failed_to_register" {
 			go func(dv *_documentVersion) {
 				log.Info("DocumentVersionStore performStatusCheck for docVer: %q ", dv.Id)
-				if dv.Status == "failed_to_register"{
+				if dv.Status == "failed_to_register" {
 					log.Info("DocumentVersionStore attempt re-registering of failed file: %q", dv.Id+"."+dv.FileExtension)
 					b64Urn := util.ToBase64(dv.Urn)
 					_, err := vada.RegisterFile(b64Urn)

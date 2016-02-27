@@ -3,7 +3,7 @@ package sheet
 import (
 	"database/sql"
 	"github.com/modelhub/core/util"
-	"github.com/modelhub/core/vada"
+	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"strings"
 )

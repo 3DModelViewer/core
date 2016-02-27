@@ -3,7 +3,7 @@ package project
 import (
 	"errors"
 	"github.com/modelhub/core/util"
-	"github.com/modelhub/core/vada"
+	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"io"
 	"net/http"
@@ -16,7 +16,7 @@ func newProjectStore(create create, delete delete, setName setName, setDescripti
 		setName:                setName,
 		setDescription:         setDescription,
 		setImageFileExtension:  setImageFileExtension,
-		addUsers:              addUsers,
+		addUsers:               addUsers,
 		removeUsers:            removeUsers,
 		acceptInvitation:       acceptInvitation,
 		declineInvitation:      declineInvitation,
@@ -38,8 +38,8 @@ type projectStore struct {
 	setName                setName
 	setDescription         setDescription
 	setImageFileExtension  setImageFileExtension
-	addUsers       addUsers
-	removeUsers     removeUsers
+	addUsers               addUsers
+	removeUsers            removeUsers
 	acceptInvitation       processInvitation
 	declineInvitation      processInvitation
 	getRole                util.GetRole

@@ -2,13 +2,13 @@ package documentversion
 
 import (
 	"database/sql"
-	"github.com/modelhub/core/api/sheet"
+	"fmt"
+	"github.com/modelhub/core/sheet"
 	"github.com/modelhub/core/util"
-	"github.com/modelhub/core/vada"
+	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"strings"
 	"time"
-	"fmt"
 )
 
 func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) DocumentVersionStore {
