@@ -14,6 +14,7 @@ import(
 	"net/http"
 	"io"
 	"os"
+	"github.com/modelhub/core"
 )
 
 const(
@@ -29,71 +30,68 @@ func main(){
 	log := golog.NewConsoleLog(0)
 	vada := vada.NewVadaClient(vadaHost, clientKey, clientSecret, log)
 	db, _ := sql.Open(sqlDriver, sqlConnectionString)
-	userStore := user.NewSqlUserStore(db, log)
-	projectStore := project.NewSqlProjectStore(db, vada, ossBucketPrefix, ossBucketPolicy, log)
-	treeNodeStore := treenode.NewSqlTreeNodeStore(db, vada, ossBucketPrefix, log)
-	docVerStore := documentversion.NewSqlDocumentVersionStore(db, 5*time.Second, vada, ossBucketPrefix, log)
-
-	ash, err := userStore.Login("ash autodeskId", "ash openId", "ash username", "ash avatar", "ash fullName", "ash email")
+	ca, _ := core.NewSqlCoreApi(db, vada, 5*time.Second, ossBucketPrefix, ossBucketPolicy, log)
+	
+	ash, err := ca.User().Login("ash autodeskId", "ash openId", "ash username", "ash avatar", "ash fullName", "ash email")
 	b, _ := json.Marshal(ash)
 	log.Info("%v %s %v", ash, string(b), err)
 
-	bob, err := userStore.Login("bob autodeskId", "bob openId", "bob username", "bob avatar", "bob fullName", "bob email")
+	bob, err := ca.User().Login("bob autodeskId", "bob openId", "bob username", "bob avatar", "bob fullName", "bob email")
 	b, _ = json.Marshal(bob)
 	log.Info("%v %s %v", bob, string(b), err)
 
-	cat, err := userStore.Login("cat autodeskId", "cat openId", "cat username", "cat avatar", "cat fullName", "cat email")
+	cat, err := ca.User().Login("cat autodeskId", "cat openId", "cat username", "cat avatar", "cat fullName", "cat email")
 	b, _ = json.Marshal(cat)
 	log.Info("%v %s %v", cat, string(b), err)
 
-	err = userStore.SetDescription(ash.Id, "EDITED")
+	err = ca.User().SetDescription(ash.Id, "EDITED")
 	log.Info("%v", err)
 
-	uwds, err := userStore.Get([]string{ash.Id, bob.Id, cat.Id})
+	uwds, err := ca.User().Get([]string{ash.Id, bob.Id, cat.Id})
 	b, _ = json.Marshal(uwds)
 	log.Info("%v %s %v", uwds, string(b), err)
 
-	us, totalResults, err := userStore.Search("fullName", 0, 5, user.FullNameAsc)
+	us, totalResults, err := ca.User().Search("fullName", 0, 5, user.FullNameAsc)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	us, totalResults, err = userStore.Search("fullName", 1, 5, user.FullNameAsc)
+	us, totalResults, err = ca.User().Search("fullName", 1, 5, user.FullNameAsc)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	us, totalResults, err = userStore.Search("fullName", 2, 5, user.FullNameAsc)
+	us, totalResults, err = ca.User().Search("fullName", 2, 5, user.FullNameAsc)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	us, totalResults, err = userStore.Search("fullName", 3, 5, user.FullNameAsc)
+	us, totalResults, err = ca.User().Search("fullName", 3, 5, user.FullNameAsc)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	us, totalResults, err = userStore.Search("fullName", 1, 1, user.FullNameAsc)
+	us, totalResults, err = ca.User().Search("fullName", 1, 1, user.FullNameAsc)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	us, totalResults, err = userStore.Search("fullName", 0, 5, user.FullNameDesc)
+	us, totalResults, err = ca.User().Search("fullName", 0, 5, user.FullNameDesc)
 	b, _ = json.Marshal(us)
 	log.Info("%v %d %s %v", us, totalResults, string(b), err)
 
-	ashsProject, err := projectStore.Create(ash.Id, "ashs project 1", "ash description 1", "", nil)
+	ashsProject, err := ca.Project().Create(ash.Id, "ashs project 1", "ash description 1", "", nil)
 	b, _ = json.Marshal(ashsProject)
 	log.Info("%v %d %s %v", ashsProject, totalResults, string(b), err)
 
-	p, err := projectStore.Create(ash.Id, "ashs project 2", "ash description 2", "", nil)
+	p, err := ca.Project().Create(ash.Id, "ashs project 2", "ash description 2", "", nil)
 	b, _ = json.Marshal(p)
 	log.Info("%v %d %s %v", p, totalResults, string(b), err)
 
-	ps, totalResults, err := projectStore.Search(ash.Id, "ashs", 0, 5, project.NameAsc)
+	ps, totalResults, err := ca.Project().Search(ash.Id, "ashs", 0, 5, project.NameAsc)
 	b, _ = json.Marshal(ps)
 	log.Info("%v %d %s %v", ps, totalResults, string(b), err)
 
-	sf1, _ := treeNodeStore.CreateFolder(ash.Id, p.Id, "sub folder 1")
-	sf2, _ := treeNodeStore.CreateFolder(ash.Id, sf1.Id, "sub folder 2")
-	_, _ = treeNodeStore.CreateFolder(ash.Id, sf1.Id, "sub folder 3")
+	sf1, _ := ca.TreeNode().CreateFolder(ash.Id, p.Id, "sub folder 1")
+	sf2, _ := ca.TreeNode().CreateFolder(ash.Id, sf1.Id, "sub folder 2")
+	_, _ = ca.TreeNode().CreateFolder(ash.Id, sf1.Id, "sub folder 3")
 
-	parents, _ := treeNodeStore.GetParents(ash.Id, sf2.Id)
+	parents, _ := ca.TreeNode().GetParents(ash.Id, sf2.Id)
 	b, _ = json.Marshal(parents)
 	log.Info("%v %s %v", parents, string(b), err)
 
@@ -103,12 +101,12 @@ func main(){
 	http.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request){
 		file, header, _ := r.FormFile("file")
 		if doc == nil {
-			doc, err = treeNodeStore.CreateDocument(ash.Id, sf2.Id, header.Filename, "test comment blah", header.Filename, file)
+			doc, err = ca.TreeNode().CreateDocument(ash.Id, sf2.Id, header.Filename, "test comment blah", header.Filename, file)
 			b, _ = json.Marshal(doc)
 			log.Info("%v %s %v", doc, string(b), err)
 			writeJson(w, doc)
 		} else {
-			docVer, err = docVerStore.Create(ash.Id, doc.Id, "test comment 2 wahwah", header.Filename, file)
+			docVer, err = ca.DocumentVersion().Create(ash.Id, doc.Id, "test comment 2 wahwah", header.Filename, file)
 			b, _ = json.Marshal(docVer)
 			log.Info("%v %s %v", docVer, string(b), err)
 			writeJson(w, docVer)
@@ -116,14 +114,14 @@ func main(){
 	})
 
 	http.HandleFunc("/getDocVers", func(w http.ResponseWriter, r *http.Request){
-		docVers, totalResults, err := docVerStore.GetForDocument(ash.Id, doc.Id, 0, 10, documentversion.VersionAsc)
+		docVers, totalResults, err := ca.DocumentVersion().GetForDocument(ash.Id, doc.Id, 0, 10, documentversion.VersionAsc)
 		b, _ = json.Marshal(docVers)
 		log.Info("%d %v %s %v", totalResults, docVers, string(b), err)
 		writeJson(w, docVers)
 	})
 
 	http.HandleFunc("/download", func(w http.ResponseWriter, r *http.Request){
-		res, _ := docVerStore.GetSeedFile(ash.Id, docVer.Id)
+		res, _ := ca.DocumentVersion().GetSeedFile(ash.Id, docVer.Id)
 		if res != nil && res.Body != nil {
 			defer res.Body.Close()
 			io.Copy(w, res.Body)
