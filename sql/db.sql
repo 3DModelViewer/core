@@ -335,6 +335,14 @@ BEGIN
 END$$
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS userGetCurrent;
+DELIMITER $$
+CREATE PROCEDURE userGetCurrent(forUserId VARCHAR(32))
+BEGIN        
+	SELECT lex(u.id) AS id, u.avatar, u.fullName, u.superUser, u.description, u.uiLanguage, u.uiTheme, u.locale, u.timeFormat FROM user AS u WHERE u.id = UNHEX(forUserId);
+END$$
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS userSetDescription;
 DELIMITER $$
 CREATE PROCEDURE userSetDescription(forUserId VARCHAR(32), newDescription VARCHAR(250))

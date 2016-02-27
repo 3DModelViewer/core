@@ -5,9 +5,10 @@ import (
 	"github.com/robsix/golog"
 )
 
-func newUserStore(login login, setDescription setProperty, setUILanguage setProperty, setUITheme setProperty, setLocale setProperty, setTimeFormat setProperty, get get, getInProjectContext getInProjectContext, getInProjectInviteContext getInProjectContext, search search, log golog.Log) UserStore {
+func newUserStore(login login, getCurrent getCurrent, setDescription setProperty, setUILanguage setProperty, setUITheme setProperty, setLocale setProperty, setTimeFormat setProperty, get get, getInProjectContext getInProjectContext, getInProjectInviteContext getInProjectContext, search search, log golog.Log) UserStore {
 	return &userStore{
 		login:                     login,
+		getCurrent:                getCurrent,
 		setDescription:            setDescription,
 		setUILanguage:             setUILanguage,
 		setUITheme:                setUITheme,
@@ -23,6 +24,7 @@ func newUserStore(login login, setDescription setProperty, setUILanguage setProp
 
 type userStore struct {
 	login                     login
+	getCurrent                getCurrent
 	setDescription            setProperty
 	setUILanguage             setProperty
 	setUITheme                setProperty
@@ -41,6 +43,16 @@ func (us *userStore) Login(autodeskId string, openId string, username string, av
 		return currentUser, err
 	} else {
 		us.log.Info("UserStore.Login success: autodeskId: %q openId: %q username: %q avatar: %q fullName %q email: %q", autodeskId, openId, username, avatar, fullName, email)
+		return currentUser, nil
+	}
+}
+
+func (us *userStore) GetCurrent(id string) (*CurrentUser, error) {
+	if currentUser, err := us.getCurrent(id); err != nil {
+		us.log.Error("UserStore.GetCurrent error: id: %q error: %v", id, err)
+		return currentUser, err
+	} else {
+		us.log.Info("UserStore.GetCurrent success: id: %q", id)
 		return currentUser, nil
 	}
 }

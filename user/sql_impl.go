@@ -10,7 +10,7 @@ import (
 
 func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 
-	getterLogin := func(query string, args ...interface{}) (*CurrentUser, error) {
+	getterCurrentUser := func(query string, args ...interface{}) (*CurrentUser, error) {
 		cu := CurrentUser{}
 		rowsScan := func(rows *sql.Rows) error {
 			if err := rows.Scan(&cu.Id, &cu.Avatar, &cu.FullName, &cu.SuperUser, &cu.Description, &cu.UILanguage, &cu.UITheme, &cu.Locale, &cu.TimeFormat); err != nil {
@@ -69,7 +69,11 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 	}
 
 	login := func(autodeskId string, openId string, username string, avatar string, fullName string, email string) (*CurrentUser, error) {
-		return getterLogin("CALL userLogin(?, ?, ?, ?, ?, ?)", autodeskId, openId, username, avatar, fullName, email)
+		return getterCurrentUser("CALL userLogin(?, ?, ?, ?, ?, ?)", autodeskId, openId, username, avatar, fullName, email)
+	}
+
+	getCurrent := func(id string) (*CurrentUser, error) {
+		return getterCurrentUser("CALL userGetCurrent(?)", id)
 	}
 
 	setDescription := func(forUser string, description string) error {
@@ -108,5 +112,5 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 		return offsetGetter("CALL userSearch(?, ?, ?, ?)", search, offset, limit, string(sortBy))
 	}
 
-	return newUserStore(login, setDescription, setUILanguage, setUITheme, setLocale, setTimeFormat, get, getInProjectContext, getInProjectInviteContext, search, log)
+	return newUserStore(login, getCurrent, setDescription, setUILanguage, setUITheme, setLocale, setTimeFormat, get, getInProjectContext, getInProjectInviteContext, search, log)
 }

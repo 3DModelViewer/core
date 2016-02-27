@@ -1,12 +1,12 @@
 package core
 
 import (
-	"github.com/modelhub/core/user"
-	"github.com/modelhub/core/project"
-	"github.com/modelhub/core/treenode"
-	"github.com/modelhub/core/documentversion"
-	"github.com/modelhub/core/sheet"
 	"errors"
+	"github.com/modelhub/core/documentversion"
+	"github.com/modelhub/core/project"
+	"github.com/modelhub/core/sheet"
+	"github.com/modelhub/core/treenode"
+	"github.com/modelhub/core/user"
 )
 
 func newCoreApi(us user.UserStore, ps project.ProjectStore, tns treenode.TreeNodeStore, dvs documentversion.DocumentVersionStore, ss sheet.SheetStore) (CoreApi, error) {
@@ -14,20 +14,20 @@ func newCoreApi(us user.UserStore, ps project.ProjectStore, tns treenode.TreeNod
 		return nil, errors.New("nil values to CoreApi parameters or not allowed")
 	}
 	return &coreApi{
-		us: us,
-		ps: ps,
+		us:  us,
+		ps:  ps,
 		tns: tns,
 		dvs: dvs,
-		ss: ss,
+		ss:  ss,
 	}, nil
 }
 
 type coreApi struct {
-	us user.UserStore
-	ps project.ProjectStore
+	us  user.UserStore
+	ps  project.ProjectStore
 	tns treenode.TreeNodeStore
 	dvs documentversion.DocumentVersionStore
-	ss sheet.SheetStore
+	ss  sheet.SheetStore
 }
 
 func (ca *coreApi) User() user.UserStore {
