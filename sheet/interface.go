@@ -12,7 +12,7 @@ type projectSearch func(forUser string, project string, search string, offset in
 
 type SheetStore interface {
 	SetName(forUser string, id string, newName string) error
-	GetItem(forUser string, id string, path string) (*http.Response, error)
+	GetItem(forUser string, id string, path string) (*http.Response, string, error)
 	Get(forUser string, ids []string) ([]*Sheet, error)
 	GetForDocumentVersion(forUser string, documentVersion string, offset int, limit int, sortBy sortBy) ([]*Sheet, int, error)
 	GlobalSearch(forUser string, search string, offset int, limit int, sortBy sortBy) ([]*Sheet, int, error)

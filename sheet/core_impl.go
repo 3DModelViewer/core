@@ -38,17 +38,17 @@ func (ss *sheetStore) SetName(forUser string, id string, newName string) error {
 	}
 }
 
-func (ss *sheetStore) GetItem(forUser string, id string, path string) (*http.Response, error) {
+func (ss *sheetStore) GetItem(forUser string, id string, path string) (*http.Response, string, error) {
 	if sheets, err := ss.get(forUser, []string{id}); err != nil || len(sheets) == 0 {
 		ss.log.Error("SheetStore.GetItem error: forUser: %q id: %q path: %q error: %v", forUser, id, path, err)
-		return nil, err
+		return nil, "", err
 	} else {
 		if res, err := ss.vada.GetSheetItem(sheets[0].BaseUrn + path); err != nil {
 			ss.log.Error("SheetStore.GetItem error: forUser: %q id: %q baseUrn: %q path: %q error: %v", forUser, id, sheets[0].BaseUrn, path, err)
-			return res, err
+			return res, sheets[0].BaseUrn, err
 		} else {
 			ss.log.Info("SheetStore.GetItem success: forUser: %q id: %q path: %q", forUser, id, path)
-			return res, err
+			return res, sheets[0].BaseUrn, err
 		}
 	}
 }
