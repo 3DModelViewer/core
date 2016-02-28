@@ -89,12 +89,12 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return util.SqlExec(db, "CALL projectRemoveUsers(?, ?, ?)", forUser, id, users)
 	}
 
-	acceptInvitation := func(forUser string, id string) error {
-		return util.SqlExec(db, "CALL projectAcceptInvitation(?, ?)", forUser, id)
+	acceptInvite := func(forUser string, id string) error {
+		return util.SqlExec(db, "CALL projectAcceptInvite(?, ?)", forUser, id)
 	}
 
-	declineInvitation := func(forUser string, id string) error {
-		return util.SqlExec(db, "CALL projectDeclineInvitation(?, ?)", forUser, id)
+	declineInvite := func(forUser string, id string) error {
+		return util.SqlExec(db, "CALL projectDeclineInvite(?, ?)", forUser, id)
 	}
 
 	get := func(forUser string, ids []string) ([]*Project, error) {
@@ -113,5 +113,5 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return offsetGetter("CALL projectSearch(?, ?, ?, ?, ?)", forUser, search, offset, limit, string(sortBy))
 	}
 
-	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addUsers, removeUsers, acceptInvitation, declineInvitation, util.GetRoleFunc(db), get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
+	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addUsers, removeUsers, acceptInvite, declineInvite, util.GetRoleFunc(db), get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
 }

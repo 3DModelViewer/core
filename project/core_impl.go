@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addUsers addUsers, removeUsers removeUsers, acceptInvitation processInvitation, declineInvitation processInvitation, getRole util.GetRole, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
+func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addUsers addUsers, removeUsers removeUsers, acceptInvite processInvite, declineInvite processInvite, getRole util.GetRole, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
 	return &projectStore{
 		create:                 create,
 		delete:                 delete,
@@ -18,8 +18,8 @@ func newProjectStore(create create, delete delete, setName setName, setDescripti
 		setImageFileExtension:  setImageFileExtension,
 		addUsers:               addUsers,
 		removeUsers:            removeUsers,
-		acceptInvitation:       acceptInvitation,
-		declineInvitation:      declineInvitation,
+		acceptInvite:           acceptInvite,
+		declineInvite:          declineInvite,
 		getRole:                getRole,
 		get:                    get,
 		getInUserContext:       getInUserContext,
@@ -40,8 +40,8 @@ type projectStore struct {
 	setImageFileExtension  setImageFileExtension
 	addUsers               addUsers
 	removeUsers            removeUsers
-	acceptInvitation       processInvitation
-	declineInvitation      processInvitation
+	acceptInvite           processInvite
+	declineInvite          processInvite
 	getRole                util.GetRole
 	get                    get
 	getInUserContext       getInUserContext
@@ -169,21 +169,21 @@ func (ps *projectStore) RemoveUsers(forUser string, id string, users []string) e
 	return nil
 }
 
-func (ps *projectStore) AcceptInvitation(forUser string, id string) error {
-	if err := ps.acceptInvitation(forUser, id); err != nil {
-		ps.log.Error("ProjectStore.RemoveUsers error: forUser: %q id: %q error: %v", forUser, id, err)
+func (ps *projectStore) AcceptInvite(forUser string, id string) error {
+	if err := ps.acceptInvite(forUser, id); err != nil {
+		ps.log.Error("ProjectStore.AcceptInvite error: forUser: %q id: %q error: %v", forUser, id, err)
 		return err
 	}
-	ps.log.Info("ProjectStore.RemoveUsers success: forUser: %q id: %q", forUser, id)
+	ps.log.Info("ProjectStore.AcceptInvite success: forUser: %q id: %q", forUser, id)
 	return nil
 }
 
-func (ps *projectStore) DeclineInvitation(forUser string, id string) error {
-	if err := ps.declineInvitation(forUser, id); err != nil {
-		ps.log.Error("ProjectStore.DeclineInvitation error: forUser: %q id: %q error: %v", forUser, id, err)
+func (ps *projectStore) DeclineInvite(forUser string, id string) error {
+	if err := ps.declineInvite(forUser, id); err != nil {
+		ps.log.Error("ProjectStore.DeclineInvite error: forUser: %q id: %q error: %v", forUser, id, err)
 		return err
 	}
-	ps.log.Info("ProjectStore.DeclineInvitation success: forUser: %q id: %q", forUser, id)
+	ps.log.Info("ProjectStore.DeclineInvite success: forUser: %q id: %q", forUser, id)
 	return nil
 }
 

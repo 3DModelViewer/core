@@ -683,9 +683,9 @@ BEGIN
 END$$
 DELIMITER ;
 
-DROP PROCEDURE IF EXISTS projectAcceptInvitation;
+DROP PROCEDURE IF EXISTS projectAcceptInvite;
 DELIMITER $$
-CREATE PROCEDURE projectAcceptInvitation(forUserId VARCHAR(32), projectId VARCHAR(32))
+CREATE PROCEDURE projectAcceptInvite(forUserId VARCHAR(32), projectId VARCHAR(32))
 BEGIN
 	IF (SELECT COUNT(*) FROM  invitation WHERE project = UNHEX(projectId) AND user = UNHEX(forUserId)) = 1 THEN 
 		INSERT INTO permission
@@ -701,9 +701,9 @@ BEGIN
 END$$
 DELIMITER ;
 
-DROP PROCEDURE IF EXISTS projectDeclineInvitation;
+DROP PROCEDURE IF EXISTS projectDeclineInvite;
 DELIMITER $$
-CREATE PROCEDURE projectDeclineInvitation(forUserId VARCHAR(32), projectId VARCHAR(32))
+CREATE PROCEDURE projectDeclineInvite(forUserId VARCHAR(32), projectId VARCHAR(32))
 BEGIN
 	DELETE FROM invitation WHERE project = UNHEX(projectId) AND user = UNHEX(forUserId);
 END$$
