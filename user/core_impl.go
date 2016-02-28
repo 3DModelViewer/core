@@ -5,15 +5,11 @@ import (
 	"github.com/robsix/golog"
 )
 
-func newUserStore(login login, getCurrent getCurrent, setDescription setProperty, setUILanguage setProperty, setUITheme setProperty, setLocale setProperty, setTimeFormat setProperty, get get, getInProjectContext getInProjectContext, getInProjectInviteContext getInProjectContext, search search, log golog.Log) UserStore {
+func newUserStore(login login, getCurrent getCurrent, setProperty setProperty, get get, getInProjectContext getInProjectContext, getInProjectInviteContext getInProjectContext, search search, log golog.Log) UserStore {
 	return &userStore{
 		login:                     login,
 		getCurrent:                getCurrent,
-		setDescription:            setDescription,
-		setUILanguage:             setUILanguage,
-		setUITheme:                setUITheme,
-		setLocale:                 setLocale,
-		setTimeFormat:             setTimeFormat,
+		setProperty:               setProperty,
 		get:                       get,
 		getInProjectContext:       getInProjectContext,
 		getInProjectInviteContext: getInProjectInviteContext,
@@ -25,11 +21,7 @@ func newUserStore(login login, getCurrent getCurrent, setDescription setProperty
 type userStore struct {
 	login                     login
 	getCurrent                getCurrent
-	setDescription            setProperty
-	setUILanguage             setProperty
-	setUITheme                setProperty
-	setLocale                 setProperty
-	setTimeFormat             setProperty
+	setProperty               setProperty
 	get                       get
 	getInProjectContext       getInProjectContext
 	getInProjectInviteContext getInProjectContext
@@ -57,52 +49,12 @@ func (us *userStore) GetCurrent(id string) (*CurrentUser, error) {
 	}
 }
 
-func (us *userStore) SetDescription(forUser string, description string) error {
-	if err := us.setDescription(forUser, description); err != nil {
-		us.log.Error("UserStore.SetDescription error: forUser: %q description: %q error: %v", forUser, description, err)
+func (us *userStore) SetProperty(forUser string, property property, value string) error {
+	if err := us.setProperty(forUser, property, value); err != nil {
+		us.log.Error("UserStore.SetProperty error: forUser: %q property: %q value: %q error: %v", forUser, property, value, err)
 		return err
 	} else {
-		us.log.Info("UserStore.SetDescription success: forUser: %q description: %q", forUser, description)
-		return nil
-	}
-}
-
-func (us *userStore) SetUILanguage(forUser string, uiLanguage string) error {
-	if err := us.setUILanguage(forUser, uiLanguage); err != nil {
-		us.log.Error("UserStore.SetUILanguage error: forUser: %q uiLanguage: %q error: %v", forUser, uiLanguage, err)
-		return err
-	} else {
-		us.log.Info("UserStore.SetUILanguage success: forUser: %q uiLanguage: %q", forUser, uiLanguage)
-		return nil
-	}
-}
-
-func (us *userStore) SetUITheme(forUser string, uiTheme string) error {
-	if err := us.setUITheme(forUser, uiTheme); err != nil {
-		us.log.Error("UserStore.SetUITheme error: forUser: %q uiTheme: %q error: %v", forUser, uiTheme, err)
-		return err
-	} else {
-		us.log.Info("UserStore.SetUITheme success: forUser: %q uiTheme: %q", forUser, uiTheme)
-		return nil
-	}
-}
-
-func (us *userStore) SetLocale(forUser string, locale string) error {
-	if err := us.setLocale(forUser, locale); err != nil {
-		us.log.Error("UserStore.SetLocale error: forUser: %q locale: %q error: %v", forUser, locale, err)
-		return err
-	} else {
-		us.log.Info("UserStore.SetLocale success: forUser: %q locale: %q", forUser, locale)
-		return nil
-	}
-}
-
-func (us *userStore) SetTimeFormat(forUser string, timeFormat string) error {
-	if err := us.setTimeFormat(forUser, timeFormat); err != nil {
-		us.log.Error("UserStore.SetTimeFormat error: forUser: %q timeFormat: %q error: %v", forUser, timeFormat, err)
-		return err
-	} else {
-		us.log.Info("UserStore.SetTimeFormat success: forUser: %q timeFormat: %q", forUser, timeFormat)
+		us.log.Info("UserStore.SetProperty success: forUser: %q property: %q value: %q", forUser, property, value)
 		return nil
 	}
 }

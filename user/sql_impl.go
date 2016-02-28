@@ -2,6 +2,7 @@ package user
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/modelhub/core/project"
 	"github.com/modelhub/core/util"
 	"github.com/robsix/golog"
@@ -76,24 +77,24 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 		return getterCurrentUser("CALL userGetCurrent(?)", id)
 	}
 
-	setDescription := func(forUser string, description string) error {
-		return util.SqlExec(db, "CALL userSetDescription(?, ?)", forUser, description)
-	}
-
-	setUILanguage := func(forUser string, uiLanguage string) error {
-		return util.SqlExec(db, "CALL userSetUILanguage(?, ?)", forUser, uiLanguage)
-	}
-
-	setUITheme := func(forUser string, uiTheme string) error {
-		return util.SqlExec(db, "CALL userSetUITheme(?, ?)", forUser, uiTheme)
-	}
-
-	setLocale := func(forUser string, locale string) error {
-		return util.SqlExec(db, "CALL userSetLocale(?, ?)", forUser, locale)
-	}
-
-	setTimeFormat := func(forUser string, timeFormat string) error {
-		return util.SqlExec(db, "CALL userSetTimeFormat(?, ?)", forUser, timeFormat)
+	setProperty := func(forUser string, property property, value string) error {
+		var partialProcName string
+		switch property {
+		case Description:
+			partialProcName = "Description"
+		case UILanguage:
+			partialProcName = "UILanguage"
+		case UITheme:
+			partialProcName = "UITheme"
+		case Locale:
+			partialProcName = "Locale"
+		case TimeFormat:
+			partialProcName = "TimeFormat"
+		default:
+			err := errors.New("invalid property name")
+			return err
+		}
+		return util.SqlExec(db, "CALL userSet"+partialProcName+"(?, ?)", forUser, value)
 	}
 
 	get := func(ids []string) ([]*UserWithDescription, error) {
@@ -112,5 +113,5 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 		return offsetGetter("CALL userSearch(?, ?, ?, ?)", search, offset, limit, string(sortBy))
 	}
 
-	return newUserStore(login, getCurrent, setDescription, setUILanguage, setUITheme, setLocale, setTimeFormat, get, getInProjectContext, getInProjectInviteContext, search, log)
+	return newUserStore(login, getCurrent, setProperty, get, getInProjectContext, getInProjectInviteContext, search, log)
 }

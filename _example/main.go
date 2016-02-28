@@ -44,7 +44,7 @@ func main(){
 	b, _ = json.Marshal(cat)
 	log.Info("%v %s %v", cat, string(b), err)
 
-	err = ca.User().SetDescription(ash.Id, "EDITED")
+	err = ca.User().SetProperty(ash.Id, user.Description, "EDITED")
 	log.Info("%v", err)
 
 	uwds, err := ca.User().Get([]string{ash.Id, bob.Id, cat.Id})
