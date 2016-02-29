@@ -1,5 +1,9 @@
 package documentversion
 
+import(
+	"strings"
+)
+
 const (
 	VersionAsc                  = sortBy("versionAsc")
 	VersionDesc                 = sortBy("versionDesc")
@@ -8,3 +12,12 @@ const (
 )
 
 type sortBy string
+
+func SortBy(sb string) sortBy {
+	switch strings.ToLower(sb) {
+	case "versiondesc":
+		return VersionDesc
+	default:
+		return VersionAsc
+	}
+}
