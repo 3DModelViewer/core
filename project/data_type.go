@@ -16,3 +16,8 @@ type ProjectInUserContext struct {
 	Project
 	Role string `json:"role"`
 }
+
+type Membership struct {
+	User string `json:"user"`
+	Role string `json:"role"`
+}

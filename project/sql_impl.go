@@ -40,6 +40,23 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return ps, totalResults, util.SqlQuery(db, rowsScan, query, args...)
 	}
 
+	offsetGetterMembership := func(query string, args ...interface{}) ([]*Membership, int, error) {
+		ms := make([]*Membership, 0, util.DefaultSqlOffsetQueryLimit)
+		totalResults := 0
+		rowsScan := func(rows *sql.Rows) error {
+			if util.RowsContainsOnlyTotalResults(&totalResults, rows) {
+				return nil
+			}
+			m := Membership{}
+			if err := rows.Scan(&totalResults, &m.User, &m.Role); err != nil {
+				return err
+			}
+			ms = append(ms, &m)
+			return nil
+		}
+		return ms, totalResults, util.SqlQuery(db, rowsScan, query, args...)
+	}
+
 	offsetGetterInUserContext := func(query string, args ...interface{}) ([]*ProjectInUserContext, int, error) {
 		ps := make([]*ProjectInUserContext, 0, util.DefaultSqlOffsetQueryLimit)
 		totalResults := 0
@@ -81,7 +98,7 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return util.SqlExec(db, "CALL projectSetImageFileExtension(?, ?, ?)", forUser, id, newImageFileExtension)
 	}
 
-	addUsers := func(forUser string, id string, role Role, users []string) error {
+	addUsers := func(forUser string, id string, role role, users []string) error {
 		return util.SqlExec(db, "CALL projectAddUsers(?, ?, ?, ?)", forUser, id, role, users)
 	}
 
@@ -97,15 +114,23 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return util.SqlExec(db, "CALL projectDeclineInvite(?, ?)", forUser, id)
 	}
 
+	getMemberships := func(forUser string, project string, role role, offset int, limit int, sortBy sortBy) ([]*Membership, int, error) {
+		return offsetGetterMembership("CALL projectGetMemberships(?, ?, ?, ?, ?, ?)", forUser, project, role, offset, limit, string(sortBy))
+	}
+
+	getMembershipInvites := func(forUser string, project string, role role, offset int, limit int, sortBy sortBy) ([]*Membership, int, error) {
+		return offsetGetterMembership("CALL projectGetMembershipInvitess(?, ?, ?, ?, ?, ?)", forUser, project, role, offset, limit, string(sortBy))
+	}
+
 	get := func(forUser string, ids []string) ([]*Project, error) {
 		return getter("CALL projectGet(?, ?)", len(ids), forUser, strings.Join(ids, ","))
 	}
 
-	getInUserContext := func(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
+	getInUserContext := func(forUser string, user string, role role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
 		return offsetGetterInUserContext("CALL projectGetInUserContext(?, ?, ?, ?, ?, ?)", forUser, user, role, offset, limit, string(sortBy))
 	}
 
-	getInUserInviteContext := func(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
+	getInUserInviteContext := func(forUser string, user string, role role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
 		return offsetGetterInUserContext("CALL projectGetInUserInviteContext(?, ?, ?, ?, ?, ?)", forUser, user, role, offset, limit, string(sortBy))
 	}
 
@@ -113,5 +138,5 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return offsetGetter("CALL projectSearch(?, ?, ?, ?, ?)", forUser, search, offset, limit, string(sortBy))
 	}
 
-	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addUsers, removeUsers, acceptInvite, declineInvite, util.GetRoleFunc(db), get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
+	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addUsers, removeUsers, acceptInvite, declineInvite, util.GetRoleFunc(db), getMemberships, getMembershipInvites, get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
 }

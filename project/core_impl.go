@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addUsers addUsers, removeUsers removeUsers, acceptInvite processInvite, declineInvite processInvite, getRole util.GetRole, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
+func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addUsers addUsers, removeUsers removeUsers, acceptInvite processInvite, declineInvite processInvite, getRole util.GetRole, getMemberships getMemberships, getMembershipInvites getMemberships, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
 	return &projectStore{
 		create:                 create,
 		delete:                 delete,
@@ -21,6 +21,8 @@ func newProjectStore(create create, delete delete, setName setName, setDescripti
 		acceptInvite:           acceptInvite,
 		declineInvite:          declineInvite,
 		getRole:                getRole,
+		getMemberships: getMemberships,
+		getMembershipInvites: getMembershipInvites,
 		get:                    get,
 		getInUserContext:       getInUserContext,
 		getInUserInviteContext: getInUserInviteContext,
@@ -43,6 +45,8 @@ type projectStore struct {
 	acceptInvite           processInvite
 	declineInvite          processInvite
 	getRole                util.GetRole
+	getMemberships getMemberships
+	getMembershipInvites getMemberships
 	get                    get
 	getInUserContext       getInUserContext
 	getInUserInviteContext getInUserContext
@@ -151,7 +155,7 @@ func (ps *projectStore) SetImage(forUser string, id string, name string, image i
 	return nil
 }
 
-func (ps *projectStore) AddUsers(forUser string, id string, role Role, users []string) error {
+func (ps *projectStore) AddUsers(forUser string, id string, role role, users []string) error {
 	if err := ps.addUsers(forUser, id, role, users); err != nil {
 		ps.log.Error("ProjectStore.AddUsers error: forUser: %q id: %q role: %q users: %v error: %v", forUser, id, role, users, err)
 		return err
@@ -197,6 +201,26 @@ func (ps *projectStore) GetRole(forUser string, id string) (string, error) {
 	}
 }
 
+func (ps *projectStore) GetMemberships(forUser string, project string, role role, offset int, limit int, sortBy sortBy) ([]*Membership, int, error) {
+	if memberships, totalResults, err := ps.getMemberships(forUser, project, role, offset, limit, sortBy); err != nil {
+		ps.log.Error("ProjectStore.GetMemberships error: forUser: %q project: %q error: %v", forUser, project, err)
+		return memberships, totalResults, err
+	} else {
+		ps.log.Info("ProjectStore.GetMemberships success: forUser: %q project: %q totalResults: %d memberships: %v", forUser, project, totalResults, memberships)
+		return memberships, totalResults, nil
+	}
+}
+
+func (ps *projectStore) GetMembershipInvites(forUser string, project string, role role, offset int, limit int, sortBy sortBy) ([]*Membership, int, error) {
+	if memberships, totalResults, err := ps.getMembershipInvites(forUser, project, role, offset, limit, sortBy); err != nil {
+		ps.log.Error("ProjectStore.GetMembershipInvites error: forUser: %q project: %q error: %v", forUser, project, err)
+		return memberships, totalResults, err
+	} else {
+		ps.log.Info("ProjectStore.GetMembershipInvites success: forUser: %q project: %q totalResults: %d memberships: %v", forUser, project, totalResults, memberships)
+		return memberships, totalResults, nil
+	}
+}
+
 func (ps *projectStore) GetImage(forUser string, id string) (*http.Response, error) {
 	if projects, err := ps.get(forUser, []string{id}); err != nil || len(projects) == 0 {
 		ps.log.Error("ProjectStore.GetImage error: forUser: %q id: %q error: %v", forUser, id, err)
@@ -226,7 +250,7 @@ func (ps *projectStore) Get(forUser string, ids []string) ([]*Project, error) {
 	}
 }
 
-func (ps *projectStore) GetInUserContext(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
+func (ps *projectStore) GetInUserContext(forUser string, user string, role role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
 	if projects, totalResults, err := ps.getInUserContext(forUser, user, role, offset, limit, sortBy); err != nil {
 		ps.log.Error("ProjectStore.GetInUserContext error: forUser: %q user: %q error: %v", forUser, user, err)
 		return projects, totalResults, err
@@ -236,7 +260,7 @@ func (ps *projectStore) GetInUserContext(forUser string, user string, role Role,
 	}
 }
 
-func (ps *projectStore) GetInUserInviteContext(forUser string, user string, role Role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
+func (ps *projectStore) GetInUserInviteContext(forUser string, user string, role role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
 	if projects, totalResults, err := ps.getInUserInviteContext(forUser, user, role, offset, limit, sortBy); err != nil {
 		ps.log.Error("ProjectStore.GetInUserInviteContext error: forUser: %q user: %q error: %v", forUser, user, err)
 		return projects, totalResults, err

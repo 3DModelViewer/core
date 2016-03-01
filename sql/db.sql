@@ -331,7 +331,7 @@ BEGIN
         locale = locale,
         timeFormat = timeFormat;
         
-	SELECT lex(u.id) AS id, u.avatar, u.fullName, u.superUser, u.description, u.uiLanguage, u.uiTheme, u.locale, u.timeFormat FROM user AS u WHERE u.autodeskId = autodeskId;
+	SELECT lex(u.id) AS id FROM user AS u WHERE u.autodeskId = autodeskId;
 END$$
 DELIMITER ;
 
@@ -339,7 +339,7 @@ DROP PROCEDURE IF EXISTS userGetCurrent;
 DELIMITER $$
 CREATE PROCEDURE userGetCurrent(forUserId VARCHAR(32))
 BEGIN        
-	SELECT lex(u.id) AS id, u.avatar, u.fullName, u.superUser, u.description, u.uiLanguage, u.uiTheme, u.locale, u.timeFormat FROM user AS u WHERE u.id = UNHEX(forUserId);
+	SELECT lex(u.id) AS id, u.avatar, u.fullName, u.superUser, u.uiLanguage, u.uiTheme, u.locale, u.timeFormat FROM user AS u WHERE u.id = UNHEX(forUserId);
 END$$
 DELIMITER ;
 
@@ -383,146 +383,22 @@ BEGIN
 END$$
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS userGetDescription;
+DELIMITER $$
+CREATE PROCEDURE userGetDescription(userId VARCHAR(32))
+BEGIN
+	SELECT description FROM user WHERE id = UNHEX(userId);
+END$$
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS userGet;
 DELIMITER $$
 CREATE PROCEDURE userGet(ids VARCHAR(6600))
 BEGIN
 	IF createTempIdsTable(ids) THEN
-		SELECT lex(u.id) AS id, avatar, fullName, description FROM user AS u INNER JOIN tempIds AS t ON u.id = t.id;
+		SELECT lex(u.id) AS id, avatar, fullName FROM user AS u INNER JOIN tempIds AS t ON u.id = t.id;
     END IF;
     DROP TEMPORARY TABLE IF EXISTS tempIds;
-END$$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS userGetInProjectContext;
-DELIMITER $$
-CREATE PROCEDURE userGetInProjectContext(forUserId VARCHAR(32), projectId VARCHAR(32), filterRole VARCHAR(50), os int, l int, sortBy VARCHAR(50))
-BEGIN
-    DECLARE totalResults INT;
-	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
-    
-	IF forUserRole IN ('owner', 'admin') THEN
-    
-		IF os < 0 THEN
-			SET os = 0;
-		END IF;
-		
-		IF l < 0 THEN
-			SET l = 0;
-		END IF;
-    
-		IF l > 100 THEN
-			SET l = 100;
-		END IF;
-    
-		DROP TEMPORARY TABLE IF EXISTS tempUserGetInProjectContext;
-		CREATE TEMPORARY TABLE tempUserGetInProjectContext(
-			id BINARY(16) NOT NULL,
-			avatar VARCHAR(500),
-			fullName VARCHAR(100),
-            role VARCHAR(50),
-            PRIMARY KEY (id),
-			INDEX (fullName),
-            INDEX (role, fullName)
-		);
-    
-		IF filterRole IS NULL OR filterRole = '' OR filterRole = 'any' THEN
-			INSERT INTO tempUserGetInProjectContext (id, avatar, fullName, role) SELECT u.id, u.avatar, u.fullName, p.role FROM user AS u INNER JOIN permission p ON u.id = p.user WHERE p.project = UNHEX(projectId);
-		ELSE
-			INSERT INTO tempUserGetInProjectContext (id, avatar, fullName, role) SELECT u.id, u.avatar, u.fullName, p.role FROM user AS u INNER JOIN permission p ON u.id = p.user WHERE p.project = UNHEX(projectId) AND p.role = filterRole;
-        END IF;
-    
-		SELECT COUNT(*) INTO totalResults FROM tempUserGetInProjectContext;
-    
-		IF os >= totalResults OR l = 0 THEN
-			SELECT totalResults;
-		ELSE IF sortBy = 'roleDesc' THEN
-			SELECT totalResults, lex(id) AS id, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY role DESC, fullName ASC LIMIT os, l;
-		ELSE IF sortBy = 'roleAsc' THEN
-			SELECT totalResults, lex(id) AS id, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY role ASC, fullName ASC LIMIT os, l;
-        ELSE IF sortBy = 'fullNameDesc' THEN
-			SELECT totalResults, lex(id) AS id, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY fullName DESC LIMIT os, l;
-		ELSE
-			SELECT totalResults, lex(id) AS id, avatar, fullName, role FROM tempUserGetInProjectContext ORDER BY fullName ASC LIMIT os, l;
-		END IF;
-		END IF;
-        END IF;
-		END IF;
-    
-		DROP TEMPORARY TABLE IF EXISTS tempUserGetInProjectContext;
-	ELSE
-		SIGNAL SQLSTATE 
-			'45002'
-		SET
-			MESSAGE_TEXT = 'Unauthorized action: get user in project context',
-            MYSQL_ERRNO = 45002;
-    END IF;
-END$$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS userGetInProjectInviteContext;
-DELIMITER $$
-CREATE PROCEDURE userGetInProjectInviteContext(forUserId VARCHAR(32), projectId VARCHAR(32), filterRole VARCHAR(50), os int, l int, sortBy VARCHAR(50))
-BEGIN
-    DECLARE totalResults INT;
-	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
-    
-	IF forUserRole IN ('owner', 'admin') THEN
-    
-		IF os < 0 THEN
-			SET os = 0;
-		END IF;
-    
-		IF l < 0 THEN
-			SET l = 0;
-		END IF;
-    
-		IF l > 100 THEN
-			SET l = 100;
-		END IF;
-    
-		DROP TEMPORARY TABLE IF EXISTS tempUserGetInProjectInviteContext;
-		CREATE TEMPORARY TABLE tempUserGetInProjectInviteContext(
-			id BINARY(16) NOT NULL,
-			avatar VARCHAR(500),
-			fullName VARCHAR(100),
-            role VARCHAR(50),
-            PRIMARY KEY (id),
-			INDEX (fullName),
-            INDEX (role)
-		);
-    
-		IF filterRole IS NULL OR filterRole = '' OR filterRole = 'any' THEN
-			INSERT INTO tempUserGetInProjectInviteContext (id, avatar, fullName, role) SELECT u.id, u.avatar, u.fullName, p.role FROM user AS u INNER JOIN invitation p ON u.id = p.user WHERE p.project = UNHEX(projectId);
-		ELSE
-			INSERT INTO tempUserGetInProjectInviteContext (id, avatar, fullName, role) SELECT u.id, u.avatar, u.fullName, p.role FROM user AS u INNER JOIN invitation p ON u.id = p.user WHERE p.project = UNHEX(projectId) AND p.role = filterRole;
-        END IF;
-    
-		SELECT COUNT(*) INTO totalResults FROM tempUserGetInProjectInviteContext;
-    
-		IF os >= totalResults OR l = 0 THEN
-			SELECT totalResults;
-		ELSE IF sortBy = 'roleDesc' THEN
-			SELECT totalResults, lex(id) AS id, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY role DESC, fullName ASC LIMIT os, l;
-		ELSE IF sortBy = 'roleAsc' THEN
-			SELECT totalResults, lex(id) AS id, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY role ASC, fullName ASC LIMIT os, l;
-        ELSE IF sortBy = 'fullNameDesc' THEN
-			SELECT totalResults, lex(id) AS id, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY fullName DESC LIMIT os, l;
-		ELSE
-			SELECT totalResults, lex(id) AS id, avatar, fullName, role FROM tempUserGetInProjectInviteContext ORDER BY fullName ASC LIMIT os, l;
-		END IF;
-		END IF;
-        END IF;
-        END IF;
-    
-		DROP TEMPORARY TABLE IF EXISTS tempUserGetInProjectInviteContext;
-	ELSE
-		SIGNAL SQLSTATE 
-			'45002'
-		SET
-			MESSAGE_TEXT = 'Unauthorized action: get user in project invite context',
-            MYSQL_ERRNO = 45002;
-    END IF;
 END$$
 DELIMITER ;
 
@@ -714,6 +590,136 @@ DELIMITER $$
 CREATE PROCEDURE projectGetRole(forUserId VARCHAR(32), projectId VARCHAR(32))
 BEGIN
 	SELECT _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId)) AS role;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS projectGetMemberships;
+DELIMITER $$
+CREATE PROCEDURE projectGetMemberships(forUserId VARCHAR(32), projectId VARCHAR(32), filterRole VARCHAR(50), os int, l int, sortBy VARCHAR(50))
+BEGIN
+    DECLARE totalResults INT;
+	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
+    
+	IF forUserRole IN ('owner', 'admin') THEN
+    
+		IF os < 0 THEN
+			SET os = 0;
+		END IF;
+		
+		IF l < 0 THEN
+			SET l = 0;
+		END IF;
+    
+		IF l > 100 THEN
+			SET l = 100;
+		END IF;
+    
+		DROP TEMPORARY TABLE IF EXISTS tempProjectGetMemberships;
+		CREATE TEMPORARY TABLE tempProjectGetMemberships(
+			id BINARY(16) NOT NULL,
+			fullName VARCHAR(100),
+            role VARCHAR(50),
+            PRIMARY KEY (id),
+			INDEX (fullName),
+            INDEX (role, fullName)
+		);
+    
+		IF filterRole IS NULL OR filterRole = '' OR filterRole = 'any' THEN
+			INSERT INTO tempProjectGetMemberships (id, fullName, role) SELECT u.id, u.fullName, p.role FROM user AS u INNER JOIN permission p ON u.id = p.user WHERE p.project = UNHEX(projectId);
+		ELSE
+			INSERT INTO tempProjectGetMemberships (id, fullName, role) SELECT u.id, u.fullName, p.role FROM user AS u INNER JOIN permission p ON u.id = p.user WHERE p.project = UNHEX(projectId) AND p.role = filterRole;
+        END IF;
+    
+		SELECT COUNT(*) INTO totalResults FROM tempProjectGetMemberships;
+    
+		IF os >= totalResults OR l = 0 THEN
+			SELECT totalResults;
+		ELSE IF sortBy = 'roleDesc' THEN
+			SELECT totalResults, lex(id) AS id, role FROM tempProjectGetMemberships ORDER BY role DESC, fullName ASC LIMIT os, l;
+		ELSE IF sortBy = 'roleAsc' THEN
+			SELECT totalResults, lex(id) AS id, role FROM tempProjectGetMemberships ORDER BY role ASC, fullName ASC LIMIT os, l;
+        ELSE IF sortBy = 'fullNameDesc' THEN
+			SELECT totalResults, lex(id) AS id, role FROM tempProjectGetMemberships ORDER BY fullName DESC LIMIT os, l;
+		ELSE
+			SELECT totalResults, lex(id) AS id, role FROM tempProjectGetMemberships ORDER BY fullName ASC LIMIT os, l;
+		END IF;
+		END IF;
+        END IF;
+		END IF;
+    
+		DROP TEMPORARY TABLE IF EXISTS tempProjectGetMemberships;
+	ELSE
+		SIGNAL SQLSTATE 
+			'45002'
+		SET
+			MESSAGE_TEXT = 'Unauthorized action: get memberships',
+            MYSQL_ERRNO = 45002;
+    END IF;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS projectGetMembershipInvites;
+DELIMITER $$
+CREATE PROCEDURE projectGetMembershipInvites(forUserId VARCHAR(32), projectId VARCHAR(32), filterRole VARCHAR(50), os int, l int, sortBy VARCHAR(50))
+BEGIN
+    DECLARE totalResults INT;
+	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
+    
+	IF forUserRole IN ('owner', 'admin') THEN
+    
+		IF os < 0 THEN
+			SET os = 0;
+		END IF;
+    
+		IF l < 0 THEN
+			SET l = 0;
+		END IF;
+    
+		IF l > 100 THEN
+			SET l = 100;
+		END IF;
+    
+		DROP TEMPORARY TABLE IF EXISTS tempProjectGetMembershipInvites;
+		CREATE TEMPORARY TABLE tempProjectGetMembershipInvites(
+			id BINARY(16) NOT NULL,
+			fullName VARCHAR(100),
+            role VARCHAR(50),
+            PRIMARY KEY (id),
+			INDEX (fullName),
+            INDEX (role)
+		);
+    
+		IF filterRole IS NULL OR filterRole = '' OR filterRole = 'any' THEN
+			INSERT INTO tempProjectGetMembershipInvites (id, fullName, role) SELECT u.id, u.fullName, p.role FROM user AS u INNER JOIN invitation p ON u.id = p.user WHERE p.project = UNHEX(projectId);
+		ELSE
+			INSERT INTO tempProjectGetMembershipInvites (id, fullName, role) SELECT u.id, u.fullName, p.role FROM user AS u INNER JOIN invitation p ON u.id = p.user WHERE p.project = UNHEX(projectId) AND p.role = filterRole;
+        END IF;
+    
+		SELECT COUNT(*) INTO totalResults FROM tempProjectGetMembershipInvites;
+    
+		IF os >= totalResults OR l = 0 THEN
+			SELECT totalResults;
+		ELSE IF sortBy = 'roleDesc' THEN
+			SELECT totalResults, lex(id) AS id, role FROM tempProjectGetMembershipInvites ORDER BY role DESC, fullName ASC LIMIT os, l;
+		ELSE IF sortBy = 'roleAsc' THEN
+			SELECT totalResults, lex(id) AS id, role FROM tempProjectGetMembershipInvites ORDER BY role ASC, fullName ASC LIMIT os, l;
+        ELSE IF sortBy = 'fullNameDesc' THEN
+			SELECT totalResults, lex(id) AS id, role FROM tempProjectGetMembershipInvites ORDER BY fullName DESC LIMIT os, l;
+		ELSE
+			SELECT totalResults, lex(id) AS id, role FROM tempProjectGetMembershipInvites ORDER BY fullName ASC LIMIT os, l;
+		END IF;
+		END IF;
+        END IF;
+        END IF;
+    
+		DROP TEMPORARY TABLE IF EXISTS tempProjectGetMembershipInvites;
+	ELSE
+		SIGNAL SQLSTATE 
+			'45002'
+		SET
+			MESSAGE_TEXT = 'Unauthorized action: get membership invites',
+            MYSQL_ERRNO = 45002;
+    END IF;
 END$$
 DELIMITER ;
 
