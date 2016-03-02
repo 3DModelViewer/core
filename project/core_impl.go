@@ -216,7 +216,7 @@ func (ps *projectStore) GetMembershipInvites(forUser string, id string, role rol
 		ps.log.Error("ProjectStore.GetMembershipInvites error: forUser: %q id: %q error: %v", forUser, id, err)
 		return memberships, totalResults, err
 	} else {
-		ps.log.Info("ProjectStore.GetMembershipInvites success: forUser: %q id: %q totalResults: %d memberships: %v", forUser, project, totalResults, memberships)
+		ps.log.Info("ProjectStore.GetMembershipInvites success: forUser: %q id: %q totalResults: %d memberships: %v", forUser, id, totalResults, memberships)
 		return memberships, totalResults, nil
 	}
 }
