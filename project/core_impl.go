@@ -201,22 +201,22 @@ func (ps *projectStore) GetRole(forUser string, id string) (string, error) {
 	}
 }
 
-func (ps *projectStore) GetMemberships(forUser string, project string, role role, offset int, limit int, sortBy sortBy) ([]*Membership, int, error) {
-	if memberships, totalResults, err := ps.getMemberships(forUser, project, role, offset, limit, sortBy); err != nil {
-		ps.log.Error("ProjectStore.GetMemberships error: forUser: %q project: %q error: %v", forUser, project, err)
+func (ps *projectStore) GetMemberships(forUser string, id string, role role, offset int, limit int, sortBy sortBy) ([]*Membership, int, error) {
+	if memberships, totalResults, err := ps.getMemberships(forUser, id, role, offset, limit, sortBy); err != nil {
+		ps.log.Error("ProjectStore.GetMemberships error: forUser: %q id: %q error: %v", forUser, id, err)
 		return memberships, totalResults, err
 	} else {
-		ps.log.Info("ProjectStore.GetMemberships success: forUser: %q project: %q totalResults: %d memberships: %v", forUser, project, totalResults, memberships)
+		ps.log.Info("ProjectStore.GetMemberships success: forUser: %q id: %q totalResults: %d memberships: %v", forUser, id, totalResults, memberships)
 		return memberships, totalResults, nil
 	}
 }
 
-func (ps *projectStore) GetMembershipInvites(forUser string, project string, role role, offset int, limit int, sortBy sortBy) ([]*Membership, int, error) {
-	if memberships, totalResults, err := ps.getMembershipInvites(forUser, project, role, offset, limit, sortBy); err != nil {
-		ps.log.Error("ProjectStore.GetMembershipInvites error: forUser: %q project: %q error: %v", forUser, project, err)
+func (ps *projectStore) GetMembershipInvites(forUser string, id string, role role, offset int, limit int, sortBy sortBy) ([]*Membership, int, error) {
+	if memberships, totalResults, err := ps.getMembershipInvites(forUser, id, role, offset, limit, sortBy); err != nil {
+		ps.log.Error("ProjectStore.GetMembershipInvites error: forUser: %q id: %q error: %v", forUser, id, err)
 		return memberships, totalResults, err
 	} else {
-		ps.log.Info("ProjectStore.GetMembershipInvites success: forUser: %q project: %q totalResults: %d memberships: %v", forUser, project, totalResults, memberships)
+		ps.log.Info("ProjectStore.GetMembershipInvites success: forUser: %q id: %q totalResults: %d memberships: %v", forUser, project, totalResults, memberships)
 		return memberships, totalResults, nil
 	}
 }
