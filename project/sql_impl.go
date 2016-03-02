@@ -119,7 +119,7 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 	}
 
 	getMembershipInvites := func(forUser string, id string, role role, offset int, limit int, sortBy sortBy) ([]*Membership, int, error) {
-		return offsetGetterMembership("CALL projectGetMembershipInvitess(?, ?, ?, ?, ?, ?)", forUser, id, string(role), offset, limit, string(sortBy))
+		return offsetGetterMembership("CALL projectGetMembershipInvites(?, ?, ?, ?, ?, ?)", forUser, id, string(role), offset, limit, string(sortBy))
 	}
 
 	get := func(forUser string, ids []string) ([]*Project, error) {
