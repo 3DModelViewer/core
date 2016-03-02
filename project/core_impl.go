@@ -152,6 +152,7 @@ func (ps *projectStore) SetImage(forUser string, id string, name string, image i
 		}
 	}
 
+	ps.log.Info("ProjectStore.SetImage success: forUser: %q id: %q name: %q image: %v", forUser, id, name, image)
 	return nil
 }
 
