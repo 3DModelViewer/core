@@ -99,11 +99,11 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 	}
 
 	addUsers := func(forUser string, id string, role role, users []string) error {
-		return util.SqlExec(db, "CALL projectAddUsers(?, ?, ?, ?)", forUser, id, role, users)
+		return util.SqlExec(db, "CALL projectAddUsers(?, ?, ?, ?)", forUser, id, string(role), strings.Join(users, ","))
 	}
 
 	removeUsers := func(forUser string, id string, users []string) error {
-		return util.SqlExec(db, "CALL projectRemoveUsers(?, ?, ?)", forUser, id, users)
+		return util.SqlExec(db, "CALL projectRemoveUsers(?, ?, ?)", forUser, id, strings.Join(users, ","))
 	}
 
 	acceptInvite := func(forUser string, id string) error {
@@ -115,11 +115,11 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 	}
 
 	getMemberships := func(forUser string, id string, role role, offset int, limit int, sortBy sortBy) ([]*Membership, int, error) {
-		return offsetGetterMembership("CALL projectGetMemberships(?, ?, ?, ?, ?, ?)", forUser, id, role, offset, limit, string(sortBy))
+		return offsetGetterMembership("CALL projectGetMemberships(?, ?, ?, ?, ?, ?)", forUser, id, string(role), offset, limit, string(sortBy))
 	}
 
 	getMembershipInvites := func(forUser string, id string, role role, offset int, limit int, sortBy sortBy) ([]*Membership, int, error) {
-		return offsetGetterMembership("CALL projectGetMembershipInvitess(?, ?, ?, ?, ?, ?)", forUser, id, role, offset, limit, string(sortBy))
+		return offsetGetterMembership("CALL projectGetMembershipInvitess(?, ?, ?, ?, ?, ?)", forUser, id, string(role), offset, limit, string(sortBy))
 	}
 
 	get := func(forUser string, ids []string) ([]*Project, error) {
@@ -127,11 +127,11 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 	}
 
 	getInUserContext := func(forUser string, user string, role role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
-		return offsetGetterInUserContext("CALL projectGetInUserContext(?, ?, ?, ?, ?, ?)", forUser, user, role, offset, limit, string(sortBy))
+		return offsetGetterInUserContext("CALL projectGetInUserContext(?, ?, ?, ?, ?, ?)", forUser, user, string(role), offset, limit, string(sortBy))
 	}
 
 	getInUserInviteContext := func(forUser string, user string, role role, offset int, limit int, sortBy sortBy) ([]*ProjectInUserContext, int, error) {
-		return offsetGetterInUserContext("CALL projectGetInUserInviteContext(?, ?, ?, ?, ?, ?)", forUser, user, role, offset, limit, string(sortBy))
+		return offsetGetterInUserContext("CALL projectGetInUserInviteContext(?, ?, ?, ?, ?, ?)", forUser, user, string(role), offset, limit, string(sortBy))
 	}
 
 	search := func(forUser string, search string, offset int, limit int, sortBy sortBy) ([]*Project, int, error) {
