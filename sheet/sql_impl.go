@@ -29,11 +29,11 @@ func NewSqlSheetStore(db *sql.DB, vada vada.VadaClient, log golog.Log) SheetStor
 		ss := make([]*Sheet_, 0, util.DefaultSqlOffsetQueryLimit)
 		totalResults := 0
 		rowsScan := func(rows *sql.Rows) error {
-			s := Sheet_{}
-			thumbnails := ""
 			if util.RowsContainsOnlyTotalResults(&totalResults, rows) {
 				return nil
 			}
+			s := Sheet_{}
+			thumbnails := ""
 			if err := rows.Scan(&totalResults, &s.Id, &s.DocumentVersion, &s.Project, &s.Name, &s.BaseUrn, &s.Manifest, &thumbnails, &s.Role); err != nil {
 				return err
 			}

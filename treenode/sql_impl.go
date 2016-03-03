@@ -30,6 +30,9 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		tns := make([]*TreeNode, 0, util.DefaultSqlOffsetQueryLimit)
 		totalResults := 0
 		rowsScan := func(rows *sql.Rows) error {
+			if util.RowsContainsOnlyTotalResults(&totalResults, rows) {
+				return nil
+			}
 			tn := TreeNode{}
 			scanNodeType := ""
 			if err := rows.Scan(&totalResults, &tn.Id, &tn.Parent, &tn.Project, &tn.Name, &scanNodeType); err != nil {

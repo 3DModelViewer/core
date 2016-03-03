@@ -1157,14 +1157,26 @@ BEGIN
     
     IF parentNodeType = 'folder' THEN
 		IF forUserRole IS NOT NULL THEN
-			SELECT COUNT(*) INTO totalResults FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType;
+			IF childNodeType = '' OR childNodeType = 'any' THEN
+				SELECT COUNT(*) INTO totalResults FROM treeNode WHERE parent = UNHEX(parentId);
+			ELSE
+				SELECT COUNT(*) INTO totalResults FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType;
+			END IF;
             
 			IF os >= totalResults OR l = 0 THEN
 				SELECT totalResults;
             ELSE IF sortBy = 'nameDesc' THEN
-				SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType ORDER BY name DESC LIMIT os, l;
+				IF childNodeType = '' OR childNodeType = 'any' THEN
+					SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) ORDER BY name DESC LIMIT os, l;
+				ELSE
+					SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType ORDER BY name DESC LIMIT os, l;
+				END IF;
             ELSE
-				SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType ORDER BY name ASC LIMIT os, l;				
+				IF childNodeType = '' OR childNodeType = 'any' THEN
+					SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) ORDER BY name ASC LIMIT os, l;
+				ELSE
+					SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType ORDER BY name ASC LIMIT os, l;
+				END IF;			
             END IF;
             END IF;
 		ELSE 
@@ -1253,7 +1265,11 @@ BEGIN
         INDEX (name)
 	);
     
-    INSERT INTO tempTreeNodeGlobalSearch (id, parent, project, name, nodeType) SELECT tn.id, tn.parent, tn.project, tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN permission AS p ON tn.project = p.project WHERE p.user = UNHEX(forUserId) AND tn.nodeType = childNodeType AND MATCH(tn.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+	IF childNodeType = '' OR childNodeType = 'any' THEN
+		INSERT INTO tempTreeNodeGlobalSearch (id, parent, project, name, nodeType) SELECT tn.id, tn.parent, tn.project, tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN permission AS p ON tn.project = p.project WHERE p.user = UNHEX(forUserId) AND MATCH(tn.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+    ELSE
+		INSERT INTO tempTreeNodeGlobalSearch (id, parent, project, name, nodeType) SELECT tn.id, tn.parent, tn.project, tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN permission AS p ON tn.project = p.project WHERE p.user = UNHEX(forUserId) AND tn.nodeType = childNodeType AND MATCH(tn.name) AGAINST(search IN NATURAL LANGUAGE MODE);
+    END IF;
     SELECT COUNT(*) INTO totalResults FROM tempTreeNodeGlobalSearch;
     
     IF os >= totalResults OR l = 0 THEN
@@ -1301,7 +1317,12 @@ BEGIN
     SET forUserRole = _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
     
 	IF forUserRole IS NOT NULL THEN
-		INSERT INTO tempTreeNodeProjectSearch (id, parent, project, name, nodeType) SELECT id, parent, project, name, nodeType FROM treeNode WHERE project = UNHEX(projectId) AND nodeType = childNodeType AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+    
+		IF childNodeType = '' OR childNodeType = 'any' THEN
+			INSERT INTO tempTreeNodeProjectSearch (id, parent, project, name, nodeType) SELECT id, parent, project, name, nodeType FROM treeNode WHERE project = UNHEX(projectId) AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE);  
+		ELSE
+			INSERT INTO tempTreeNodeProjectSearch (id, parent, project, name, nodeType) SELECT id, parent, project, name, nodeType FROM treeNode WHERE project = UNHEX(projectId) AND nodeType = childNodeType AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+		END IF;
 		SELECT COUNT(*) INTO totalResults FROM tempTreeNodeProjectSearch;
 		
 		IF os >= totalResults OR l = 0 THEN
