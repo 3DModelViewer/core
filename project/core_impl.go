@@ -228,7 +228,7 @@ func (ps *projectStore) GetImage(forUser string, id string) (*http.Response, err
 		return nil, err
 	} else if projects[0].ImageFileExtension == "" {
 		err := errors.New("project has no image file")
-		ps.log.Warning("ProjectStore.GetImage error: forUser: %q id: %q error: %v", forUser, id, err)
+		ps.log.Error("ProjectStore.GetImage error: forUser: %q id: %q error: %v", forUser, id, err)
 		return nil, err
 	} else {
 		if res, err := ps.vada.GetFile(id+"."+projects[0].ImageFileExtension, ps.ossBucketPrefix+id); err != nil {
