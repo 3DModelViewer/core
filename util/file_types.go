@@ -6,6 +6,7 @@ import (
 )
 
 func GetImageFileExtension(imageName string) (string, error) {
+	imageName = strings.ToLower(imageName)
 	switch {
 	case strings.HasSuffix(imageName, ".png"):
 		return "png", nil
