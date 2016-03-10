@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addUsers addUsers, removeUsers removeUsers, acceptInvite processInvite, declineInvite processInvite, getRole util.GetRole, getMemberships getMemberships, getMembershipInvites getMemberships, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
+func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addUsers addUsers, removeUsers removeUsers, acceptInvite processInvite, declineInvite processInvite, getRole util.GetRole, getMemberships getMemberships, getMembershipInvites getMemberships, getDescription getDescription, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
 	return &projectStore{
 		create:                 create,
 		delete:                 delete,
@@ -23,6 +23,7 @@ func newProjectStore(create create, delete delete, setName setName, setDescripti
 		getRole:                getRole,
 		getMemberships: getMemberships,
 		getMembershipInvites: getMembershipInvites,
+		getDescription: getDescription,
 		get:                    get,
 		getInUserContext:       getInUserContext,
 		getInUserInviteContext: getInUserInviteContext,
@@ -47,6 +48,7 @@ type projectStore struct {
 	getRole                util.GetRole
 	getMemberships getMemberships
 	getMembershipInvites getMemberships
+	getDescription getDescription
 	get                    get
 	getInUserContext       getInUserContext
 	getInUserInviteContext getInUserContext
@@ -219,6 +221,16 @@ func (ps *projectStore) GetMembershipInvites(forUser string, id string, role rol
 	} else {
 		ps.log.Info("ProjectStore.GetMembershipInvites success: forUser: %q id: %q totalResults: %d memberships: %v", forUser, id, totalResults, memberships)
 		return memberships, totalResults, nil
+	}
+}
+
+func (ps *projectStore) GetDescription(forUser string, id string) (string, error) {
+	if description, err := ps.getDescription(forUser, id); err != nil {
+		ps.log.Error("ProjectStore.GetDescription error: forUser: %q id: %q error: %v", forUser, id, err)
+		return description, err
+	} else {
+		ps.log.Info("ProjectStore.GetDescription success: forUser: %q id: %q", forUser, id)
+		return description, nil
 	}
 }
 

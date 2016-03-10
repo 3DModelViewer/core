@@ -14,13 +14,24 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		ps := make([]*Project, 0, colLen)
 		rowsScan := func(rows *sql.Rows) error {
 			p := Project{}
-			if err := rows.Scan(&p.Id, &p.Name, &p.Description, &p.Created, &p.ImageFileExtension); err != nil {
+			if err := rows.Scan(&p.Id, &p.Name, &p.Created, &p.ImageFileExtension); err != nil {
 				return err
 			}
 			ps = append(ps, &p)
 			return nil
 		}
 		return ps, util.SqlQuery(db, rowsScan, query, args...)
+	}
+
+	getterString := func(query string, args ...interface{}) (string, error) {
+		str := ""
+		rowsScan := func(rows *sql.Rows) error {
+			if err := rows.Scan(&str); err != nil {
+				return err
+			}
+			return nil
+		}
+		return str, util.SqlQuery(db, rowsScan, query, args...)
 	}
 
 	offsetGetter := func(query string, args ...interface{}) ([]*Project, int, error) {
@@ -31,7 +42,7 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 				return nil
 			}
 			p := Project{}
-			if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Description, &p.Created, &p.ImageFileExtension); err != nil {
+			if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Created, &p.ImageFileExtension); err != nil {
 				return err
 			}
 			ps = append(ps, &p)
@@ -65,7 +76,7 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 				return nil
 			}
 			p := ProjectInUserContext{}
-			if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Description, &p.Created, &p.ImageFileExtension, &p.Role); err != nil {
+			if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Created, &p.ImageFileExtension, &p.Role); err != nil {
 				return err
 			}
 			ps = append(ps, &p)
@@ -122,6 +133,10 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return offsetGetterMembership("CALL projectGetMembershipInvites(?, ?, ?, ?, ?, ?)", forUser, id, string(role), offset, limit, string(sortBy))
 	}
 
+	getDescription := func(forUser string, id string) (string, error) {
+		return getterString("CALL projectGetDescription(?, ?)", forUser, id)
+	}
+
 	get := func(forUser string, ids []string) ([]*Project, error) {
 		return getter("CALL projectGet(?, ?)", len(ids), forUser, strings.Join(ids, ","))
 	}
@@ -138,5 +153,5 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return offsetGetter("CALL projectSearch(?, ?, ?, ?, ?)", forUser, search, offset, limit, string(sortBy))
 	}
 
-	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addUsers, removeUsers, acceptInvite, declineInvite, util.GetRoleFunc(db), getMemberships, getMembershipInvites, get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
+	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addUsers, removeUsers, acceptInvite, declineInvite, util.GetRoleFunc(db), getMemberships, getMembershipInvites, getDescription, get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
 }
