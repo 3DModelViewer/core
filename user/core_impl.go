@@ -4,13 +4,12 @@ import (
 	"github.com/robsix/golog"
 )
 
-func newUserStore(login login, getCurrent getCurrent, setProperty setProperty, get get, getDescription getDescription, search search, log golog.Log) UserStore {
+func newUserStore(login login, getCurrent getCurrent, setProperty setProperty, get get, search search, log golog.Log) UserStore {
 	return &userStore{
 		login:                     login,
 		getCurrent:                getCurrent,
 		setProperty:               setProperty,
 		get:                       get,
-		getDescription:        getDescription,
 		search: search,
 		log:    log,
 	}
@@ -21,7 +20,6 @@ type userStore struct {
 	getCurrent                getCurrent
 	setProperty               setProperty
 	get                       get
-	getDescription 		  getDescription
 	search                    search
 	log                       golog.Log
 }
@@ -63,16 +61,6 @@ func (us *userStore) Get(ids []string) ([]*User, error) {
 	} else {
 		us.log.Info("UserStore.Get success: ids: %v", ids)
 		return users, nil
-	}
-}
-
-func (us *userStore) GetDescription(id string) (string, error) {
-	if description, err := us.getDescription(id); err != nil {
-		us.log.Error("UserStore.GetDescription error: id: %q error: %v", id, err)
-		return description, err
-	} else {
-		us.log.Info("UserStore.GetDescription success: id: %q", id)
-		return description, nil
 	}
 }
 

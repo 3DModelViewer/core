@@ -64,7 +64,6 @@ CREATE TABLE user(
     email VARCHAR(100) NOT NULL,
     superUser BOOL NOT NULL DEFAULT FALSE,
     lastLogin DATETIME NOT NULL,
-    description VARCHAR(250) NOT NULL,
     uiLanguage VARCHAR(10) NOT NULL,
     uiTheme VARCHAR(10) NOT NULL,
     locale VARCHAR(10) NOT NULL,
@@ -78,14 +77,13 @@ DROP TABLE IF EXISTS project;
 CREATE TABLE project(
 	id BINARY(16) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    description VARCHAR(250) NOT NULL,
     created DATETIME NOT NULL,
     imageFileExtension VARCHAR(10) NOT NULL,
     PRIMARY KEY (id),
     FULLTEXT (name)
 );
-INSERT INTO project (id, name, description, created, imageFileExtension)
-VALUES (UNHEX('00000000000000000000000000000000'), '', '', UTC_TIMESTAMP(), '');
+INSERT INTO project (id, name, created, imageFileExtension)
+VALUES (UNHEX('00000000000000000000000000000000'), '', UTC_TIMESTAMP(), '');
 
 DROP TABLE IF EXISTS role;
 CREATE TABLE role(
@@ -313,9 +311,9 @@ BEGIN
 	DECLARE opId BINARY(16) DEFAULT opUuid();
     
 	INSERT INTO user
-		(id, autodeskId, openId, username, avatar, fullName, email, superUser, lastLogin, description, uiLanguage, uiTheme, locale, timeFormat)
+		(id, autodeskId, openId, username, avatar, fullName, email, superUser, lastLogin, uiLanguage, uiTheme, locale, timeFormat)
 	VALUES
-		(opId, autodeskId, openId, username, avatar, fullName, email, false, UTC_TIMESTAMP(), '', 'en', 'dark', 'en-US', 'llll')
+		(opId, autodeskId, openId, username, avatar, fullName, email, false, UTC_TIMESTAMP(), 'en', 'dark', 'en-US', 'llll')
 	ON DUPLICATE KEY UPDATE
 		id = id,
         openId = VALUES(openId),
@@ -325,7 +323,6 @@ BEGIN
         email = VALUES(email),
         superUser = superUser,
         lastLogin = VALUES(lastLogin),
-        description = description,
         uiLanguage = uiLanguage,
         uiTheme = uiTheme,
         locale = locale,
@@ -340,14 +337,6 @@ DELIMITER $$
 CREATE PROCEDURE userGetCurrent(forUserId VARCHAR(32))
 BEGIN        
 	SELECT lex(u.id) AS id, u.avatar, u.fullName, u.superUser, u.uiLanguage, u.uiTheme, u.locale, u.timeFormat FROM user AS u WHERE u.id = UNHEX(forUserId);
-END$$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS userSetDescription;
-DELIMITER $$
-CREATE PROCEDURE userSetDescription(forUserId VARCHAR(32), newDescription VARCHAR(250))
-BEGIN
-	UPDATE user SET description = newDescription WHERE id = UNHEX(forUserId);
 END$$
 DELIMITER ;
 
@@ -380,14 +369,6 @@ DELIMITER $$
 CREATE PROCEDURE userSetTimeFormat(forUserId VARCHAR(32), newTimeFormat VARCHAR(20))
 BEGIN
 	UPDATE user SET timeFormat = newTimeFormat WHERE id = UNHEX(forUserId);
-END$$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS userGetDescription;
-DELIMITER $$
-CREATE PROCEDURE userGetDescription(userId VARCHAR(32))
-BEGIN
-	SELECT description FROM user WHERE id = UNHEX(userId);
 END$$
 DELIMITER ;
 
@@ -451,13 +432,13 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS projectCreate;
 DELIMITER $$
-CREATE PROCEDURE projectCreate(forUserId VARCHAR(32), newProjectId VARCHAR(32), name VARCHAR(100), description VARCHAR(1000), imageFileExtension VARCHAR(10))
+CREATE PROCEDURE projectCreate(forUserId VARCHAR(32), newProjectId VARCHAR(32), name VARCHAR(100), imageFileExtension VARCHAR(10))
 BEGIN    
     # create project
 	INSERT INTO project
-		(id, name, description, created, imageFileExtension)
+		(id, name, created, imageFileExtension)
 	VALUES
-		(UNHEX(newProjectId), name, description, UTC_TIMESTAMP(), imageFileExtension);
+		(UNHEX(newProjectId), name, UTC_TIMESTAMP(), imageFileExtension);
 	
     #create default root folder
 	INSERT INTO treeNode
@@ -504,23 +485,6 @@ BEGIN
 			'45002'
 		SET
 			MESSAGE_TEXT = 'Unauthorized action: project set name',
-            MYSQL_ERRNO = 45002;
-    END IF;
-END$$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS projectSetDescription;
-DELIMITER $$
-CREATE PROCEDURE projectSetDescription(forUserId VARCHAR(32), projectId VARCHAR(32), newDescription VARCHAR(250))
-BEGIN
-	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
-	IF forUserRole = 'owner' THEN
-		UPDATE project SET description = newDescription WHERE id = UNHEX(projectId);
-	ELSE
-		SIGNAL SQLSTATE 
-			'45002'
-		SET
-			MESSAGE_TEXT = 'Unauthorized action: project set description',
             MYSQL_ERRNO = 45002;
     END IF;
 END$$
@@ -719,22 +683,6 @@ BEGIN
 		SET
 			MESSAGE_TEXT = 'Unauthorized action: get membership invites',
             MYSQL_ERRNO = 45002;
-    END IF;
-END$$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS projectGetDescription;
-DELIMITER $$
-CREATE PROCEDURE projectGetDescription(forUserId VARCHAR(32), projectId VARCHAR(32))
-BEGIN
-	IF (SELECT COUNT(*) FROM permission WHERE project = UNHEX(projectId) AND user = UNHEX(forUserId)) = 1 THEN
-		SELECT description FROM project WHERE id = UNHEX(projectId);
-    ELSE
-		SIGNAL SQLSTATE 
-			'45002'
-		SET
-			MESSAGE_TEXT = 'Unauthorized action: get project description',
-			MYSQL_ERRNO = 45002;
     END IF;
 END$$
 DELIMITER ;

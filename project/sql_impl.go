@@ -23,17 +23,6 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return ps, util.SqlQuery(db, rowsScan, query, args...)
 	}
 
-	getterString := func(query string, args ...interface{}) (string, error) {
-		str := ""
-		rowsScan := func(rows *sql.Rows) error {
-			if err := rows.Scan(&str); err != nil {
-				return err
-			}
-			return nil
-		}
-		return str, util.SqlQuery(db, rowsScan, query, args...)
-	}
-
 	offsetGetter := func(query string, args ...interface{}) ([]*Project, int, error) {
 		ps := make([]*Project, 0, util.DefaultSqlOffsetQueryLimit)
 		totalResults := 0
@@ -85,8 +74,8 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return ps, totalResults, util.SqlQuery(db, rowsScan, query, args...)
 	}
 
-	create := func(forUser string, id string, name string, description string, imageFileExtension string) (*Project, error) {
-		if ps, err := getter("CALL projectCreate(?, ?, ?, ?, ?)", 1, forUser, id, name, description, imageFileExtension); len(ps) == 1 {
+	create := func(forUser string, id string, name string, imageFileExtension string) (*Project, error) {
+		if ps, err := getter("CALL projectCreate(?, ?, ?, ?)", 1, forUser, id, name, imageFileExtension); len(ps) == 1 {
 			return ps[0], err
 		} else {
 			return nil, err
@@ -133,10 +122,6 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return offsetGetterMembership("CALL projectGetMembershipInvites(?, ?, ?, ?, ?, ?)", forUser, id, string(role), offset, limit, string(sortBy))
 	}
 
-	getDescription := func(forUser string, id string) (string, error) {
-		return getterString("CALL projectGetDescription(?, ?)", forUser, id)
-	}
-
 	get := func(forUser string, ids []string) ([]*Project, error) {
 		return getter("CALL projectGet(?, ?)", len(ids), forUser, strings.Join(ids, ","))
 	}
@@ -153,5 +138,5 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return offsetGetter("CALL projectSearch(?, ?, ?, ?, ?)", forUser, search, offset, limit, string(sortBy))
 	}
 
-	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addUsers, removeUsers, acceptInvite, declineInvite, util.GetRoleFunc(db), getMemberships, getMembershipInvites, getDescription, get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
+	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addUsers, removeUsers, acceptInvite, declineInvite, util.GetRoleFunc(db), getMemberships, getMembershipInvites, get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
 }

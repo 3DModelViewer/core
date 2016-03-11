@@ -94,13 +94,9 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 		return getter("CALL userGet(?)", len(ids), strings.Join(ids, ","))
 	}
 
-	getDescription := func(id string) (string, error) {
-		return getterString("CALL userGetDescription(?)", id)
-	}
-
 	search := func(search string, offset int, limit int, sortBy sortBy) ([]*User, int, error) {
 		return offsetGetter("CALL userSearch(?, ?, ?, ?)", search, offset, limit, string(sortBy))
 	}
 
-	return newUserStore(login, getCurrent, setProperty, get, getDescription, search, log)
+	return newUserStore(login, getCurrent, setProperty, get, search, log)
 }

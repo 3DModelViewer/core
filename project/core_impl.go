@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addUsers addUsers, removeUsers removeUsers, acceptInvite processInvite, declineInvite processInvite, getRole util.GetRole, getMemberships getMemberships, getMembershipInvites getMemberships, getDescription getDescription, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
+func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addUsers addUsers, removeUsers removeUsers, acceptInvite processInvite, declineInvite processInvite, getRole util.GetRole, getMemberships getMemberships, getMembershipInvites getMemberships, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
 	return &projectStore{
 		create:                 create,
 		delete:                 delete,
@@ -23,7 +23,6 @@ func newProjectStore(create create, delete delete, setName setName, setDescripti
 		getRole:                getRole,
 		getMemberships: getMemberships,
 		getMembershipInvites: getMembershipInvites,
-		getDescription: getDescription,
 		get:                    get,
 		getInUserContext:       getInUserContext,
 		getInUserInviteContext: getInUserInviteContext,
@@ -48,7 +47,6 @@ type projectStore struct {
 	getRole                util.GetRole
 	getMemberships getMemberships
 	getMembershipInvites getMemberships
-	getDescription getDescription
 	get                    get
 	getInUserContext       getInUserContext
 	getInUserInviteContext getInUserContext
@@ -59,30 +57,30 @@ type projectStore struct {
 	log                    golog.Log
 }
 
-func (ps *projectStore) Create(forUser string, name string, description string, imageName string, image io.ReadCloser) (*Project, error) {
+func (ps *projectStore) Create(forUser string, name string, imageName string, image io.ReadCloser) (*Project, error) {
 	newProjectId := util.NewId()
 	var imageFileExtension string
 
 	json, err := ps.vada.CreateBucket(ps.ossBucketPrefix+newProjectId, ps.ossBucketPolicy)
 	if err != nil {
-		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q description: %q imageName: %q createBucketJson: %v error: %v", forUser, name, description, imageName, json, err)
+		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q imageName: %q createBucketJson: %v error: %v", forUser, name, imageName, json, err)
 		return nil, err
 	}
 
 	if image != nil {
 		if imageFileExtension, err = util.GetImageFileExtension(imageName); err != nil {
-			ps.log.Error("ProjectStore.Create error: forUser: %q name: %q description: %q imageFileExtension: %q error: %v", forUser, name, description, imageFileExtension, err)
+			ps.log.Error("ProjectStore.Create error: forUser: %q name: %q imageFileExtension: %q error: %v", forUser, name, imageFileExtension, err)
 		} else if json, err := ps.vada.UploadFile(newProjectId+"."+imageFileExtension, ps.ossBucketPrefix+newProjectId, image); err != nil {
-			ps.log.Error("ProjectStore.Create error: forUser: %q name: %q description: %q imageFileExtension: %q imageUploadJson: %v error: %v", forUser, name, description, imageFileExtension, json, err)
+			ps.log.Error("ProjectStore.Create error: forUser: %q name: %q imageFileExtension: %q imageUploadJson: %v error: %v", forUser, name, imageFileExtension, json, err)
 			imageFileExtension = ""
 		}
 	}
 
-	if proj, err := ps.create(forUser, newProjectId, name, description, imageFileExtension); err != nil {
-		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q description: %q imageFileExtension: %q image: %v error: %v", forUser, name, description, imageFileExtension, image, err)
+	if proj, err := ps.create(forUser, newProjectId, name, imageFileExtension); err != nil {
+		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q imageFileExtension: %q image: %v error: %v", forUser, name, imageFileExtension, image, err)
 		return proj, err
 	} else {
-		ps.log.Info("ProjectStore.Create success: forUser: %q name: %q description: %q imageFileExtension: %q", forUser, name, description, imageFileExtension)
+		ps.log.Info("ProjectStore.Create success: forUser: %q name: %q imageFileExtension: %q", forUser, name, imageFileExtension)
 		return proj, nil
 	}
 }
@@ -221,16 +219,6 @@ func (ps *projectStore) GetMembershipInvites(forUser string, id string, role rol
 	} else {
 		ps.log.Info("ProjectStore.GetMembershipInvites success: forUser: %q id: %q totalResults: %d memberships: %v", forUser, id, totalResults, memberships)
 		return memberships, totalResults, nil
-	}
-}
-
-func (ps *projectStore) GetDescription(forUser string, id string) (string, error) {
-	if description, err := ps.getDescription(forUser, id); err != nil {
-		ps.log.Error("ProjectStore.GetDescription error: forUser: %q id: %q error: %v", forUser, id, err)
-		return description, err
-	} else {
-		ps.log.Info("ProjectStore.GetDescription success: forUser: %q id: %q", forUser, id)
-		return description, nil
 	}
 }
 
