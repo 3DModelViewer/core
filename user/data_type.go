@@ -5,7 +5,6 @@ type CurrentUser struct {
 	SuperUser  bool   `json:"superUser"`
 	UILanguage string `json:"uiLanguage"`
 	UITheme    string `json:"uiTheme"`
-	Locale     string `json:"locale"`
 	TimeFormat string `json:"timeFormat"`
 }
 

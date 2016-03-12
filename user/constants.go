@@ -12,7 +12,6 @@ const (
 	Description = property("description")
 	UILanguage  = property("uilanguage")
 	UITheme     = property("uitheme")
-	Locale      = property("locale")
 	TimeFormat  = property("timeformat")
 )
 
@@ -36,8 +35,6 @@ func Property(p string) (property, error) {
 		return UILanguage, nil
 	case "uitheme":
 		return UITheme, nil
-	case "locale":
-		return Locale, nil
 	case "timeformat":
 		return TimeFormat, nil
 	default:

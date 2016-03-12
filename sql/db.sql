@@ -66,7 +66,6 @@ CREATE TABLE user(
     lastLogin DATETIME NOT NULL,
     uiLanguage VARCHAR(10) NOT NULL,
     uiTheme VARCHAR(10) NOT NULL,
-    locale VARCHAR(10) NOT NULL,
     timeFormat VARCHAR(20) NOT NULL,
     PRIMARY KEY (id),
     UNIQUE INDEX (autodeskId),
@@ -311,9 +310,9 @@ BEGIN
 	DECLARE opId BINARY(16) DEFAULT opUuid();
     
 	INSERT INTO user
-		(id, autodeskId, openId, username, avatar, fullName, email, superUser, lastLogin, uiLanguage, uiTheme, locale, timeFormat)
+		(id, autodeskId, openId, username, avatar, fullName, email, superUser, lastLogin, uiLanguage, uiTheme, timeFormat)
 	VALUES
-		(opId, autodeskId, openId, username, avatar, fullName, email, false, UTC_TIMESTAMP(), 'en', 'dark', 'en-US', 'llll')
+		(opId, autodeskId, openId, username, avatar, fullName, email, false, UTC_TIMESTAMP(), 'en', 'dark', 'llll')
 	ON DUPLICATE KEY UPDATE
 		id = id,
         openId = VALUES(openId),
@@ -325,7 +324,6 @@ BEGIN
         lastLogin = VALUES(lastLogin),
         uiLanguage = uiLanguage,
         uiTheme = uiTheme,
-        locale = locale,
         timeFormat = timeFormat;
         
 	SELECT lex(u.id) AS id FROM user AS u WHERE u.autodeskId = autodeskId;
@@ -336,7 +334,7 @@ DROP PROCEDURE IF EXISTS userGetCurrent;
 DELIMITER $$
 CREATE PROCEDURE userGetCurrent(forUserId VARCHAR(32))
 BEGIN        
-	SELECT lex(u.id) AS id, u.avatar, u.fullName, u.superUser, u.uiLanguage, u.uiTheme, u.locale, u.timeFormat FROM user AS u WHERE u.id = UNHEX(forUserId);
+	SELECT lex(u.id) AS id, u.avatar, u.fullName, u.superUser, u.uiLanguage, u.uiTheme, u.timeFormat FROM user AS u WHERE u.id = UNHEX(forUserId);
 END$$
 DELIMITER ;
 
@@ -353,14 +351,6 @@ DELIMITER $$
 CREATE PROCEDURE userSetUITheme(forUserId VARCHAR(32), newUITheme VARCHAR(10))
 BEGIN
 	UPDATE user SET uiTheme = newUITheme WHERE id = UNHEX(forUserId);
-END$$
-DELIMITER ;
-
-DROP PROCEDURE IF EXISTS userSetLocale;
-DELIMITER $$
-CREATE PROCEDURE userSetLocale(forUserId VARCHAR(32), newLocale VARCHAR(10))
-BEGIN
-	UPDATE user SET locale = newLocale WHERE id = UNHEX(forUserId);
 END$$
 DELIMITER ;
 

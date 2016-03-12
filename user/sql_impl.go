@@ -24,7 +24,7 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 	getterCurrentUser := func(query string, args ...interface{}) (*CurrentUser, error) {
 		cu := CurrentUser{}
 		rowsScan := func(rows *sql.Rows) error {
-			if err := rows.Scan(&cu.Id, &cu.Avatar, &cu.FullName, &cu.SuperUser, &cu.UILanguage, &cu.UITheme, &cu.Locale, &cu.TimeFormat); err != nil {
+			if err := rows.Scan(&cu.Id, &cu.Avatar, &cu.FullName, &cu.SuperUser, &cu.UILanguage, &cu.UITheme, &cu.TimeFormat); err != nil {
 				return err
 			}
 			return nil
@@ -79,8 +79,6 @@ func NewSqlUserStore(db *sql.DB, log golog.Log) UserStore {
 			partialProcName = "UILanguage"
 		case UITheme:
 			partialProcName = "UITheme"
-		case Locale:
-			partialProcName = "Locale"
 		case TimeFormat:
 			partialProcName = "TimeFormat"
 		default:
