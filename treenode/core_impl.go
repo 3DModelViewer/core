@@ -8,6 +8,7 @@ import (
 	"github.com/robsix/json"
 	"io"
 	"path/filepath"
+	"strings"
 )
 
 func newTreeNodeStore(createFolder createFolder, createDocument createDocument, createViewerState createViewerState, setName setName, move move, get get, getChildren getChildren, getParents getParents, globalSearch globalSearch, projectSearch projectSearch, getRole util.GetRole, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
@@ -80,7 +81,7 @@ func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name str
 		}
 	}
 
-	fileExtension := filepath.Ext(fileName)
+	fileExtension := strings.ToLower(filepath.Ext(fileName))
 	if len(fileExtension) >= 1 {
 		fileExtension = fileExtension[1:] //cut of the .
 	}

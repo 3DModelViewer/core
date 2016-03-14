@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"time"
+	"strings"
 )
 
 func newDocumentVersionStore(create create, get get, getForDocument getForDocument, getRole util.GetRole, bulkSetStatus bulkSetStatus, bulkSaveSheets bulkSaveSheets, statusCheckTimeout time.Duration, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) DocumentVersionStore {
@@ -63,7 +64,7 @@ func (dvs *documentVersionStore) Create(forUser string, document string, uploadC
 		}
 	}
 
-	fileExtension := filepath.Ext(fileName)
+	fileExtension := strings.ToLower(filepath.Ext(fileName))
 	if len(fileExtension) >= 1 {
 		fileExtension = fileExtension[1:] //cut of the .
 	}

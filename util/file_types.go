@@ -104,7 +104,7 @@ var fileTypes = map[string]string{
 }
 
 func getFileType(fileExtension string) (string, error) {
-	if fileType, exists := fileTypes[fileExtension]; exists {
+	if fileType, exists := fileTypes[strings.ToLower(fileExtension)]; exists {
 		return fileType, nil
 	} else {
 		return "", errors.New("unkonwn file type")
