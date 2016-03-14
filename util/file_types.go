@@ -37,6 +37,7 @@ var fileTypes = map[string]string{
 	//video
 	"mp4":  "video",
 	"ogg":  "video",
+	"ogv":  "video",
 	"webm": "video",
 	//audio
 	"aac":  "audio",
@@ -45,6 +46,7 @@ var fileTypes = map[string]string{
 	"mp2":  "audio",
 	"mpg":  "audio",
 	"mpeg": "audio",
+	"oga":  "audio",
 	"wav":  "audio",
 	//lmv
 	"3dm":           "lmv",
