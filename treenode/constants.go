@@ -1,6 +1,6 @@
 package treenode
 
-import(
+import (
 	"strings"
 )
 

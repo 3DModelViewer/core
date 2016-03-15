@@ -1,8 +1,8 @@
 package user
 
 import (
-	"strings"
 	"errors"
+	"strings"
 )
 
 const (

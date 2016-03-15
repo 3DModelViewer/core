@@ -8,8 +8,8 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
-	"time"
 	"strings"
+	"time"
 )
 
 func newDocumentVersionStore(create create, get get, getForDocument getForDocument, getRole util.GetRole, bulkSetStatus bulkSetStatus, bulkSaveSheets bulkSaveSheets, statusCheckTimeout time.Duration, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) DocumentVersionStore {
@@ -40,26 +40,26 @@ type documentVersionStore struct {
 	log                golog.Log
 }
 
-func (dvs *documentVersionStore) Create(forUser string, document string, uploadComment string, fileName string, file io.ReadCloser) (*DocumentVersion, error) {
+func (dvs *documentVersionStore) Create(forUser string, document string, uploadComment string, fileName string, file io.ReadCloser, thumbnailName string, thumbnail io.ReadCloser) (*DocumentVersion, error) {
 	if file == nil {
 		err := errors.New("file required")
-		dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q fileName: %q error: %v", forUser, document, fileName, err)
+		dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q fileName: %q thumbnailName: %q error: %v", forUser, document, fileName, thumbnailName, err)
 		return nil, err
 	}
 	defer file.Close()
 	var projectId string
 
 	if docVers, _, err := dvs.getForDocument(forUser, document, 0, 1, VersionAsc); err != nil || docVers == nil || len(docVers) == 0 {
-		dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q fileName: %q error: %v", forUser, document, fileName, err)
+		dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q fileName: %q thumbnailName: %q error: %v", forUser, document, fileName, thumbnailName, err)
 		return nil, err
 	} else {
 		projectId = docVers[0].Project
 		if role, err := dvs.getRole(forUser, projectId); err != nil {
-			dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q fileName: %q error: %v", forUser, document, fileName, err)
+			dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q fileName: %q thumbnailName: %q error: %v", forUser, document, fileName, thumbnailName, err)
 			return nil, err
 		} else if !(role == "owner" || role == "admin" || role == "organiser" || role == "contributor") {
 			err := errors.New("Unauthorized Action: treeNode create document")
-			dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q fileName: %q error: %v", forUser, document, fileName, err)
+			dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q fileName: %q thumbnailName: %q error: %v", forUser, document, fileName, thumbnailName, err)
 			return nil, err
 		}
 	}
@@ -72,11 +72,17 @@ func (dvs *documentVersionStore) Create(forUser string, document string, uploadC
 	if newDocVerId, status, urn, err := util.DocumentUploadHelper(fileName, file, dvs.ossBucketPrefix+projectId, dvs.vada, dvs.log); err != nil {
 		return nil, err
 	} else {
-		if dv, err := dvs.create(forUser, document, newDocVerId, uploadComment, fileExtension, urn, status); err != nil {
-			dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q uploadComment: %q fileName: %q error: %v", forUser, document, uploadComment, fileName, err)
+		thumbnailFileExtension := ""
+		if thumbnailFileExtension, err = util.GetImageFileExtension(thumbnailName); err == nil {
+			if _, err = dvs.vada.UploadFile(newDocVerId+".thumbnail."+thumbnailFileExtension, dvs.ossBucketPrefix+projectId, thumbnail); err != nil {
+				thumbnailFileExtension = ""
+			}
+		}
+		if dv, err := dvs.create(forUser, document, newDocVerId, uploadComment, fileExtension, urn, status, thumbnailFileExtension); err != nil {
+			dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q uploadComment: %q fileName: %q thumbnailName: %q error: %v", forUser, document, uploadComment, fileName, thumbnailName, err)
 			return nil, err
 		} else {
-			dvs.log.Info("DocumentVersionStore.Create success: forUser: %q document: %q uploadComment: %q fileName: %q", forUser, document, uploadComment, fileName)
+			dvs.log.Info("DocumentVersionStore.Create success: forUser: %q document: %q uploadComment: %q fileName: %q thumbnailName: %q", forUser, document, uploadComment, fileName, thumbnailName)
 			return convertToPublicFormat([]*_documentVersion{dv})[0], nil
 		}
 	}

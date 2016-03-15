@@ -6,7 +6,7 @@ import (
 )
 
 type createFolder func(forUser string, parent string, name string) (*TreeNode, error)
-type createDocument func(forUser string, parent string, name string, documentVersion string, uploadComment string, fileExtension string, urn string, status string) (*TreeNode, error)
+type createDocument func(forUser string, parent string, name string, documentVersion string, uploadComment string, fileExtension string, urn string, status string, thumbnailFileExtension string) (*TreeNode, error)
 type createViewerState func(forUser string, parent string, name string, comment string, definition *json.Json) (*TreeNode, error)
 type setName func(forUser string, id string, newName string) error
 type move func(forUser string, newParent string, ids []string) error
@@ -18,7 +18,7 @@ type projectSearch func(forUser string, project string, search string, nodeType 
 
 type TreeNodeStore interface {
 	CreateFolder(forUser string, parent string, name string) (*TreeNode, error)
-	CreateDocument(forUser string, parent string, name string, uploadComment string, fileName string, file io.ReadCloser) (*TreeNode, error)
+	CreateDocument(forUser string, parent string, name string, uploadComment string, fileName string, file io.ReadCloser, thumbnailName string, thumbnail io.ReadCloser) (*TreeNode, error)
 	CreateViewerState(forUser string, parent string, name string, createComment string, definition *json.Json) (*TreeNode, error)
 	SetName(forUser string, id string, newName string) error
 	Move(forUser string, newParent string, ids []string) error

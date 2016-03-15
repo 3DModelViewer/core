@@ -1,18 +1,18 @@
 package project
 
-import(
+import (
 	"strings"
 )
 
 const (
-	NameAsc     = sortBy("nameAsc")
-	NameDesc    = sortBy("nameDesc")
-	FullNameAsc     = sortBy("fullNameAsc")
-	FullNameDesc    = sortBy("fullNameDesc")
-	RoleAsc     = sortBy("roleAsc")
-	RoleDesc    = sortBy("roleDesc")
-	CreatedAsc  = sortBy("createdAsc")
-	CreatedDesc = sortBy("createdDesc")
+	NameAsc      = sortBy("nameAsc")
+	NameDesc     = sortBy("nameDesc")
+	FullNameAsc  = sortBy("fullNameAsc")
+	FullNameDesc = sortBy("fullNameDesc")
+	RoleAsc      = sortBy("roleAsc")
+	RoleDesc     = sortBy("roleDesc")
+	CreatedAsc   = sortBy("createdAsc")
+	CreatedDesc  = sortBy("createdDesc")
 
 	Any         = role("any") //used for filtering only
 	Owner       = role("owner")

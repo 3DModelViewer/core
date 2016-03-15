@@ -21,8 +21,8 @@ func newProjectStore(create create, delete delete, setName setName, setDescripti
 		acceptInvite:           acceptInvite,
 		declineInvite:          declineInvite,
 		getRole:                getRole,
-		getMemberships: getMemberships,
-		getMembershipInvites: getMembershipInvites,
+		getMemberships:         getMemberships,
+		getMembershipInvites:   getMembershipInvites,
 		get:                    get,
 		getInUserContext:       getInUserContext,
 		getInUserInviteContext: getInUserInviteContext,
@@ -45,8 +45,8 @@ type projectStore struct {
 	acceptInvite           processInvite
 	declineInvite          processInvite
 	getRole                util.GetRole
-	getMemberships getMemberships
-	getMembershipInvites getMemberships
+	getMemberships         getMemberships
+	getMembershipInvites   getMemberships
 	get                    get
 	getInUserContext       getInUserContext
 	getInUserInviteContext getInUserContext

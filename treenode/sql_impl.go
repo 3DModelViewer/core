@@ -53,8 +53,8 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		}
 	}
 
-	createDocument := func(forUser string, parent string, name string, documentVersion string, uploadComment string, fileExtension string, urn string, status string) (*TreeNode, error) {
-		if tns, err := getter("CALL treeNodeCreateDocument(?, ?, ?, ?, ?, ?, ?, ?)", 1, forUser, parent, name, documentVersion, uploadComment, fileExtension, urn, status); len(tns) == 1 {
+	createDocument := func(forUser string, parent string, name string, documentVersion string, uploadComment string, fileExtension string, urn string, status string, thumbnailFileExtension string) (*TreeNode, error) {
+		if tns, err := getter("CALL treeNodeCreateDocument(?, ?, ?, ?, ?, ?, ?, ?, ?)", 1, forUser, parent, name, documentVersion, uploadComment, fileExtension, urn, status, thumbnailFileExtension); len(tns) == 1 {
 			return tns[0], err
 		} else {
 			return nil, err

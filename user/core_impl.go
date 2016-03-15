@@ -6,22 +6,22 @@ import (
 
 func newUserStore(login login, getCurrent getCurrent, setProperty setProperty, get get, search search, log golog.Log) UserStore {
 	return &userStore{
-		login:                     login,
-		getCurrent:                getCurrent,
-		setProperty:               setProperty,
-		get:                       get,
-		search: search,
-		log:    log,
+		login:       login,
+		getCurrent:  getCurrent,
+		setProperty: setProperty,
+		get:         get,
+		search:      search,
+		log:         log,
 	}
 }
 
 type userStore struct {
-	login                     login
-	getCurrent                getCurrent
-	setProperty               setProperty
-	get                       get
-	search                    search
-	log                       golog.Log
+	login       login
+	getCurrent  getCurrent
+	setProperty setProperty
+	get         get
+	search      search
+	log         golog.Log
 }
 
 func (us *userStore) Login(autodeskId string, openId string, username string, avatar string, fullName string, email string) (string, error) {

@@ -1,6 +1,6 @@
 package documentversion
 
-import(
+import (
 	"strings"
 )
 
