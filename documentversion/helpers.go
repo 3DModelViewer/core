@@ -15,16 +15,16 @@ func convertToPublicFormat(dvs []*_documentVersion) []*DocumentVersion {
 	publicDvs := make([]*DocumentVersion, 0, len(dvs))
 	for _, dv := range dvs {
 		publicDvs = append(publicDvs, &DocumentVersion{
-			Id:                     dv.Id,
-			Document:               dv.Document,
-			Version:                dv.Version,
-			Project:                dv.Project,
-			Uploaded:               dv.Uploaded,
-			UploadComment:          dv.UploadComment,
-			UploadedBy:             dv.UploadedBy,
-			FileType:				dv.FileType,
-			FileExtension:          dv.FileExtension,
-			Status:                 dv.Status,
+			Id:            dv.Id,
+			Document:      dv.Document,
+			Version:       dv.Version,
+			Project:       dv.Project,
+			Uploaded:      dv.Uploaded,
+			UploadComment: dv.UploadComment,
+			UploadedBy:    dv.UploadedBy,
+			FileType:      dv.FileType,
+			FileExtension: dv.FileExtension,
+			Status:        dv.Status,
 			ThumbnailType: dv.ThumbnailType,
 		})
 	}

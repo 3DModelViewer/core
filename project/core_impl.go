@@ -16,7 +16,7 @@ func newProjectStore(create create, delete delete, setName setName, setDescripti
 		delete:                 delete,
 		setName:                setName,
 		setDescription:         setDescription,
-		setThumbnailType:  setThumbnailType,
+		setThumbnailType:       setThumbnailType,
 		addUsers:               addUsers,
 		removeUsers:            removeUsers,
 		acceptInvite:           acceptInvite,
@@ -40,7 +40,7 @@ type projectStore struct {
 	delete                 delete
 	setName                setName
 	setDescription         setDescription
-	setThumbnailType setThumbnailType
+	setThumbnailType       setThumbnailType
 	addUsers               addUsers
 	removeUsers            removeUsers
 	acceptInvite           processInvite

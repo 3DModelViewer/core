@@ -14,7 +14,7 @@ func DocumentUploadHelper(fileName string, file io.ReadCloser, thumbnailType str
 	if file == nil {
 		err := errors.New("file required")
 		log.Error("DocumentUploadHelper error: %v", err)
-		return "", "", "", err
+		return "", "", "", "", "", err
 	}
 	defer file.Close()
 	if thumbnail != nil {
@@ -33,21 +33,20 @@ func DocumentUploadHelper(fileName string, file io.ReadCloser, thumbnailType str
 	log.Info("DocumentUploadHelper starting upload of file: %q to bucket: %q", newDocVerId+"."+fileExtension, ossBucket)
 	uploadResp, err := vada.UploadFile(newDocVerId+"."+fileExtension, ossBucket, file)
 	if err != nil {
-		return "", "", "", err
+		return "", "", "", fExt, "", err
 	}
-
 
 	if thumbnail != nil && strings.HasPrefix(thumbnailType, "image/") {
 		if _, err = vada.UploadFile(newDocVerId+".tn.tn", ossBucket, thumbnail); err != nil {
 			tnType = ""
 		}
-	}else {
+	} else {
 		tnType = ""
 	}
 
 	urn, err = uploadResp.String("objectId")
 	if err != nil {
-		return newDocVerId, "", urn, err
+		return newDocVerId, "", urn, fExt, tnType, err
 	}
 
 	if fileType == "lmv" {

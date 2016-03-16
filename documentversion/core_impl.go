@@ -7,6 +7,7 @@ import (
 	"github.com/robsix/golog"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -62,7 +63,7 @@ func (dvs *documentVersionStore) Create(forUser string, document string, uploadC
 		}
 	}
 
-	if newDocVerId, status, fileExtension, thumbnailType, urn, err := util.DocumentUploadHelper(fileName, file, thumbnailType, thumbnail, dvs.ossBucketPrefix+projectId, dvs.vada, dvs.log); err != nil {
+	if newDocVerId, status, urn, fileExtension, thumbnailType, err := util.DocumentUploadHelper(fileName, file, thumbnailType, thumbnail, dvs.ossBucketPrefix+projectId, dvs.vada, dvs.log); err != nil {
 		return nil, err
 	} else {
 		if dv, err := dvs.create(forUser, document, newDocVerId, uploadComment, fileType, fileExtension, urn, status, thumbnailType); err != nil {
@@ -117,6 +118,28 @@ func (dvs *documentVersionStore) GetSeedFile(forUser string, id string) (*http.R
 		} else {
 			dvs.log.Info("DocumentVersionStore.GetSeedFile success: forUser: %q id: %q", forUser, id)
 			return res, err
+		}
+	}
+}
+
+func (dvs *documentVersionStore) GetThumbnail(forUser string, id string) (*http.Response, error) {
+	if docVers, err := dvs.get(forUser, []string{id}); err != nil || docVers == nil || len(docVers) == 0 {
+		dvs.log.Error("DocumentVersionStore.GetThumbnail error: forUser: %q id: %q error: %v", forUser, id, err)
+		return nil, err
+	} else {
+		docVer := docVers[0]
+		if strings.HasPrefix(docVer.ThumbnailType, "image/") {
+			if res, err := dvs.vada.GetFile(docVer.Id+".tn.tn", dvs.ossBucketPrefix+docVer.Project); err != nil {
+				dvs.log.Error("DocumentVersionStore.GetThumbnail error: forUser: %q id: %q error: %v", forUser, id, err)
+				return res, err
+			} else {
+				dvs.log.Info("DocumentVersionStore.GetThumbnail success: forUser: %q id: %q", forUser, id)
+				return res, err
+			}
+		} else {
+			err = errors.New("DocumentVersion does not have a thumbnail")
+			dvs.log.Error("DocumentVersionStore.GetThumbnail error: forUser: %q id: %q error: %v", forUser, id, err)
+			return nil, err
 		}
 	}
 }

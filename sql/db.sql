@@ -166,10 +166,11 @@ CREATE TABLE documentVersion(
     uploaded DATETIME NOT NULL,
     uploadComment VARCHAR(250) NOT NULL,
     uploadedBy BINARY(16) NOT NULL,
+    fileType VARCHAR(50) NOT NULL,
     fileExtension VARCHAR(10) NOT NULL,
     urn VARCHAR(1000) NOT NULL,
     status VARCHAR(50) NOT NULL,
-    thumbnailFileExtension VARCHAR(10) NOT NULL,
+    thumbnailType VARCHAR(50) NOT NULL,
 	PRIMARY KEY (document, version, id),
     UNIQUE INDEX (id),
     FOREIGN KEY (project) REFERENCES project(id) ON DELETE CASCADE,
@@ -945,11 +946,11 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS treeNodeCreateDocument;
 DELIMITER $$
-CREATE PROCEDURE treeNodeCreateDocument(forUserId VARCHAR(32), parentId VARCHAR(32), documentName VARCHAR(50), documentVersionId VARCHAR(32), uploadComment VARCHAR(250), fileExtension VARCHAR(10), urn VARCHAR(1000), status VARCHAR(50), thumbnailFileExtension VARCHAR(10))
+CREATE PROCEDURE treeNodeCreateDocument(forUserId VARCHAR(32), parentId VARCHAR(32), documentName VARCHAR(50), documentVersionId VARCHAR(32), uploadComment VARCHAR(250), fileType VARCHAR(50), fileExtension VARCHAR(10), urn VARCHAR(1000), status VARCHAR(50), thumbnailType VARCHAR(50))
 BEGIN
     DECLARE newTreeNodeId BINARY(16) DEFAULT opUuid();
 	CALL _treeNode_createNode(forUserId, newTreeNodeId, parentId, documentName, 'document');
-    CALL documentVersionCreate(forUserId, lex(newTreeNodeId), documentVersionId, uploadComment, fileExtension, urn, status, thumbnailFileExtension);
+    CALL documentVersionCreate(forUserId, lex(newTreeNodeId), documentVersionId, uploadComment, fileType, fileExtension, urn, status, thumbnailType);
 END$$
 DELIMITER ;
 
@@ -1297,16 +1298,16 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS documentVersionCreate;
 DELIMITER $$
-CREATE PROCEDURE documentVersionCreate(forUserId VARCHAR(32), documentId VARCHAR(32), documentVersionId VARCHAR(32), uploadComment VARCHAR(250), fileExtension VARCHAR(10), urn VARCHAR(1000), status VARCHAR(50), thumbnailFileExtension VARCHAR(10))
+CREATE PROCEDURE documentVersionCreate(forUserId VARCHAR(32), documentId VARCHAR(32), documentVersionId VARCHAR(32), uploadComment VARCHAR(250), fileType VARCHAR(50), fileExtension VARCHAR(10), urn VARCHAR(1000), status VARCHAR(50), thumbnailType VARCHAR(50))
 BEGIN
 	DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM treeNode WHERE id = UNHEX(documentId));
     DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
     DECLARE version INT DEFAULT (SELECT COUNT(*) FROM documentVersion WHERE document = UNHEX(documentId)) + 1;
     
     IF forUserRole IN ('owner', 'admin', 'organiser', 'contributor') THEN
-		INSERT INTO documentVersion (id, document, version, project, uploaded, uploadComment, uploadedBy, fileExtension, urn, status, thumbnailFileExtension)
-        VALUES (UNHEX(documentVersionId), UNHEX(documentId), version, projectId, UTC_TIMESTAMP(), uploadComment, UNHEX(forUserId), fileExtension, urn, status, thumbnailFileExtension);
-        SELECT lex(dv.id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, urn, status, thumbnailFileExtension FROM documentVersion AS dv WHERE dv.id = UNHEX(documentVersionId);
+		INSERT INTO documentVersion (id, document, version, project, uploaded, uploadComment, uploadedBy, fileType, fileExtension, urn, status, thumbnailType)
+        VALUES (UNHEX(documentVersionId), UNHEX(documentId), version, projectId, UTC_TIMESTAMP(), uploadComment, UNHEX(forUserId), fileType, fileExtension, urn, status, thumbnailType);
+        SELECT lex(dv.id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, fileType, fileExtension, urn, status, thumbnailType FROM documentVersion AS dv WHERE dv.id = UNHEX(documentVersionId);
 	ELSE
 		SIGNAL SQLSTATE 
 			'45002'
@@ -1336,7 +1337,7 @@ BEGIN
 		SELECT project INTO projectId FROM documentVersion WHERE id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
         SELECT COUNT(DISTINCT project) INTO distinctProjectsCount FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
         IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
-			SELECT lex(dv.id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, urn, status, thumbnailFileExtension FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
+			SELECT lex(dv.id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, fileType, fileExtension, urn, status, thumbnailType FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
         ELSE
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1374,9 +1375,9 @@ BEGIN
         IF os >= totalResults OR l = 0 THEN
 			SELECT totalResults;
 		ELSE IF sortBy = 'versionAsc' THEN
-			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, urn, status, thumbnailFileExtension FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version ASC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, fileType, fileExtension, urn, status, thumbnailType FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version ASC LIMIT os, l;
 		ELSE
-			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, FileExtension, urn, status, thumbnailFileExtension FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version DESC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, fileType, fileExtension, urn, status, thumbnailType FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version DESC LIMIT os, l;
         END IF;
         END IF;
     ELSE 

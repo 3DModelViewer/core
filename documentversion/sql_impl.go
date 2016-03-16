@@ -17,7 +17,7 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 		dvs := make([]*_documentVersion, 0, colLen)
 		rowsScan := func(rows *sql.Rows) error {
 			dv := _documentVersion{}
-			if err := rows.Scan(&dv.Id, &dv.Document, &dv.Version, &dv.Project, &dv.Uploaded, &dv.UploadComment, &dv.UploadedBy, &dv.FileExtension, &dv.Urn, &dv.Status, &dv.ThumbnailType); err != nil {
+			if err := rows.Scan(&dv.Id, &dv.Document, &dv.Version, &dv.Project, &dv.Uploaded, &dv.UploadComment, &dv.UploadedBy, &dv.FileType, &dv.FileExtension, &dv.Urn, &dv.Status, &dv.ThumbnailType); err != nil {
 				return err
 			}
 			dvs = append(dvs, &dv)
@@ -34,7 +34,7 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 				return nil
 			}
 			dv := _documentVersion{}
-			if err := rows.Scan(&totalResults, &dv.Id, &dv.Document, &dv.Version, &dv.Project, &dv.Uploaded, &dv.UploadComment, &dv.UploadedBy, &dv.FileExtension, &dv.Urn, &dv.Status, &dv.ThumbnailType); err != nil {
+			if err := rows.Scan(&totalResults, &dv.Id, &dv.Document, &dv.Version, &dv.Project, &dv.Uploaded, &dv.UploadComment, &dv.UploadedBy, &dv.FileType, &dv.FileExtension, &dv.Urn, &dv.Status, &dv.ThumbnailType); err != nil {
 				return err
 			}
 			dvs = append(dvs, &dv)
@@ -43,8 +43,8 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 		return dvs, totalResults, util.SqlQuery(db, rowsScan, query, args...)
 	}
 
-	create := func(forUser string, document string, documentVersion string, uploadComment, fileExtension string, urn string, status string, thumbnailFileExtension string) (*_documentVersion, error) {
-		if dvs, err := getter("CALL documentVersionCreate(?, ?, ?, ?, ?, ?, ?, ?)", 1, forUser, document, documentVersion, uploadComment, fileExtension, urn, status, thumbnailFileExtension); len(dvs) == 1 {
+	create := func(forUser string, document string, documentVersion string, uploadComment, fileType string, fileExtension string, urn string, status string, thumbnailType string) (*_documentVersion, error) {
+		if dvs, err := getter("CALL documentVersionCreate(?, ?, ?, ?, ?, ?, ?, ?, ?)", 1, forUser, document, documentVersion, uploadComment, fileType, fileExtension, urn, status, thumbnailType); len(dvs) == 1 {
 			return dvs[0], err
 		} else {
 			return nil, err
