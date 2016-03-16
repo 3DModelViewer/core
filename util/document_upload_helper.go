@@ -7,20 +7,25 @@ import (
 	"github.com/robsix/golog"
 	"io"
 	"path/filepath"
+	"strings"
 )
 
-func DocumentUploadHelper(fileName string, file io.ReadCloser, ossBucket string, vada vada.VadaClient, log golog.Log) (newDocVerId string, status string, urn string, err error) {
+func DocumentUploadHelper(fileName string, file io.ReadCloser, thumbnailType string, thumbnail io.ReadCloser, ossBucket string, vada vada.VadaClient, log golog.Log) (newDocVerId string, status string, urn string, fExt string, tnType string, err error) {
 	if file == nil {
 		err := errors.New("file required")
 		log.Error("DocumentUploadHelper error: %v", err)
 		return "", "", "", err
 	}
 	defer file.Close()
+	if thumbnail != nil {
+		defer thumbnail.Close()
+	}
 
 	fileExtension := filepath.Ext(fileName)
 	if len(fileExtension) >= 1 {
 		fileExtension = fileExtension[1:] //cut of the .
 	}
+	fExt = fileExtension
 
 	fileType, _ := getFileType(fileExtension)
 	newDocVerId = NewId()
@@ -29,6 +34,15 @@ func DocumentUploadHelper(fileName string, file io.ReadCloser, ossBucket string,
 	uploadResp, err := vada.UploadFile(newDocVerId+"."+fileExtension, ossBucket, file)
 	if err != nil {
 		return "", "", "", err
+	}
+
+
+	if thumbnail != nil && strings.HasPrefix(thumbnailType, "image/") {
+		if _, err = vada.UploadFile(newDocVerId+".tn.tn", ossBucket, thumbnail); err != nil {
+			tnType = ""
+		}
+	}else {
+		tnType = ""
 	}
 
 	urn, err = uploadResp.String("objectId")
@@ -49,7 +63,7 @@ func DocumentUploadHelper(fileName string, file io.ReadCloser, ossBucket string,
 		status = "wont_register"
 	}
 
-	return newDocVerId, status, urn, err
+	return newDocVerId, status, urn, fExt, tnType, err
 }
 
 func ToBase64(str string) string {

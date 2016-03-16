@@ -77,11 +77,11 @@ CREATE TABLE project(
 	id BINARY(16) NOT NULL,
     name VARCHAR(100) NOT NULL,
     created DATETIME NOT NULL,
-    imageFileExtension VARCHAR(10) NOT NULL,
+    thumbnailType VARCHAR(50) NOT NULL,
     PRIMARY KEY (id),
     FULLTEXT (name)
 );
-INSERT INTO project (id, name, created, imageFileExtension)
+INSERT INTO project (id, name, created, thumbnailType)
 VALUES (UNHEX('00000000000000000000000000000000'), '', UTC_TIMESTAMP(), '');
 
 DROP TABLE IF EXISTS role;
@@ -423,13 +423,13 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS projectCreate;
 DELIMITER $$
-CREATE PROCEDURE projectCreate(forUserId VARCHAR(32), newProjectId VARCHAR(32), name VARCHAR(100), imageFileExtension VARCHAR(10))
+CREATE PROCEDURE projectCreate(forUserId VARCHAR(32), newProjectId VARCHAR(32), name VARCHAR(100), thumbnailType VARCHAR(50))
 BEGIN    
     # create project
 	INSERT INTO project
-		(id, name, created, imageFileExtension)
+		(id, name, created, thumbnailType)
 	VALUES
-		(UNHEX(newProjectId), name, UTC_TIMESTAMP(), imageFileExtension);
+		(UNHEX(newProjectId), name, UTC_TIMESTAMP(), thumbnailType);
 	
     #create default root folder
 	INSERT INTO treeNode
@@ -443,7 +443,7 @@ BEGIN
 	VALUES
 		(UNHEX(newProjectId), UNHEX(forUserId), 'owner');
     
-	SELECT newProjectId AS id, name, created, imageFileExtension FROM project WHERE id = UNHEX(newProjectId);
+	SELECT newProjectId AS id, name, created, thumbnailType FROM project WHERE id = UNHEX(newProjectId);
 END$$
 DELIMITER ;
 
@@ -481,18 +481,18 @@ BEGIN
 END$$
 DELIMITER ;
 
-DROP PROCEDURE IF EXISTS projectSetImageFileExtension;
+DROP PROCEDURE IF EXISTS projectSetThumbnailType;
 DELIMITER $$
-CREATE PROCEDURE projectSetImageFileExtension(forUserId VARCHAR(32), projectId VARCHAR(32), newImageFileExtension VARCHAR(10))
+CREATE PROCEDURE projectSetThumbnailType(forUserId VARCHAR(32), projectId VARCHAR(32), newThumbnailType VARCHAR(10))
 BEGIN
 	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
 	IF forUserRole = 'owner' THEN
-		UPDATE project SET imageFileExtension = newImageFileExtension WHERE id = UNHEX(projectId);
+		UPDATE project SET thumbnailType = newThumbnailType WHERE id = UNHEX(projectId);
 	ELSE
 		SIGNAL SQLSTATE 
 			'45002'
 		SET
-			MESSAGE_TEXT = 'Unauthorized action: project set image file extension',
+			MESSAGE_TEXT = 'Unauthorized action: project set thumbnail type',
             MYSQL_ERRNO = 45002;
     END IF;
 END$$
@@ -689,7 +689,7 @@ BEGIN
 		SELECT COUNT(*) INTO projectsCount FROM tempIds;
         SELECT COUNT(*) INTO permissionsCount FROM permission AS p INNER JOIN tempIds AS t ON p.project = t.id WHERE p.user = UNHEX(forUserId);
         IF projectsCount = permissionsCount THEN
-			SELECT lex(p.id) AS id, name, created, imageFileExtension FROM project AS p INNER JOIN tempIds AS t ON p.id = t.id;
+			SELECT lex(p.id) AS id, name, created, thumbnailType FROM project AS p INNER JOIN tempIds AS t ON p.id = t.id;
         ELSE
 			SIGNAL SQLSTATE 
 				'45002'
@@ -725,7 +725,7 @@ BEGIN
 		id BINARY(16) NOT NULL,
 		name VARCHAR(100) NULL,
 		created DATETIME NOT NULL,
-		imageFileExtension VARCHAR(10) NULL,
+		thumbnailType VARCHAR(50) NULL,
         role VARCHAR(50),
 		PRIMARY KEY (id),
 		INDEX (name),
@@ -735,15 +735,15 @@ BEGIN
     
 	IF filterRole IS NULL OR filterRole = '' OR filterRole = 'any' THEN
 		IF forUserId = userId THEN
-			INSERT INTO tempProjectGetInUserContext SELECT p.id, p.name, p.created, p.imageFileExtension, perm1.role FROM project AS p INNER JOIN permission As perm1 ON p.Id = perm1.project WHERE perm1.user = UNHEX(forUserId) AND perm1.role IN ('owner', 'admin');
+			INSERT INTO tempProjectGetInUserContext SELECT p.id, p.name, p.created, p.thumbnailType, perm1.role FROM project AS p INNER JOIN permission As perm1 ON p.Id = perm1.project WHERE perm1.user = UNHEX(forUserId) AND perm1.role IN ('owner', 'admin');
         ELSE
-			INSERT INTO tempProjectGetInUserContext SELECT p.id, p.name, p.created, p.imageFileExtension, perm2.role FROM project AS p INNER JOIN permission As perm1 ON p.Id = perm1.project INNER JOIN permission perm2 ON perm1.project = perm2.project WHERE perm1.user = UNHEX(forUserId) AND perm1.role IN ('owner', 'admin') AND perm2.user = UNHEX(userId);
+			INSERT INTO tempProjectGetInUserContext SELECT p.id, p.name, p.created, p.thumbnailType, perm2.role FROM project AS p INNER JOIN permission As perm1 ON p.Id = perm1.project INNER JOIN permission perm2 ON perm1.project = perm2.project WHERE perm1.user = UNHEX(forUserId) AND perm1.role IN ('owner', 'admin') AND perm2.user = UNHEX(userId);
 		END IF;
     ELSE
 		IF forUserId = userId THEN
-			INSERT INTO tempProjectGetInUserContext SELECT p.id, p.name, p.created, p.imageFileExtension, perm1.role FROM project AS p INNER JOIN permission As perm1 ON p.Id = perm1.project WHERE perm1.user = UNHEX(forUserId) AND perm1.role IN ('owner', 'admin') AND perm1.role = filterRole;
+			INSERT INTO tempProjectGetInUserContext SELECT p.id, p.name, p.created, p.thumbnailType, perm1.role FROM project AS p INNER JOIN permission As perm1 ON p.Id = perm1.project WHERE perm1.user = UNHEX(forUserId) AND perm1.role IN ('owner', 'admin') AND perm1.role = filterRole;
         ELSE
-			INSERT INTO tempProjectGetInUserContext SELECT p.id, p.name, p.created, p.imageFileExtension, perm2.role FROM project AS p INNER JOIN permission As perm1 ON p.Id = perm1.project INNER JOIN permission perm2 ON perm1.project = perm2.project WHERE perm1.user = UNHEX(forUserId) AND perm1.role IN ('owner', 'admin') AND perm2.user = UNHEX(userId) AND perm2.role = filterRole;
+			INSERT INTO tempProjectGetInUserContext SELECT p.id, p.name, p.created, p.thumbnailType, perm2.role FROM project AS p INNER JOIN permission As perm1 ON p.Id = perm1.project INNER JOIN permission perm2 ON perm1.project = perm2.project WHERE perm1.user = UNHEX(forUserId) AND perm1.role IN ('owner', 'admin') AND perm2.user = UNHEX(userId) AND perm2.role = filterRole;
 		END IF;
 	END IF;
     
@@ -752,17 +752,17 @@ BEGIN
     IF os >= totalResults OR l = 0 THEN
 		SELECT totalResults;
     ELSE IF sortBy = 'roleDesc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY role DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType, role FROM tempProjectGetInUserContext ORDER BY role DESC LIMIT os, l;
     ELSE IF sortBy = 'roleAsc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY role ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType, role FROM tempProjectGetInUserContext ORDER BY role ASC LIMIT os, l;
     ELSE IF sortBy = 'createdDesc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY created DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType, role FROM tempProjectGetInUserContext ORDER BY created DESC LIMIT os, l;
     ELSE IF sortBy = 'createdAsc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY created ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType, role FROM tempProjectGetInUserContext ORDER BY created ASC LIMIT os, l;
     ELSE IF sortBy = 'nameDesc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY name DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType, role FROM tempProjectGetInUserContext ORDER BY name DESC LIMIT os, l;
 	ELSE
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension, role FROM tempProjectGetInUserContext ORDER BY name ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType, role FROM tempProjectGetInUserContext ORDER BY name ASC LIMIT os, l;
 	END IF;
     END IF;
     END IF;
@@ -797,7 +797,7 @@ BEGIN
 		id BINARY(16) NOT NULL,
 		name VARCHAR(100) NULL,
 		created DATETIME NOT NULL,
-		imageFileExtension VARCHAR(10) NULL,
+		thumbnailType VARCHAR(50) NULL,
         role VARCHAR(50),
 		PRIMARY KEY (id),
 		INDEX (name),
@@ -807,15 +807,15 @@ BEGIN
     
 	IF filterRole IS NULL OR filterRole = '' OR filterRole = 'any' THEN
 		IF forUserId = userId THEN
-			INSERT INTO tempProjectGetInUserInviteContext SELECT p.id, p.name, p.created, p.imageFileExtension, i.role FROM project AS p INNER JOIN invitation As i ON p.Id = i.project WHERE i.user = UNHEX(forUserId);
+			INSERT INTO tempProjectGetInUserInviteContext SELECT p.id, p.name, p.created, p.thumbnailType, i.role FROM project AS p INNER JOIN invitation As i ON p.Id = i.project WHERE i.user = UNHEX(forUserId);
         ELSE
-			INSERT INTO tempProjectGetInUserInviteContext SELECT p.id, p.name, p.created, p.imageFileExtension, i.role FROM project AS p INNER JOIN permission As perm1 ON p.Id = perm1.project INNER JOIN invitation i ON perm1.project = i.project WHERE perm1.user = UNHEX(forUserId) AND perm1.role IN ('owner', 'admin') AND i.user = UNHEX(userId);
+			INSERT INTO tempProjectGetInUserInviteContext SELECT p.id, p.name, p.created, p.thumbnailType, i.role FROM project AS p INNER JOIN permission As perm1 ON p.Id = perm1.project INNER JOIN invitation i ON perm1.project = i.project WHERE perm1.user = UNHEX(forUserId) AND perm1.role IN ('owner', 'admin') AND i.user = UNHEX(userId);
 		END IF;
     ELSE
 		IF forUserId = userId THEN
-			INSERT INTO tempProjectGetInUserInviteContext SELECT p.id, p.name, p.created, p.imageFileExtension, i.role FROM project AS p INNER JOIN invitation As i ON p.Id = i.project WHERE i.user = UNHEX(forUserId) AND i.role = filterRole;
+			INSERT INTO tempProjectGetInUserInviteContext SELECT p.id, p.name, p.created, p.thumbnailType, i.role FROM project AS p INNER JOIN invitation As i ON p.Id = i.project WHERE i.user = UNHEX(forUserId) AND i.role = filterRole;
         ELSE
-			INSERT INTO tempProjectGetInUserInviteContext SELECT p.id, p.name, p.created, p.imageFileExtension, i.role FROM project AS p INNER JOIN permission As perm1 ON p.Id = perm1.project INNER JOIN invitation i ON perm1.project = i.project WHERE perm1.user = UNHEX(forUserId) AND perm1.role IN ('owner', 'admin') AND i.user = UNHEX(userId) AND i.role = filterRole;
+			INSERT INTO tempProjectGetInUserInviteContext SELECT p.id, p.name, p.created, p.thumbnailType, i.role FROM project AS p INNER JOIN permission As perm1 ON p.Id = perm1.project INNER JOIN invitation i ON perm1.project = i.project WHERE perm1.user = UNHEX(forUserId) AND perm1.role IN ('owner', 'admin') AND i.user = UNHEX(userId) AND i.role = filterRole;
 		END IF;
 	END IF;
     
@@ -824,17 +824,17 @@ BEGIN
     IF os >= totalResults OR l = 0 THEN
 			SELECT totalResults;
     ELSE IF sortBy = 'roleDesc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY role DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType, role FROM tempProjectGetInUserInviteContext ORDER BY role DESC LIMIT os, l;
     ELSE IF sortBy = 'roleAsc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY role ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType, role FROM tempProjectGetInUserInviteContext ORDER BY role ASC LIMIT os, l;
     ELSE IF sortBy = 'createdDesc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY created DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType, role FROM tempProjectGetInUserInviteContext ORDER BY created DESC LIMIT os, l;
     ELSE IF sortBy = 'createdAsc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY created ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType, role FROM tempProjectGetInUserInviteContext ORDER BY created ASC LIMIT os, l;
     ELSE IF sortBy = 'nameDesc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY name DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType, role FROM tempProjectGetInUserInviteContext ORDER BY name DESC LIMIT os, l;
 	ELSE
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension, role FROM tempProjectGetInUserInviteContext ORDER BY name ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType, role FROM tempProjectGetInUserInviteContext ORDER BY name ASC LIMIT os, l;
 	END IF;
     END IF;
     END IF;
@@ -869,26 +869,26 @@ BEGIN
 		id BINARY(16) NOT NULL,
 		name VARCHAR(100) NULL,
 		created DATETIME NOT NULL,
-		imageFileExtension VARCHAR(10) NULL,
+		thumbnailType VARCHAR(50) NULL,
 		PRIMARY KEY (id),
 		INDEX (name),
 		INDEX (created)
 	);
     
-	INSERT INTO tempProjectSearch SELECT p.id, name, p.created, p.imageFileExtension FROM project AS p INNER JOIN permission AS perm ON p.id = perm.project WHERE perm.user = UNHEX(forUserId) AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE);
+	INSERT INTO tempProjectSearch SELECT p.id, name, p.created, p.thumbnailType FROM project AS p INNER JOIN permission AS perm ON p.id = perm.project WHERE perm.user = UNHEX(forUserId) AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE);
     
     SELECT COUNT(*) INTO totalResults FROM tempProjectSearch;
     
     IF os >= totalResults OR l = 0 THEN
 		SELECT totalResults;
     ELSE IF sortBy = 'createdDesc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension FROM tempProjectSearch ORDER BY created DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType FROM tempProjectSearch ORDER BY created DESC LIMIT os, l;
     ELSE IF sortBy = 'createdAsc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension FROM tempProjectSearch ORDER BY created ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType FROM tempProjectSearch ORDER BY created ASC LIMIT os, l;
     ELSE IF sortBy = 'nameDesc' THEN
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension FROM tempProjectSearch ORDER BY name DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType FROM tempProjectSearch ORDER BY name DESC LIMIT os, l;
     ELSE
-		SELECT totalResults, lex(id) AS id, name, created, imageFileExtension FROM tempProjectSearch ORDER BY name ASC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, name, created, thumbnailType FROM tempProjectSearch ORDER BY name ASC LIMIT os, l;
 	END IF;
     END IF;
     END IF;

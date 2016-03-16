@@ -7,8 +7,6 @@ import (
 	"github.com/robsix/golog"
 	"github.com/robsix/json"
 	"io"
-	"path/filepath"
-	"strings"
 )
 
 func newTreeNodeStore(createFolder createFolder, createDocument createDocument, createViewerState createViewerState, setName setName, move move, get get, getChildren getChildren, getParents getParents, globalSearch globalSearch, projectSearch projectSearch, getRole util.GetRole, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
@@ -57,49 +55,38 @@ func (tns *treeNodeStore) CreateFolder(forUser string, parent string, name strin
 	}
 }
 
-func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name string, uploadComment string, fileName string, file io.ReadCloser, thumbnailName string, thumbnail io.ReadCloser) (*TreeNode, error) {
+func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name string, uploadComment string, fileType string, fileName string, file io.ReadCloser, thumbnailType string, thumbnail io.ReadCloser) (*TreeNode, error) {
 	if file == nil {
 		err := errors.New("file required")
-		tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q thumbnailName: %q error: %v", forUser, parent, name, thumbnailName, err)
+		tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q fileType: %q thumbnailType: %q error: %v", forUser, parent, name, fileType, thumbnailType, err)
 		return nil, err
 	}
 	defer file.Close()
 	var projectId string
 
 	if treeNodes, err := tns.get(forUser, []string{parent}); err != nil || treeNodes == nil {
-		tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q thumbnailName: %q error: %v", forUser, parent, name, thumbnailName, err)
+		tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q fileType: %q thumbnailType: %q error: %v", forUser, parent, name, fileType, thumbnailType, err)
 		return nil, err
 	} else {
 		projectId = treeNodes[0].Project
 		if role, err := tns.getRole(forUser, projectId); err != nil {
-			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q thumbnailName: %q error: %v", forUser, parent, name, thumbnailName, err)
+			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q fileType: %q thumbnailType: %q error: %v", forUser, parent, name, fileType, thumbnailType, err)
 			return nil, err
 		} else if !(role == "owner" || role == "admin" || role == "organiser" || role == "contributor") {
 			err := errors.New("Unauthorized Action: treeNode create document")
-			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q thumbnailName: %q error: %v", forUser, parent, name, thumbnailName, err)
+			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q fileType: %q thumbnailType: %q error: %v", forUser, parent, name, fileType, thumbnailType, err)
 			return nil, err
 		}
 	}
 
-	fileExtension := strings.ToLower(filepath.Ext(fileName))
-	if len(fileExtension) >= 1 {
-		fileExtension = fileExtension[1:] //cut of the .
-	}
-
-	if newDocVerId, status, urn, err := util.DocumentUploadHelper(fileName, file, tns.ossBucketPrefix+projectId, tns.vada, tns.log); err != nil {
+	if newDocVerId, status, urn, fileExtension, thumbnailType, err := util.DocumentUploadHelper(fileName, file, thumbnailType, thumbnail, tns.ossBucketPrefix+projectId, tns.vada, tns.log); err != nil {
 		return nil, err
 	} else {
-		thumbnailFileExtension := ""
-		if thumbnailFileExtension, err = util.GetImageFileExtension(thumbnailName); err == nil {
-			if _, err = tns.vada.UploadFile(newDocVerId+".thumbnail."+thumbnailFileExtension, tns.ossBucketPrefix+projectId, thumbnail); err != nil {
-				thumbnailFileExtension = ""
-			}
-		}
-		if treeNode, err := tns.createDocument(forUser, parent, name, newDocVerId, uploadComment, fileExtension, urn, status, thumbnailFileExtension); err != nil {
-			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q uploadComment: %q fileName: %q thumbnailName: %q error: %v", forUser, parent, name, uploadComment, fileName, thumbnailName, err)
+		if treeNode, err := tns.createDocument(forUser, parent, name, newDocVerId, uploadComment, fileType, fileExtension, urn, status, thumbnailType); err != nil {
+			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q uploadComment: %q fileType: %q fileName: %q thumbnailType: %q error: %v", forUser, parent, name, uploadComment, fileType, fileName, thumbnailType, err)
 			return treeNode, err
 		} else {
-			tns.log.Info("TreeNodeStore.CreateDocument success: forUser: %q parent: %q name: %q uploadComment: %q fileName: %q thumbnailName: %q treeNode: %v", forUser, parent, name, uploadComment, fileName, thumbnailName, treeNode)
+			tns.log.Info("TreeNodeStore.CreateDocument success: forUser: %q parent: %q name: %q uploadComment: %q fileType: %q fileName: %q thumbnailType: %q treeNode: %v", forUser, parent, name, uploadComment, fileType, fileName, thumbnailType, treeNode)
 			return treeNode, nil
 		}
 	}

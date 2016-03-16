@@ -17,7 +17,8 @@ type DocumentVersion struct {
 	Uploaded               time.Time `json:"uploaded"`
 	UploadComment          string    `json:"uploadComment"`
 	UploadedBy             string    `json:"uploadedBy"`
+	FileType			   string 	 `json:"fileType"`
 	FileExtension          string    `json:"fileExtension"`
 	Status                 string    `json:"status"`
-	ThumbnailFileExtension string    `json:"thumbnailFileExtension"`
+	ThumbnailType 		   string    `json:"thumbnailType"`
 }

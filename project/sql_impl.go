@@ -14,7 +14,7 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		ps := make([]*Project, 0, colLen)
 		rowsScan := func(rows *sql.Rows) error {
 			p := Project{}
-			if err := rows.Scan(&p.Id, &p.Name, &p.Created, &p.ImageFileExtension); err != nil {
+			if err := rows.Scan(&p.Id, &p.Name, &p.Created, &p.ThumbnailType); err != nil {
 				return err
 			}
 			ps = append(ps, &p)
@@ -31,7 +31,7 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 				return nil
 			}
 			p := Project{}
-			if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Created, &p.ImageFileExtension); err != nil {
+			if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Created, &p.ThumbnailType); err != nil {
 				return err
 			}
 			ps = append(ps, &p)
@@ -65,7 +65,7 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 				return nil
 			}
 			p := ProjectInUserContext{}
-			if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Created, &p.ImageFileExtension, &p.Role); err != nil {
+			if err := rows.Scan(&totalResults, &p.Id, &p.Name, &p.Created, &p.ThumbnailType, &p.Role); err != nil {
 				return err
 			}
 			ps = append(ps, &p)
@@ -74,8 +74,8 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return ps, totalResults, util.SqlQuery(db, rowsScan, query, args...)
 	}
 
-	create := func(forUser string, id string, name string, imageFileExtension string) (*Project, error) {
-		if ps, err := getter("CALL projectCreate(?, ?, ?, ?)", 1, forUser, id, name, imageFileExtension); len(ps) == 1 {
+	create := func(forUser string, id string, name string, thumbnailType string) (*Project, error) {
+		if ps, err := getter("CALL projectCreate(?, ?, ?, ?)", 1, forUser, id, name, thumbnailType); len(ps) == 1 {
 			return ps[0], err
 		} else {
 			return nil, err
@@ -94,8 +94,8 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return util.SqlExec(db, "CALL projectSetDescription(?, ?, ?)", forUser, id, newDescription)
 	}
 
-	setImageFileExtension := func(forUser string, id string, newImageFileExtension string) error {
-		return util.SqlExec(db, "CALL projectSetImageFileExtension(?, ?, ?)", forUser, id, newImageFileExtension)
+	setThumbnailType := func(forUser string, id string, newThumbnailType string) error {
+		return util.SqlExec(db, "CALL projectSetThumbnailType(?, ?, ?)", forUser, id, newThumbnailType)
 	}
 
 	addUsers := func(forUser string, id string, role role, users []string) error {
@@ -138,5 +138,5 @@ func NewSqlProjectStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string
 		return offsetGetter("CALL projectSearch(?, ?, ?, ?, ?)", forUser, search, offset, limit, string(sortBy))
 	}
 
-	return newProjectStore(create, delete, setName, setDescription, setImageFileExtension, addUsers, removeUsers, acceptInvite, declineInvite, util.GetRoleFunc(db), getMemberships, getMembershipInvites, get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
+	return newProjectStore(create, delete, setName, setDescription, setThumbnailType, addUsers, removeUsers, acceptInvite, declineInvite, util.GetRoleFunc(db), getMemberships, getMembershipInvites, get, getInUserContext, getInUserInviteContext, search, vada, ossBucketPrefix, ossBucketPolicy, log)
 }

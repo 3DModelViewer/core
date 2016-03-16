@@ -7,15 +7,16 @@ import (
 	"github.com/robsix/golog"
 	"io"
 	"net/http"
+	"strings"
 )
 
-func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setImageFileExtension setImageFileExtension, addUsers addUsers, removeUsers removeUsers, acceptInvite processInvite, declineInvite processInvite, getRole util.GetRole, getMemberships getMemberships, getMembershipInvites getMemberships, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
+func newProjectStore(create create, delete delete, setName setName, setDescription setDescription, setThumbnailType setThumbnailType, addUsers addUsers, removeUsers removeUsers, acceptInvite processInvite, declineInvite processInvite, getRole util.GetRole, getMemberships getMemberships, getMembershipInvites getMemberships, get get, getInUserContext getInUserContext, getInUserInviteContext getInUserContext, search search, vada vada.VadaClient, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) ProjectStore {
 	return &projectStore{
 		create:                 create,
 		delete:                 delete,
 		setName:                setName,
 		setDescription:         setDescription,
-		setImageFileExtension:  setImageFileExtension,
+		setThumbnailType:  setThumbnailType,
 		addUsers:               addUsers,
 		removeUsers:            removeUsers,
 		acceptInvite:           acceptInvite,
@@ -39,7 +40,7 @@ type projectStore struct {
 	delete                 delete
 	setName                setName
 	setDescription         setDescription
-	setImageFileExtension  setImageFileExtension
+	setThumbnailType setThumbnailType
 	addUsers               addUsers
 	removeUsers            removeUsers
 	acceptInvite           processInvite
@@ -57,30 +58,29 @@ type projectStore struct {
 	log                    golog.Log
 }
 
-func (ps *projectStore) Create(forUser string, name string, imageName string, image io.ReadCloser) (*Project, error) {
+func (ps *projectStore) Create(forUser string, name string, thumbnailType string, thumbnail io.ReadCloser) (*Project, error) {
 	newProjectId := util.NewId()
-	var imageFileExtension string
 
 	json, err := ps.vada.CreateBucket(ps.ossBucketPrefix+newProjectId, ps.ossBucketPolicy)
 	if err != nil {
-		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q imageName: %q createBucketJson: %v error: %v", forUser, name, imageName, json, err)
+		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q thumbnailType: %q createBucketJson: %v error: %v", forUser, name, thumbnailType, json, err)
 		return nil, err
 	}
 
-	if image != nil {
-		if imageFileExtension, err = util.GetImageFileExtension(imageName); err != nil {
-			ps.log.Error("ProjectStore.Create error: forUser: %q name: %q imageFileExtension: %q error: %v", forUser, name, imageFileExtension, err)
-		} else if json, err := ps.vada.UploadFile(newProjectId+"."+imageFileExtension, ps.ossBucketPrefix+newProjectId, image); err != nil {
-			ps.log.Error("ProjectStore.Create error: forUser: %q name: %q imageFileExtension: %q imageUploadJson: %v error: %v", forUser, name, imageFileExtension, json, err)
-			imageFileExtension = ""
+	if thumbnail != nil && strings.HasPrefix(thumbnailType, "image/") {
+		if json, err := ps.vada.UploadFile(newProjectId, ps.ossBucketPrefix+newProjectId, thumbnail); err != nil {
+			ps.log.Error("ProjectStore.Create error: forUser: %q name: %q thumbnailType: %q imageUploadJson: %v error: %v", forUser, name, thumbnailType, json, err)
+			thumbnailType = ""
 		}
+	} else {
+		thumbnailType = ""
 	}
 
-	if proj, err := ps.create(forUser, newProjectId, name, imageFileExtension); err != nil {
-		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q imageFileExtension: %q image: %v error: %v", forUser, name, imageFileExtension, image, err)
+	if proj, err := ps.create(forUser, newProjectId, name, thumbnailType); err != nil {
+		ps.log.Error("ProjectStore.Create error: forUser: %q name: %q thumbnailType: %q image: %v error: %v", forUser, name, thumbnailType, thumbnail, err)
 		return proj, err
 	} else {
-		ps.log.Info("ProjectStore.Create success: forUser: %q name: %q imageFileExtension: %q", forUser, name, imageFileExtension)
+		ps.log.Info("ProjectStore.Create success: forUser: %q name: %q thumbnailType: %q", forUser, name, thumbnailType)
 		return proj, nil
 	}
 }
@@ -117,42 +117,48 @@ func (ps *projectStore) SetDescription(forUser string, id string, newDescription
 	return nil
 }
 
-func (ps *projectStore) SetImage(forUser string, id string, name string, image io.ReadCloser) error {
+func (ps *projectStore) SetThumbnail(forUser string, id string, thumbnailType string, thumbnail io.ReadCloser) error {
 
+	newThumbnailType := ""
 	role, err := ps.getRole(forUser, id)
 	if err != nil {
-		ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q name: %q image: %v error: %v", forUser, id, name, image, err)
+		ps.log.Error("ProjectStore.SetThumbnail error: forUser: %q id: %q thumbnailType: %q thumbnail: %v error: %v", forUser, id, thumbnailType, thumbnail, err)
 		return err
 	} else if role != "owner" {
 		err := errors.New("Unauthorized Action: none owner trying to set project image")
-		ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q name: %q image: %v error: %v", forUser, id, name, image, err)
+		ps.log.Error("ProjectStore.SetThumbnail error: forUser: %q id: %q thumbnailType: %q thumbnail: %v error: %v", forUser, id, thumbnailType, thumbnail, err)
 		return err
 	}
 
 	if projects, err := ps.get(forUser, []string{id}); err != nil {
-		ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q name: %q image: %v error: %v", forUser, id, name, image, err)
+		ps.log.Error("ProjectStore.SetThumbnail error: forUser: %q id: %q thumbnailType: %q thumbnail: %v error: %v", forUser, id, thumbnailType, thumbnail, err)
 		return err
 	} else if len(projects) != 1 {
 		err := errors.New("project not found")
-		ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q name: %q image: %v error: %v", forUser, id, name, image, err)
+		ps.log.Error("ProjectStore.SetThumbnail error: forUser: %q id: %q thumbnailType: %q thumbnail: %v error: %v", forUser, id, thumbnailType, thumbnail, err)
 		return err
-	} else if projects[0].ImageFileExtension != "" {
-		if err := ps.vada.DeleteFile(id+"."+projects[0].ImageFileExtension, ps.ossBucketPrefix+id); err != nil {
-			ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q name: %q image: %v error: %v", forUser, id, name, image, err)
-		}
-	}
-
-	if image != nil {
-		if imageFileExtension, err := util.GetImageFileExtension(name); err != nil {
-			ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q name: %q image: %v error: %v", forUser, id, name, image, err)
-			return err
-		} else if json, err := ps.vada.UploadFile(id+"."+imageFileExtension, ps.ossBucketPrefix+id, image); err != nil {
-			ps.log.Error("ProjectStore.SetImage error: forUser: %q id: %q imageFileExtension: %q image: %v imageUploadJson: %v error: %v", forUser, id, imageFileExtension, image, json, err)
+	} else if projects[0].ThumbnailType != "" {
+		if err := ps.vada.DeleteFile(id, ps.ossBucketPrefix+id); err != nil {
+			ps.log.Error("ProjectStore.SetThumbnail error: forUser: %q id: %q thumbnailType: %q thumbnail: %v error: %v", forUser, id, thumbnailType, thumbnail, err)
 			return err
 		}
 	}
 
-	ps.log.Info("ProjectStore.SetImage success: forUser: %q id: %q name: %q image: %v", forUser, id, name, image)
+	if thumbnail != nil && strings.HasPrefix(thumbnailType, "image/") {
+		if json, err := ps.vada.UploadFile(id, ps.ossBucketPrefix+id, thumbnail); err != nil {
+			ps.log.Error("ProjectStore.SetThumbnail error: forUser: %q id: %q thumbnailType: %q thumbnail: %v imageUploadJson: %v error: %v", forUser, id, thumbnailType, thumbnail, json, err)
+			return err
+		} else {
+			newThumbnailType = thumbnailType
+		}
+	}
+
+	if err := ps.setThumbnailType(forUser, id, newThumbnailType); err != nil {
+		ps.log.Error("ProjectStore.SetThumbnail error: forUser: %q id: %q thumbnailType: %q thumbnail: %v error: %v", forUser, id, thumbnailType, thumbnail, err)
+		return err
+	}
+
+	ps.log.Info("ProjectStore.SetThumbnail success: forUser: %q id: %q thumbnailType: %q thumbnail: %v", forUser, id, thumbnailType, thumbnail)
 	return nil
 }
 
@@ -222,20 +228,16 @@ func (ps *projectStore) GetMembershipInvites(forUser string, id string, role rol
 	}
 }
 
-func (ps *projectStore) GetImage(forUser string, id string) (*http.Response, error) {
-	if projects, err := ps.get(forUser, []string{id}); err != nil || len(projects) == 0 {
-		ps.log.Error("ProjectStore.GetImage error: forUser: %q id: %q error: %v", forUser, id, err)
-		return nil, err
-	} else if projects[0].ImageFileExtension == "" {
-		err := errors.New("project has no image file")
-		ps.log.Error("ProjectStore.GetImage error: forUser: %q id: %q error: %v", forUser, id, err)
+func (ps *projectStore) GetThumbnail(forUser string, id string) (*http.Response, error) {
+	if role, err := ps.getRole(forUser, id); err != nil || role == "" {
+		ps.log.Error("ProjectStore.GetThumbnail error: forUser: %q id: %q error: %v", forUser, id, err)
 		return nil, err
 	} else {
-		if res, err := ps.vada.GetFile(id+"."+projects[0].ImageFileExtension, ps.ossBucketPrefix+id); err != nil {
-			ps.log.Error("ProjectStore.GetImage error: forUser: %q id: %q error: %v", forUser, id, err)
+		if res, err := ps.vada.GetFile(id, ps.ossBucketPrefix+id); err != nil {
+			ps.log.Error("ProjectStore.GetThumbnail error: forUser: %q id: %q error: %v", forUser, id, err)
 			return res, err
 		} else {
-			ps.log.Info("ProjectStore.GetImage success: forUser: %q id: %q", forUser, id)
+			ps.log.Info("ProjectStore.GetThumbnail success: forUser: %q id: %q", forUser, id)
 			return res, err
 		}
 	}

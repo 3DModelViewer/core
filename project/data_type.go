@@ -8,7 +8,7 @@ type Project struct {
 	Id                 string    `json:"id"`
 	Name               string    `json:"name"`
 	Created            time.Time `json:"created"`
-	ImageFileExtension string    `json:"imageFileExtension"`
+	ThumbnailType 	   string    `json:"thumbnailType"`
 }
 
 type ProjectInUserContext struct {

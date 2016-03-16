@@ -22,9 +22,10 @@ func convertToPublicFormat(dvs []*_documentVersion) []*DocumentVersion {
 			Uploaded:               dv.Uploaded,
 			UploadComment:          dv.UploadComment,
 			UploadedBy:             dv.UploadedBy,
+			FileType:				dv.FileType,
 			FileExtension:          dv.FileExtension,
 			Status:                 dv.Status,
-			ThumbnailFileExtension: dv.ThumbnailFileExtension,
+			ThumbnailType: dv.ThumbnailType,
 		})
 	}
 	return publicDvs
