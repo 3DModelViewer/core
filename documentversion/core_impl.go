@@ -48,6 +48,10 @@ func (dvs *documentVersionStore) Create(forUser string, document string, uploadC
 	defer file.Close()
 	var projectId string
 
+	if thumbnail != nil {
+		defer thumbnail.Close()
+	}
+
 	if docVers, _, err := dvs.getForDocument(forUser, document, 0, 1, VersionAsc); err != nil || docVers == nil || len(docVers) == 0 {
 		dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q fileType: %q fileName: %q thumbnailType: %q error: %v", forUser, document, fileType, fileName, thumbnailType, err)
 		return nil, err
@@ -67,10 +71,10 @@ func (dvs *documentVersionStore) Create(forUser string, document string, uploadC
 		return nil, err
 	} else {
 		if dv, err := dvs.create(forUser, document, newDocVerId, uploadComment, fileType, fileExtension, urn, status, thumbnailType); err != nil {
-			dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q uploadComment: %q fileType: %q fileName: %q thumbnailType: %q error: %v", forUser, document, fileType, uploadComment, fileName, thumbnailType, err)
+			dvs.log.Error("DocumentVersionStore.Create error: forUser: %q document: %q uploadComment: %q fileType: %q fileExtension: %q thumbnailType: %q error: %v", forUser, document, fileType, uploadComment, fileExtension, thumbnailType, err)
 			return nil, err
 		} else {
-			dvs.log.Info("DocumentVersionStore.Create success: forUser: %q document: %q uploadComment: %q fileType: %q fileName: %q thumbnailType: %q", forUser, document, fileType, uploadComment, fileName, thumbnailType)
+			dvs.log.Info("DocumentVersionStore.Create success: forUser: %q document: %q uploadComment: %q fileType: %q fileExtension: %q thumbnailType: %q", forUser, document, fileType, uploadComment, fileExtension, thumbnailType)
 			return convertToPublicFormat([]*_documentVersion{dv})[0], nil
 		}
 	}

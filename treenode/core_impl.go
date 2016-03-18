@@ -64,6 +64,10 @@ func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name str
 	defer file.Close()
 	var projectId string
 
+	if thumbnail != nil {
+		defer thumbnail.Close()
+	}
+
 	if treeNodes, err := tns.get(forUser, []string{parent}); err != nil || treeNodes == nil {
 		tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q fileType: %q thumbnailType: %q error: %v", forUser, parent, name, fileType, thumbnailType, err)
 		return nil, err
@@ -83,10 +87,10 @@ func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name str
 		return nil, err
 	} else {
 		if treeNode, err := tns.createDocument(forUser, parent, name, newDocVerId, uploadComment, fileType, fileExtension, urn, status, thumbnailType); err != nil {
-			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q uploadComment: %q fileType: %q fileName: %q thumbnailType: %q error: %v", forUser, parent, name, uploadComment, fileType, fileName, thumbnailType, err)
+			tns.log.Error("TreeNodeStore.CreateDocument error: forUser: %q parent: %q name: %q uploadComment: %q fileType: %q fileExtension: %q thumbnailType: %q error: %v", forUser, parent, name, uploadComment, fileType, fileExtension, thumbnailType, err)
 			return treeNode, err
 		} else {
-			tns.log.Info("TreeNodeStore.CreateDocument success: forUser: %q parent: %q name: %q uploadComment: %q fileType: %q fileName: %q thumbnailType: %q treeNode: %v", forUser, parent, name, uploadComment, fileType, fileName, thumbnailType, treeNode)
+			tns.log.Info("TreeNodeStore.CreateDocument success: forUser: %q parent: %q name: %q uploadComment: %q fileType: %q fileExtension: %q thumbnailType: %q treeNode: %v", forUser, parent, name, uploadComment, fileType, fileExtension, thumbnailType, treeNode)
 			return treeNode, nil
 		}
 	}

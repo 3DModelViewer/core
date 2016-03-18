@@ -26,6 +26,7 @@ func DocumentUploadHelper(fileName string, file io.ReadCloser, thumbnailType str
 		fileExtension = fileExtension[1:] //cut of the .
 	}
 	fExt = fileExtension
+	tnType = thumbnailType
 
 	fileType, _ := getFileType(fileExtension)
 	newDocVerId = NewId()
