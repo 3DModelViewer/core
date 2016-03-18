@@ -143,7 +143,7 @@ CREATE TABLE treeNode(
 	id BINARY(16) NOT NULL,
 	parent BINARY(16) NULL,
     project BINARY(16) NOT NULL,
-    name VARCHAR(50) NOT NULL,
+    name VARCHAR(250) NOT NULL,
     nodeType VARCHAR(50) NOT NULL,
     PRIMARY KEY (project, id),
     UNIQUE INDEX (parent, nodeType, id),
@@ -183,7 +183,7 @@ CREATE TABLE sheet(
 	id BINARY(16) NOT NULL,
 	documentVersion BINARY(16) NOT NULL,
     project BINARY(16) NOT NULL,
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(250) NOT NULL,
     baseUrn VARCHAR(1000) NOT NULL,
     manifest VARCHAR(1000) NOT NULL,
     thumbnails VARCHAR(4000) NOT NULL,
@@ -905,7 +905,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS _treeNode_createNode;
 DELIMITER $$
-CREATE PROCEDURE _treeNode_createNode(forUserId VARCHAR(32), newTreeNodeId Binary(16), parentId VARCHAR(32), newNodeName VARCHAR(50), newNodeType VARCHAR(50))
+CREATE PROCEDURE _treeNode_createNode(forUserId VARCHAR(32), newTreeNodeId Binary(16), parentId VARCHAR(32), newNodeName VARCHAR(250), newNodeType VARCHAR(50))
 BEGIN
 	DECLARE projectId BINARY(16) DEFAULT NULL;
     DECLARE parentNodeType VARCHAR(50) DEFAULT NULL;
@@ -937,7 +937,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS treeNodeCreateFolder;
 DELIMITER $$
-CREATE PROCEDURE treeNodeCreateFolder(forUserId VARCHAR(32), parentId VARCHAR(32), folderName VARCHAR(50))
+CREATE PROCEDURE treeNodeCreateFolder(forUserId VARCHAR(32), parentId VARCHAR(32), folderName VARCHAR(250))
 BEGIN
     DECLARE newTreeNodeId BINARY(16) DEFAULT opUuid();
 	CALL _treeNode_createNode(forUserId, newTreeNodeId, parentId, folderName, 'folder');
@@ -946,7 +946,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS treeNodeCreateDocument;
 DELIMITER $$
-CREATE PROCEDURE treeNodeCreateDocument(forUserId VARCHAR(32), parentId VARCHAR(32), documentName VARCHAR(50), documentVersionId VARCHAR(32), uploadComment VARCHAR(250), fileType VARCHAR(50), fileExtension VARCHAR(10), urn VARCHAR(1000), status VARCHAR(50), thumbnailType VARCHAR(50))
+CREATE PROCEDURE treeNodeCreateDocument(forUserId VARCHAR(32), parentId VARCHAR(32), documentName VARCHAR(250), documentVersionId VARCHAR(32), uploadComment VARCHAR(250), fileType VARCHAR(50), fileExtension VARCHAR(10), urn VARCHAR(1000), status VARCHAR(50), thumbnailType VARCHAR(50))
 BEGIN
     DECLARE newTreeNodeId BINARY(16) DEFAULT opUuid();
 	CALL _treeNode_createNode(forUserId, newTreeNodeId, parentId, documentName, 'document');
@@ -956,7 +956,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS treeNodeCreateViewerState;
 DELIMITER $$
-CREATE PROCEDURE treeNodeCreateViewerState(forUserId VARCHAR(32), parentId VARCHAR(32), viewerStateName VARCHAR(50))
+CREATE PROCEDURE treeNodeCreateViewerState(forUserId VARCHAR(32), parentId VARCHAR(32), viewerStateName VARCHAR(250))
 BEGIN
     DECLARE newTreeNodeId BINARY(16) DEFAULT opUuid();
 	CALL _treeNode_createNode(forUserId, newTreeNodeId, parentId, viewerStateName, 'viewerState');
@@ -966,7 +966,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS treeNodeSetName;
 DELIMITER $$
-CREATE PROCEDURE treeNodeSetName(forUserId VARCHAR(32), treeNodeId VARCHAR(32), newName VARCHAR(50))
+CREATE PROCEDURE treeNodeSetName(forUserId VARCHAR(32), treeNodeId VARCHAR(32), newName VARCHAR(250))
 BEGIN
 	DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM treeNode WHERE id = UNHEX(treeNodeId));
 	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
@@ -1169,7 +1169,7 @@ BEGIN
 			depth INT NOT NULL,
 			id VARCHAR(32) NOT NULL,
 			parent VARCHAR(32) NULL,
-			name VARCHAR(50) NULL,
+			name VARCHAR(250) NULL,
             PRIMARY KEY (depth)
 		);
 		WHILE currentParent != rootParent DO
@@ -1213,7 +1213,7 @@ BEGIN
 		id BINARY(16) NOT NULL,
 		parent BINARY(16) NULL,
         project BINARY(16) NOT NULL,
-		name VARCHAR(50) NULL,
+		name VARCHAR(250) NULL,
         nodeType VARCHAR(50) NOT NULL,
         INDEX (name)
 	);
@@ -1262,7 +1262,7 @@ BEGIN
 		id BINARY(16) NOT NULL,
 		parent BINARY(16) NULL,
         project BINARY(16) NOT NULL,
-		name VARCHAR(50) NULL,
+		name VARCHAR(250) NULL,
         nodeType VARCHAR(50) NOT NULL,
         INDEX (name)
 	);
@@ -1396,7 +1396,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS sheetCreate;
 DELIMITER $$
-CREATE PROCEDURE sheetCreate(documentVersionId VARCHAR(32), projectId VARCHAR(32), name VARCHAR(100), baseUrn VARCHAR(1000), manifest VARCHAR(1000), thumbnails VARCHAR(4000), role VARCHAR(50))
+CREATE PROCEDURE sheetCreate(documentVersionId VARCHAR(32), projectId VARCHAR(32), name VARCHAR(250), baseUrn VARCHAR(1000), manifest VARCHAR(1000), thumbnails VARCHAR(4000), role VARCHAR(50))
 BEGIN
     INSERT INTO sheet (id, documentVersion, project, name, baseUrn, manifest, thumbnails, role)
     VALUES (opUuid(), UNHEX(documentVersionId), UNHEX(projectId), name, baseUrn, manifest, thumbnails, role);
@@ -1405,7 +1405,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS sheetSetName;
 DELIMITER $$
-CREATE PROCEDURE sheetSetName(forUserId VARCHAR(32), sheetId VARCHAR(32), newName VARCHAR(50))
+CREATE PROCEDURE sheetSetName(forUserId VARCHAR(32), sheetId VARCHAR(32), newName VARCHAR(250))
 BEGIN
 	DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM sheet WHERE id = UNHEX(sheetId));
 	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
@@ -1515,7 +1515,7 @@ BEGIN
 		id BINARY(16) NOT NULL,
 		documentVersion BINARY(16) NOT NULL,
 		project BINARY(16) NOT NULL,
-		name VARCHAR(100) NULL,
+		name VARCHAR(250) NULL,
 		baseUrn VARCHAR(1000) NOT NULL,
 		manifest VARCHAR(1000) NOT NULL,
 		thumbnails VARCHAR(4000) NULL,
@@ -1564,7 +1564,7 @@ BEGIN
 		id BINARY(16) NOT NULL,
 		documentVersion BINARY(16) NOT NULL,
 		project BINARY(16) NOT NULL,
-		name VARCHAR(100) NULL,
+		name VARCHAR(250) NULL,
 		baseUrn VARCHAR(1000) NOT NULL,
 		manifest VARCHAR(1000) NOT NULL,
 		thumbnails VARCHAR(4000) NULL,
