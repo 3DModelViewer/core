@@ -15,6 +15,7 @@ type getChildren func(forUser string, id string, nodeType nodeType, offset int, 
 type getParents func(forUser string, id string) ([]*TreeNode, error)
 type globalSearch func(forUser string, search string, nodeType nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error)
 type projectSearch func(forUser string, project string, search string, nodeType nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error)
+type getChildrenDocumentNodes func(forUser string, id string, offset int, limit int, sortBy sortBy) ([]*DocumentNode, int, error)
 
 type TreeNodeStore interface {
 	CreateFolder(forUser string, parent string, name string) (*TreeNode, error)
@@ -27,4 +28,6 @@ type TreeNodeStore interface {
 	GetParents(forUser string, id string) ([]*TreeNode, error)
 	GlobalSearch(forUser string, search string, nodeType nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error)
 	ProjectSearch(forUser string, project string, search string, nodeType nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error)
+	//special api for ui request efficiencu
+	GetChildrenDocumentNodes(forUser string, id string, offset int, limit int, sortBy sortBy) ([]*DocumentNode, int, error)
 }

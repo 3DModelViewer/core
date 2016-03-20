@@ -45,6 +45,25 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		return tns, totalResults, util.SqlQuery(db, rowsScan, query, args...)
 	}
 
+	offsetGetterChildrenDocumentNodes := func(query string, args ...interface{}) ([]*DocumentNode, int, error) {
+		tns := make([]*TreeNode, 0, util.DefaultSqlOffsetQueryLimit)
+		totalResults := 0
+		rowsScan := func(rows *sql.Rows) error {
+			if util.RowsContainsOnlyTotalResults(&totalResults, rows) {
+				return nil
+			}
+			dn := DocumentNode{}
+			scanNodeType := ""
+			if err := rows.Scan(&totalResults, &dn.Id, &dn.Parent, &dn.Project, &dn.Name, &scanNodeType, &dn.LatestVersion.Id, &dn.LatestVersion.Version, &dn.LatestVersion.Uploaded, &dn.LatestVersion.FileType, &dn.LatestVersion.FileExtension, &dn.LatestVersion.Status, &dn.LatestVersion.ThumbnailType); err != nil {
+				return err
+			}
+			dn.NodeType = nodeType(scanNodeType)
+			tns = append(tns, &dn)
+			return nil
+		}
+		return tns, totalResults, util.SqlQuery(db, rowsScan, query, args...)
+	}
+
 	createFolder := func(forUser string, parent string, name string) (*TreeNode, error) {
 		if tns, err := getter("CALL treeNodeCreateFolder(?, ?, ?)", 1, forUser, parent, name); len(tns) == 1 {
 			return tns[0], err
@@ -94,5 +113,9 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		return offsetGetter("CALL treeNodeProjectSearch(?, ?, ?, ?, ?, ?, ?)", forUser, project, search, string(nt), offset, limit, string(sortBy))
 	}
 
-	return newTreeNodeStore(createFolder, createDocument, createViewerState, setName, move, get, getChildren, getParents, globalSearch, projectSearch, util.GetRoleFunc(db), vada, ossBucketPrefix, log)
+	getChildrenDocumentNodes := func(forUser string, id string, offset int, limit int, sortBy sortBy) ([]*DocumentNode, int, error) {
+		return offsetGetterChildrenDocumentNodes("CALL treeNodeGetChildrenDocumentNodes(?, ?, ?, ?, ?)", forUser, id, offset, limit, string(sortBy))
+	}
+
+	return newTreeNodeStore(createFolder, createDocument, createViewerState, setName, move, get, getChildren, getParents, globalSearch, projectSearch, getChildrenDocumentNodes, util.GetRoleFunc(db), vada, ossBucketPrefix, log)
 }
