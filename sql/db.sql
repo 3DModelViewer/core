@@ -1325,7 +1325,7 @@ BEGIN
             ELSE IF sortBy = 'nameDesc' THEN
 				SELECT totalResults, lex(tn.id) AS id, lex(tn.parent) AS parent, lex(tn.project) AS project, tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN documentVersion AS dv ON tn.id = dv.document WHERE dv.version = (SELECT MAX(dv2.version) FROM documentVersion AS dv2 WHERE dv2.document = tn.id) AND parent = UNHEX(parentId) AND nodeType = 'document' ORDER BY name DESC LIMIT os, l;
             ELSE
-				SELECT totalResults, lex(tn.id) AS id, lex(tn.parent) AS parent, lex(tn.project) AS project, tn.name, tn.nodeType FROM treeNode AS tn WHERE dv.version = (SELECT MAX(dv2.version) FROM documentVersion AS dv2 WHERE dv2.document = tn.id) AND parent = UNHEX(parentId) AND nodeType = 'document' ORDER BY name ASC LIMIT os, l;
+				SELECT totalResults, lex(tn.id) AS id, lex(tn.parent) AS parent, lex(tn.project) AS project, tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN documentVersion AS dv ON tn.id = dv.document WHERE dv.version = (SELECT MAX(dv2.version) FROM documentVersion AS dv2 WHERE dv2.document = tn.id) AND parent = UNHEX(parentId) AND nodeType = 'document' ORDER BY name ASC LIMIT os, l;
             END IF;
             END IF;
 		ELSE 
