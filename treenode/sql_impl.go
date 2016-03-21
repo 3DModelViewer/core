@@ -46,7 +46,7 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 	}
 
 	offsetGetterChildrenDocumentNodes := func(query string, args ...interface{}) ([]*DocumentNode, int, error) {
-		tns := make([]*TreeNode, 0, util.DefaultSqlOffsetQueryLimit)
+		dns := make([]*DocumentNode, 0, util.DefaultSqlOffsetQueryLimit)
 		totalResults := 0
 		rowsScan := func(rows *sql.Rows) error {
 			if util.RowsContainsOnlyTotalResults(&totalResults, rows) {
@@ -58,10 +58,10 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 				return err
 			}
 			dn.NodeType = nodeType(scanNodeType)
-			tns = append(tns, &dn)
+			dns = append(dns, &dn)
 			return nil
 		}
-		return tns, totalResults, util.SqlQuery(db, rowsScan, query, args...)
+		return dns, totalResults, util.SqlQuery(db, rowsScan, query, args...)
 	}
 
 	createFolder := func(forUser string, parent string, name string) (*TreeNode, error) {
