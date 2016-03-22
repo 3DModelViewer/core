@@ -67,7 +67,7 @@ func (dvs *documentVersionStore) Create(forUser string, document string, uploadC
 		}
 	}
 
-	if newDocVerId, status, urn, fileExtension, thumbnailType, err := util.DocumentUploadHelper(fileName, file, thumbnailType, thumbnail, dvs.ossBucketPrefix+projectId, dvs.vada, dvs.log); err != nil {
+	if newDocVerId, status, urn, fileExtension, fileType, thumbnailType, err := util.DocumentUploadHelper(fileName, fileType, file, thumbnailType, thumbnail, dvs.ossBucketPrefix+projectId, dvs.vada, dvs.log); err != nil {
 		return nil, err
 	} else {
 		if dv, err := dvs.create(forUser, document, newDocVerId, uploadComment, fileType, fileExtension, urn, status, thumbnailType); err != nil {

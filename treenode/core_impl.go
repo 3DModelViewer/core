@@ -83,7 +83,7 @@ func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name str
 		}
 	}
 
-	if newDocVerId, status, urn, fileExtension, thumbnailType, err := util.DocumentUploadHelper(fileName, file, thumbnailType, thumbnail, tns.ossBucketPrefix+projectId, tns.vada, tns.log); err != nil {
+	if newDocVerId, status, urn, fileExtension, fileType, thumbnailType, err := util.DocumentUploadHelper(fileName, fileType, file, thumbnailType, thumbnail, tns.ossBucketPrefix+projectId, tns.vada, tns.log); err != nil {
 		return nil, err
 	} else {
 		if treeNode, err := tns.createDocument(forUser, parent, name, newDocVerId, uploadComment, fileType, fileExtension, urn, status, thumbnailType); err != nil {

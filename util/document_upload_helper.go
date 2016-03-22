@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func DocumentUploadHelper(fileName string, file io.ReadCloser, thumbnailType string, thumbnail io.ReadCloser, ossBucket string, vada vada.VadaClient, log golog.Log) (newDocVerId string, status string, urn string, fExt string, tnType string, err error) {
+func DocumentUploadHelper(fileName string, fileType string, file io.ReadCloser, thumbnailType string, thumbnail io.ReadCloser, ossBucket string, vada vada.VadaClient, log golog.Log) (newDocVerId string, status string, urn string, fExt string, fType string, tnType string, err error) {
 	if file == nil {
 		err := errors.New("file required")
 		log.Error("DocumentUploadHelper error: %v", err)
@@ -28,7 +28,7 @@ func DocumentUploadHelper(fileName string, file io.ReadCloser, thumbnailType str
 	fExt = fileExtension
 	tnType = thumbnailType
 
-	fileType, _ := getFileType(fileExtension)
+	fType, _ = getFileType(fileExtension)
 	newDocVerId = NewId()
 
 	log.Info("DocumentUploadHelper starting upload of file: %q to bucket: %q", newDocVerId+"."+fileExtension, ossBucket)
@@ -50,7 +50,7 @@ func DocumentUploadHelper(fileName string, file io.ReadCloser, thumbnailType str
 		return newDocVerId, "", urn, fExt, tnType, err
 	}
 
-	if fileType == "lmv" {
+	if fType == "lmv" {
 		log.Info("DocumentUploadHelper registering file: %q", newDocVerId+"."+fileExtension)
 		b64Urn := ToBase64(urn)
 		_, err = vada.RegisterFile(b64Urn)
@@ -63,7 +63,11 @@ func DocumentUploadHelper(fileName string, file io.ReadCloser, thumbnailType str
 		status = "wont_register"
 	}
 
-	return newDocVerId, status, urn, fExt, tnType, err
+	if fType != "lmv" && fType != "pdf" && fType != "text" {
+		fType = fileType
+	}
+
+	return newDocVerId, status, urn, fExt, fType, tnType, err
 }
 
 func ToBase64(str string) string {
