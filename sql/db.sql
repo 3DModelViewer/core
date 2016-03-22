@@ -1323,9 +1323,9 @@ BEGIN
 			IF os >= totalResults OR l = 0 THEN
 				SELECT totalResults;
             ELSE IF sortBy = 'nameDesc' THEN
-				SELECT totalResults, lex(tn.id) AS id, lex(tn.parent) AS parent, lex(tn.project) AS project, tn.name, tn.nodeType, lex(dv.id) AS latestVersionId, dv.version, dv.uploaded, dv.fileType, dv.fileExtension, dv.status, dv.thumbnailType FROM treeNode AS tn INNER JOIN documentVersion AS dv ON tn.id = dv.document WHERE dv.version = (SELECT MAX(dv2.version) FROM documentVersion AS dv2 WHERE dv2.document = tn.id) AND parent = UNHEX(parentId) AND nodeType = 'document' ORDER BY name DESC LIMIT os, l;
+				SELECT totalResults, lex(tn.id) AS id, lex(tn.parent) AS parent, lex(tn.project) AS project, tn.name, tn.nodeType, dv.id, dv.version, dv.uploaded, dv.fileType, dv.fileExtension, dv.status, dv.thumbnailType FROM treeNode AS tn INNER JOIN documentVersion AS dv ON tn.id = dv.document WHERE dv.version = (SELECT MAX(dv2.version) FROM documentVersion AS dv2 WHERE dv2.document = tn.id) AND parent = UNHEX(parentId) AND nodeType = 'document' ORDER BY name DESC LIMIT os, l;
             ELSE
-				SELECT totalResults, lex(tn.id) AS id, lex(tn.parent) AS parent, lex(tn.project) AS project, tn.name, tn.nodeType, lex(dv.id) AS latestVersionId, dv.version, dv.uploaded, dv.fileType, dv.fileExtension, dv.status, dv.thumbnailType FROM treeNode AS tn INNER JOIN documentVersion AS dv ON tn.id = dv.document WHERE dv.version = (SELECT MAX(dv2.version) FROM documentVersion AS dv2 WHERE dv2.document = tn.id) AND parent = UNHEX(parentId) AND nodeType = 'document' ORDER BY name ASC LIMIT os, l;
+				SELECT totalResults, lex(tn.id) AS id, lex(tn.parent) AS parent, lex(tn.project) AS project, tn.name, tn.nodeType, dv.id, dv.version, dv.uploaded, dv.fileType, dv.fileExtension, dv.status, dv.thumbnailType FROM treeNode AS tn INNER JOIN documentVersion AS dv ON tn.id = dv.document WHERE dv.version = (SELECT MAX(dv2.version) FROM documentVersion AS dv2 WHERE dv2.document = tn.id) AND parent = UNHEX(parentId) AND nodeType = 'document' ORDER BY name ASC LIMIT os, l;
             END IF;
             END IF;
 		ELSE 
