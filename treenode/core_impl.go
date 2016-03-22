@@ -9,7 +9,7 @@ import (
 	"io"
 )
 
-func newTreeNodeStore(createFolder createFolder, createDocument createDocument, createViewerState createViewerState, setName setName, move move, get get, getChildren getChildren, getParents getParents, globalSearch globalSearch, projectSearch projectSearch, getChildrenDocumentNodes getChildrenDocumentNodes, getRole util.GetRole, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
+func newTreeNodeStore(createFolder createFolder, createDocument createDocument, createViewerState createViewerState, setName setName, move move, get get, getChildren getChildren, getParents getParents, globalSearch globalSearch, projectSearch projectSearch, getRole util.GetRole, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
 	return &treeNodeStore{
 		createFolder:      createFolder,
 		createDocument:    createDocument,
@@ -21,7 +21,6 @@ func newTreeNodeStore(createFolder createFolder, createDocument createDocument, 
 		getParents:        getParents,
 		globalSearch:      globalSearch,
 		projectSearch:     projectSearch,
-		getChildrenDocumentNodes: getChildrenDocumentNodes,
 		getRole:           getRole,
 		vada:              vada,
 		ossBucketPrefix:   ossBucketPrefix,
@@ -40,7 +39,6 @@ type treeNodeStore struct {
 	getParents        getParents
 	globalSearch      globalSearch
 	projectSearch     projectSearch
-	getChildrenDocumentNodes getChildrenDocumentNodes
 	getRole           util.GetRole
 	vada              vada.VadaClient
 	ossBucketPrefix   string
@@ -172,16 +170,6 @@ func (tns *treeNodeStore) ProjectSearch(forUser string, project string, search s
 		return treeNodes, totalResults, err
 	} else {
 		tns.log.Info("TreeNodeStore.ProjectSearch success: forUser: %q project: %q search: %q nodeType: %q offset: %d limit: %d sortBy: %q totalResults: %d", forUser, project, search, nodeType, offset, limit, sortBy, totalResults)
-		return treeNodes, totalResults, nil
-	}
-}
-
-func (tns *treeNodeStore) GetChildrenDocumentNodes(forUser string, id string, offset int, limit int, sortBy sortBy) ([]*DocumentNode, int, error) {
-	if treeNodes, totalResults, err := tns.getChildrenDocumentNodes(forUser, id, offset, limit, sortBy); err != nil {
-		tns.log.Error("TreeNodeStore.GetChildrenDocumentNodes error: forUser: %q id: %q offset: %d limit: %d sortBy: %q error: %v", forUser, id, offset, limit, sortBy, err)
-		return treeNodes, totalResults, err
-	} else {
-		tns.log.Info("TreeNodeStore.GetChildrenDocumentNodes success: forUser: %q id: %q offset: %d limit: %d sortBy: %q totalResults: %d", forUser, id, offset, limit, sortBy, totalResults)
 		return treeNodes, totalResults, nil
 	}
 }
