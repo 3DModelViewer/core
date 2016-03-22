@@ -11,7 +11,7 @@ type TreeNode struct {
 
 type DocumentNode struct {
 	TreeNode
-	LatestVersion latestVersion `json:"latestVersion"`
+	LatestVersion latestVersion
 }
 
 type latestVersion struct{

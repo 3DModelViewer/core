@@ -1292,59 +1292,6 @@ BEGIN
 END$$
 DELIMITER ;
 
-DROP PROCEDURE IF EXISTS treeNodeGetChildrenDocumentNodes;
-DELIMITER $$
-CREATE PROCEDURE treeNodeGetChildrenDocumentNodes(forUserId VARCHAR(32), parentId VARCHAR(32), os INT, l INT, sortBy VARCHAR(50))
-BEGIN
-	DECLARE projectId BINARY(16) DEFAULT NULL;
-    DECLARE parentNodeType VARCHAR(50) DEFAULT NULL;
-	DECLARE forUserRole VARCHAR(50) DEFAULT NULL;
-    DECLARE totalResults INT DEFAULT 0;
-    
-	IF os < 0 THEN
-		SET os = 0;
-	END IF;
-    
-	IF l < 0 THEN
-		SET l = 0;
-	END IF;
-    
-	IF l > 100 THEN
-		SET l = 100;
-	END IF;
-    
-    SELECT project, nodeType INTO projectId, parentNodeType FROM treeNode WHERE id = UNHEX(parentId);
-    SET forUserRole = _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
-    
-    IF parentNodeType = 'folder' THEN
-		IF forUserRole IS NOT NULL THEN
-			SELECT COUNT(*) INTO totalResults FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = 'document';
-            
-			IF os >= totalResults OR l = 0 THEN
-				SELECT totalResults;
-            ELSE IF sortBy = 'nameDesc' THEN
-				SELECT totalResults, lex(tn.id) AS id, lex(tn.parent) AS parent, lex(tn.project) AS project, tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN documentVersion AS dv ON tn.id = dv.document WHERE dv.version = (SELECT MAX(dv2.version) FROM documentVersion AS dv2 WHERE dv2.document = tn.id) AND parent = UNHEX(parentId) AND nodeType = 'document' ORDER BY name DESC LIMIT os, l;
-            ELSE
-				SELECT totalResults, lex(tn.id) AS id, lex(tn.parent) AS parent, lex(tn.project) AS project, tn.name, tn.nodeType FROM treeNode AS tn WHERE dv.version = (SELECT MAX(dv2.version) FROM documentVersion AS dv2 WHERE dv2.document = tn.id) AND parent = UNHEX(parentId) AND nodeType = 'document' ORDER BY name ASC LIMIT os, l;
-            END IF;
-            END IF;
-		ELSE 
-			SIGNAL SQLSTATE 
-				'45002'
-			SET
-				MESSAGE_TEXT = 'Unauthorized action: treeNode get children document nodes',
-				MYSQL_ERRNO = 45002;
-		END IF;
-	ELSE
-		SIGNAL SQLSTATE 
-			'45003'
-		SET
-			MESSAGE_TEXT = 'Invalid action: get treeNodes from a none folder parent',
-            MYSQL_ERRNO = 45003;
-	END IF;
-END$$
-DELIMITER ;
-
 # END TREENODE
 
 # START DOCUMENTVERSION

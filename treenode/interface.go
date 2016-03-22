@@ -28,6 +28,6 @@ type TreeNodeStore interface {
 	GetParents(forUser string, id string) ([]*TreeNode, error)
 	GlobalSearch(forUser string, search string, nodeType nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error)
 	ProjectSearch(forUser string, project string, search string, nodeType nodeType, offset int, limit int, sortBy sortBy) ([]*TreeNode, int, error)
-	//special api for ui request efficiency
+	//special api for ui request efficiencu
 	GetChildrenDocumentNodes(forUser string, id string, offset int, limit int, sortBy sortBy) ([]*DocumentNode, int, error)
 }
