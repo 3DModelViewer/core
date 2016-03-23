@@ -11,9 +11,10 @@ import (
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"time"
+	"github.com/modelhub/core/helper"
 )
 
-func NewSqlCoreApi(mySqlConnection string, vada vada.VadaClient, statusCheckTimeout time.Duration, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) (CoreApi, error) {
+func NewSqlCoreApi(mySqlConnection string, vada vada.VadaClient, statusCheckTimeout time.Duration, batchGetTimeout time.Duration, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) (CoreApi, error) {
 	if db, err := sql.Open("mysql", mySqlConnection); err != nil {
 		return nil, err
 	} else {
@@ -22,6 +23,7 @@ func NewSqlCoreApi(mySqlConnection string, vada vada.VadaClient, statusCheckTime
 		tns := treenode.NewSqlTreeNodeStore(db, vada, ossBucketPrefix, log)
 		dvs := documentversion.NewSqlDocumentVersionStore(db, statusCheckTimeout, vada, ossBucketPrefix, log)
 		ss := sheet.NewSqlSheetStore(db, vada, log)
-		return newCoreApi(us, ps, tns, dvs, ss)
+		h := helper.NewHelper(tns, dvs, ss, batchGetTimeout, log)
+		return newCoreApi(us, ps, tns, dvs, ss, h)
 	}
 }

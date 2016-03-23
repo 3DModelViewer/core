@@ -6,6 +6,7 @@ import (
 	"github.com/modelhub/core/sheet"
 	"github.com/modelhub/core/treenode"
 	"github.com/modelhub/core/user"
+	"github.com/modelhub/core/helper"
 )
 
 type CoreApi interface {
@@ -14,4 +15,5 @@ type CoreApi interface {
 	TreeNode() treenode.TreeNodeStore
 	DocumentVersion() documentversion.DocumentVersionStore
 	Sheet() sheet.SheetStore
+	Helper() helper.Helper
 }

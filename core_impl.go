@@ -7,9 +7,10 @@ import (
 	"github.com/modelhub/core/sheet"
 	"github.com/modelhub/core/treenode"
 	"github.com/modelhub/core/user"
+	"github.com/modelhub/core/helper"
 )
 
-func newCoreApi(us user.UserStore, ps project.ProjectStore, tns treenode.TreeNodeStore, dvs documentversion.DocumentVersionStore, ss sheet.SheetStore) (CoreApi, error) {
+func newCoreApi(us user.UserStore, ps project.ProjectStore, tns treenode.TreeNodeStore, dvs documentversion.DocumentVersionStore, ss sheet.SheetStore, h helper.Helper) (CoreApi, error) {
 	if us == nil || ps == nil || tns == nil || dvs == nil || ss == nil {
 		return nil, errors.New("nil values to CoreApi parameters or not allowed")
 	}
@@ -19,6 +20,7 @@ func newCoreApi(us user.UserStore, ps project.ProjectStore, tns treenode.TreeNod
 		tns: tns,
 		dvs: dvs,
 		ss:  ss,
+		h: h,
 	}, nil
 }
 
@@ -28,6 +30,7 @@ type coreApi struct {
 	tns treenode.TreeNodeStore
 	dvs documentversion.DocumentVersionStore
 	ss  sheet.SheetStore
+	h helper.Helper
 }
 
 func (ca *coreApi) User() user.UserStore {
@@ -48,4 +51,8 @@ func (ca *coreApi) DocumentVersion() documentversion.DocumentVersionStore {
 
 func (ca *coreApi) Sheet() sheet.SheetStore {
 	return ca.ss
+}
+
+func (ca *coreApi) Helper() helper.Helper {
+	return ca.h
 }
