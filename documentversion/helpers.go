@@ -102,7 +102,7 @@ func performStatusCheck(dvs []*_documentVersion, bulkStatusUpdate bulkSetStatus,
 			checkCount--
 			successes = append(successes, statusJson)
 		case <-timeOutChan:
-			log.Warning("DocumentVersionStore performStatusCheck timed out after %v with %s open updates awaiting response", statusCheckTimeOut, checkCount)
+			log.Warning("DocumentVersionStore performStatusCheck timed out after %v with %d open updates awaiting response", statusCheckTimeOut, checkCount)
 			timedOut = true
 		}
 		if timedOut {
