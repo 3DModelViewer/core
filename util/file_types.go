@@ -23,6 +23,8 @@ func GetImageFileExtension(imageName string) (string, error) {
 }
 
 var fileTypes = map[string]string{
+	//md
+	"md": "md",
 	//odp
 	"odp": "odp",
 	//pdf

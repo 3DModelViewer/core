@@ -29,7 +29,7 @@ func DocumentUploadHelper(fileName string, fileType string, file io.ReadCloser, 
 	tnType = thumbnailType
 
 	fType, _ = getFileType(fileExtension)
-	if fType != "lmv" && fType != "pdf" && fType != "text" && fType != "odp" {
+	if fType != "lmv" && fType != "pdf" && fType != "text" && fType != "odp" && fType != "md" {
 		fType = fileType
 	}
 	newDocVerId = NewId()
