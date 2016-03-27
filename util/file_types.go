@@ -5,23 +5,6 @@ import (
 	"strings"
 )
 
-func GetImageFileExtension(imageName string) (string, error) {
-	imageName = strings.ToLower(imageName)
-	switch {
-	case strings.HasSuffix(imageName, ".png"):
-		return "png", nil
-	case strings.HasSuffix(imageName, ".jpeg"):
-		return "jpeg", nil
-	case strings.HasSuffix(imageName, ".jpg"):
-		return "jpeg", nil
-	case strings.HasSuffix(imageName, ".gif"):
-		return "gif", nil
-	case strings.HasSuffix(imageName, ".webp"):
-		return "webp", nil
-	}
-	return "", errors.New("no valid image file extension found")
-}
-
 var fileTypes = map[string]string{
 	//md
 	"md": "md",
