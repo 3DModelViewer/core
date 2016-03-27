@@ -16,7 +16,7 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		rowsScan := func(rows *sql.Rows) error {
 			tn := TreeNode{}
 			scanNodeType := ""
-			if err := rows.Scan(&tn.Id, &tn.Parent, &tn.Project, &tn.Name, &scanNodeType); err != nil {
+			if err := rows.Scan(&tn.Id, &tn.Parent, &tn.Project, &tn.Name, &scanNodeType, &tn.ChildCount); err != nil {
 				return err
 			}
 			tn.NodeType = nodeType(scanNodeType)
@@ -35,7 +35,7 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 			}
 			tn := TreeNode{}
 			scanNodeType := ""
-			if err := rows.Scan(&totalResults, &tn.Id, &tn.Parent, &tn.Project, &tn.Name, &scanNodeType); err != nil {
+			if err := rows.Scan(&totalResults, &tn.Id, &tn.Parent, &tn.Project, &tn.Name, &scanNodeType, &tn.ChildCount); err != nil {
 				return err
 			}
 			tn.NodeType = nodeType(scanNodeType)

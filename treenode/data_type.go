@@ -6,4 +6,5 @@ type TreeNode struct {
 	Project  string   `json:"project"`
 	NodeType nodeType `json:"nodeType"`
 	Name     string   `json:"name"`
+	ChildCount int `json:"childCount"`
 }

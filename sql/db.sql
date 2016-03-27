@@ -917,7 +917,7 @@ BEGIN
         SET forUserRole = _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
 		IF (newNodeType = 'folder' AND forUserRole IN ('owner', 'admin', 'organiser')) OR (newNodeType != 'folder' AND forUserRole IN ('owner', 'admin', 'organiser', 'contributor')) THEN
 			INSERT INTO treeNode (id, parent, project, name, nodeType) VALUES (newTreeNodeId, UNHEX(parentId), projectId, newNodeName, newNodeType);
-			SELECT lex(newTreeNodeId) AS id, parentId AS parent, lex(projectId) AS project, newNodeName AS name, newNodeType AS nodeType;
+			SELECT lex(newTreeNodeId) AS id, parentId AS parent, lex(projectId) AS project, newNodeName AS name, newNodeType AS nodeType, 0 as children;
 		ELSE 
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1071,7 +1071,7 @@ BEGIN
 		SELECT project INTO projectId FROM treeNode WHERE id = (SELECT id FROM tempIds LIMIT 1);
         SELECT COUNT(DISTINCT project) INTO distinctProjectsCount FROM treeNode AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
         IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
-			SELECT lex(tn.id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode AS tn INNER JOIN tempIds AS t ON tn.id = t.id;
+			SELECT lex(tn1.id) AS id, lex(tn1.parent) AS parent, lex(tn1.project) AS project, name, tn1.nodeType, (SELECT COUNT(*) + (SELECT COUNT(*) FROM documentVersion WHERE document = tn1.id) FROM treenode AS tn2 WHERE tn1.id = tn2.parent) AS childCount FROM treeNode AS tn1 INNER JOIN tempIds AS t ON tn1.id = t.id;
         ELSE
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1120,15 +1120,15 @@ BEGIN
 				SELECT totalResults;
             ELSE IF sortBy = 'nameDesc' THEN
 				IF childNodeType = '' OR childNodeType = 'any' THEN
-					SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) ORDER BY name DESC LIMIT os, l;
+					SELECT totalResults, lex(tn1.id) AS id, lex(tn1.parent) AS parent, lex(tn1.project) AS project, name, tn1.nodeType, (SELECT COUNT(*) + (SELECT COUNT(*) FROM documentVersion WHERE document = tn1.id) FROM treenode AS tn2 WHERE tn1.id = tn2.parent) AS childCount FROM treeNode AS tn1 WHERE tn1.parent = UNHEX(parentId) ORDER BY name DESC LIMIT os, l;
 				ELSE
-					SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType ORDER BY name DESC LIMIT os, l;
+					SELECT totalResults, lex(tn1.id) AS id, lex(tn1.parent) AS parent, lex(tn1.project) AS project, name, tn1.nodeType, (SELECT COUNT(*) + (SELECT COUNT(*) FROM documentVersion WHERE document = tn1.id) FROM treenode AS tn2 WHERE tn1.id = tn2.parent) AS childCount FROM treeNode AS tn1 WHERE tn1.parent = UNHEX(parentId) AND tn1.nodeType = childNodeType ORDER BY name DESC LIMIT os, l;
 				END IF;
             ELSE
 				IF childNodeType = '' OR childNodeType = 'any' THEN
-					SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) ORDER BY name ASC LIMIT os, l;
+					SELECT totalResults, lex(tn1.id) AS id, lex(tn1.parent) AS parent, lex(tn1.project) AS project, name, tn1.nodeType, (SELECT COUNT(*) + (SELECT COUNT(*) FROM documentVersion WHERE document = tn1.id) FROM treenode AS tn2 WHERE tn1.id = tn2.parent) AS childCount FROM treeNode AS tn1 WHERE tn1.parent = UNHEX(parentId) ORDER BY name ASC LIMIT os, l;
 				ELSE
-					SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM treeNode WHERE parent = UNHEX(parentId) AND nodeType = childNodeType ORDER BY name ASC LIMIT os, l;
+					SELECT totalResults, lex(tn1.id) AS id, lex(tn1.parent) AS parent, lex(tn1.project) AS project, name, tn1.nodeType, (SELECT COUNT(*) + (SELECT COUNT(*) FROM documentVersion WHERE document = tn1.id) FROM treenode AS tn2 WHERE tn1.id = tn2.parent) AS childCount FROM treeNode AS tn1 WHERE tn1.parent = UNHEX(parentId) AND tn1.nodeType = childNodeType ORDER BY name ASC LIMIT os, l;
 				END IF;			
             END IF;
             END IF;
@@ -1215,22 +1215,23 @@ BEGIN
         project BINARY(16) NOT NULL,
 		name VARCHAR(250) NULL,
         nodeType VARCHAR(50) NOT NULL,
+        childCount INT NOT NULL,
         INDEX (name)
 	);
     
 	IF childNodeType = '' OR childNodeType = 'any' THEN
-		INSERT INTO tempTreeNodeGlobalSearch (id, parent, project, name, nodeType) SELECT tn.id, tn.parent, tn.project, tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN permission AS p ON tn.project = p.project WHERE p.user = UNHEX(forUserId) AND MATCH(tn.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+		INSERT INTO tempTreeNodeGlobalSearch (id, parent, project, name, nodeType, childCount) SELECT tn1.id, tn1.parent, tn1.project, tn1.name, tn1.nodeType, (SELECT COUNT(*) + (SELECT COUNT(*) FROM documentVersion WHERE document = tn1.id) FROM treenode AS tn2 WHERE tn1.id = tn2.parent) AS childCount FROM treeNode AS tn1 INNER JOIN permission AS p ON tn1.project = p.project WHERE p.user = UNHEX(forUserId) AND MATCH(tn1.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
     ELSE
-		INSERT INTO tempTreeNodeGlobalSearch (id, parent, project, name, nodeType) SELECT tn.id, tn.parent, tn.project, tn.name, tn.nodeType FROM treeNode AS tn INNER JOIN permission AS p ON tn.project = p.project WHERE p.user = UNHEX(forUserId) AND tn.nodeType = childNodeType AND MATCH(tn.name) AGAINST(search IN NATURAL LANGUAGE MODE);
+		INSERT INTO tempTreeNodeGlobalSearch (id, parent, project, name, nodeType, childCount) SELECT tn1.id, tn1.parent, tn1.project, tn1.name, tn1.nodeType, (SELECT COUNT(*) + (SELECT COUNT(*) FROM documentVersion WHERE document = tn1.id) FROM treenode AS tn2 WHERE tn1.id = tn2.parent) AS childCount FROM treeNode AS tn1 INNER JOIN permission AS p ON tn1.project = p.project WHERE p.user = UNHEX(forUserId) AND tn1.nodeType = childNodeType AND MATCH(tn1.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
     END IF;
     SELECT COUNT(*) INTO totalResults FROM tempTreeNodeGlobalSearch;
     
     IF os >= totalResults OR l = 0 THEN
 		SELECT totalResults;
     ELSE IF sortBy = 'nameDesc' THEN
-		SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM tempTreeNodeGlobalSearch ORDER BY name DESC LIMIT os, l;
+		SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType, childCount FROM tempTreeNodeGlobalSearch ORDER BY name DESC LIMIT os, l;
     ELSE
-		SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM tempTreeNodeGlobalSearch ORDER BY name ASC LIMIT os, l;			
+		SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType, childCount FROM tempTreeNodeGlobalSearch ORDER BY name ASC LIMIT os, l;			
     END IF;
     END IF;
     
@@ -1264,6 +1265,7 @@ BEGIN
         project BINARY(16) NOT NULL,
 		name VARCHAR(250) NULL,
         nodeType VARCHAR(50) NOT NULL,
+        childCount INT NOT NULL,
         INDEX (name)
 	);
     
@@ -1272,18 +1274,18 @@ BEGIN
 	IF forUserRole IS NOT NULL THEN
     
 		IF childNodeType = '' OR childNodeType = 'any' THEN
-			INSERT INTO tempTreeNodeProjectSearch (id, parent, project, name, nodeType) SELECT id, parent, project, name, nodeType FROM treeNode WHERE project = UNHEX(projectId) AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE);  
+			INSERT INTO tempTreeNodeProjectSearch (id, parent, project, name, nodeType, childCount) SELECT tn1.id, tn1.parent, tn1.project, tn1.name, tn1.nodeType, (SELECT COUNT(*) + (SELECT COUNT(*) FROM documentVersion WHERE document = tn1.id) FROM treenode AS tn2 WHERE tn1.id = tn2.parent) AS childCount FROM treeNode AS tn1 WHERE tn1.project = UNHEX(projectId) AND MATCH(tn1.name) AGAINST(search IN NATURAL LANGUAGE MODE); 
 		ELSE
-			INSERT INTO tempTreeNodeProjectSearch (id, parent, project, name, nodeType) SELECT id, parent, project, name, nodeType FROM treeNode WHERE project = UNHEX(projectId) AND nodeType = childNodeType AND MATCH(name) AGAINST(search IN NATURAL LANGUAGE MODE); 
+			INSERT INTO tempTreeNodeProjectSearch (id, parent, project, name, nodeType, childCount) SELECT tn1.id, tn1.parent, tn1.project, tn1.name, tn1.nodeType, (SELECT COUNT(*) + (SELECT COUNT(*) FROM documentVersion WHERE document = tn1.id) FROM treenode AS tn2 WHERE tn1.id = tn2.parent) AS childCount FROM treeNode AS tn1 WHERE tn1.project = UNHEX(projectId) AND tn1.nodeType = childNodeType AND MATCH(tn1.name) AGAINST(search IN NATURAL LANGUAGE MODE);
 		END IF;
 		SELECT COUNT(*) INTO totalResults FROM tempTreeNodeProjectSearch;
 		
 		IF os >= totalResults OR l = 0 THEN
 			SELECT totalResults;
 		ELSE IF sortBy = 'nameDesc' THEN
-			SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM tempTreeNodeProjectSearch ORDER BY name DESC LIMIT os, l;
+			SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType, childCount FROM tempTreeNodeProjectSearch ORDER BY name DESC LIMIT os, l;
 		ELSE
-			SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType FROM tempTreeNodeProjectSearch ORDER BY name ASC LIMIT os, l;		
+			SELECT totalResults, lex(id) AS id, lex(parent) AS parent, lex(project) AS project, name, nodeType, childCount FROM tempTreeNodeProjectSearch ORDER BY name ASC LIMIT os, l;		
 		END IF;
         END IF;
     END IF;
