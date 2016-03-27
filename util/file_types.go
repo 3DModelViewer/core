@@ -25,8 +25,17 @@ func GetImageFileExtension(imageName string) (string, error) {
 var fileTypes = map[string]string{
 	//md
 	"md": "md",
-	//odp
-	"odp": "odp",
+	//open document format
+	"odt": "od",
+	"ods": "od",
+	"odp": "od",
+	"odg": "od",
+	"odf": "od",
+	"fodt": "od",
+	"fods": "od",
+	"fodp": "od",
+	"fodg": "od",
+	"fodf": "od",
 	//pdf
 	"pdf": "pdf",
 	//text
