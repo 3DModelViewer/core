@@ -1177,7 +1177,7 @@ BEGIN
 			INSERT INTO tempTreeNodeGetParents (depth, id, parent, name) VALUES (depthCounter, treeNodeId, lex(currentParent), currentName);
             SET depthCounter = depthCounter + 1;
 		END WHILE;
-        SELECT id, parent, lex(projectId) AS project, name, 'folder' AS nodeType FROM tempTreeNodeGetParents ORDER BY depth DESC;
+        SELECT id, parent, lex(projectId) AS project, name, 'folder' AS nodeType, 0 as childCount FROM tempTreeNodeGetParents ORDER BY depth DESC;
 	ELSE 
 		SIGNAL SQLSTATE 
 			'45002'
