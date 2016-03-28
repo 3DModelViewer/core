@@ -137,6 +137,8 @@ func (h *helper) GetDocumentVersionsWithFirstSheetInfo(forUser string, document 
 					}
 					resSheetChan <- resSheet
 				}(idx, docVer)
+			} else {
+				countDown--
 			}
 		}
 		for countDown > 0 {
