@@ -97,3 +97,64 @@ func (h *helper) GetChildrenDocumentsWithLatestVersionAndFirstSheetInfo(forUser 
 		return res, totalResults, err
 	}
 }
+
+func (h *helper) GetDocumentVersionsWithFirstSheetInfo(forUser string, document string, offset int, limit int, sortBy sortBy) ([]*DocumentVersion, int, error) {
+	if docVers, totalResults, err := h.dvs.GetForDocument(forUser, document, offset, limit, documentversion.SortBy(string(sortBy))); err != nil {
+		return nil, totalResults, err
+	} else {
+		countDown := len(docVers)
+		timeOutChan := time.After(h.batchGetTimeout)
+		res := make([]*DocumentVersion, 0, totalResults)
+		resSheetChan := make(chan *struct{
+			resIdx int
+			firstSheet *firstSheet
+			err error
+		})
+		for idx, docVer := range docVers {
+			res = append(res, &DocumentVersion{
+				DocumentVersion: docVer,
+			})
+			if docVer.FileType == "lmv" && docVer.Status == "success" {
+				go func(idx int, docVer *documentversion.DocumentVersion) {
+					sheets, _, er := h.ss.GetForDocumentVersion(forUser, docVer.Id, 0, 1, sheet.NameAsc)
+					resSheet := &struct {
+						resIdx int
+						firstSheet  *firstSheet
+						err    error
+					}{
+						resIdx: idx,
+						firstSheet: nil,
+						err: er,
+					}
+					if sheets != nil && len(sheets) > 0 {
+						sheet := sheets[0]
+						resSheet.firstSheet = &firstSheet{
+							Id: sheet.Id,
+							Thumbnails: sheet.Thumbnails,
+							Manifest: sheet.Manifest,
+							Role: sheet.Role,
+						}
+					}
+					resSheetChan <- resSheet
+				}(idx, docVer)
+			}
+		}
+		for countDown > 0 {
+			timedOut := false
+			select {
+			case resSheet := <- resSheetChan:
+				countDown--
+				if resSheet.firstSheet != nil {
+					res[resSheet.resIdx].FirstSheet = resSheet.firstSheet
+				}
+			case <-timeOutChan:
+				h.log.Warning("Helper.GetDocumentVersionsWithFirstSheetInfo timed out after %v with %d open first sheet requests awaiting response", h.batchGetTimeout, countDown)
+				timedOut = true
+			}
+			if timedOut {
+				break
+			}
+		}
+		return res, totalResults, err
+	}
+}

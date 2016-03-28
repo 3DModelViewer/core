@@ -2,6 +2,7 @@ package helper
 
 import (
 	"github.com/modelhub/core/treenode"
+	"github.com/modelhub/core/documentversion"
 )
 
 type DocumentNode struct{
@@ -23,4 +24,9 @@ type firstSheet struct {
 	Thumbnails      []string `json:"thumbnails"`
 	Manifest        string   `json:"manifest"`
 	Role            string   `json:"role"`
+}
+
+type DocumentVersion struct {
+	*documentversion.DocumentVersion
+	FirstSheet *firstSheet 	`json:"firstSheet,omitempty"`
 }
