@@ -26,6 +26,7 @@ func convertToPublicFormat(dvs []*_documentVersion) []*DocumentVersion {
 			FileExtension: dv.FileExtension,
 			Status:        dv.Status,
 			ThumbnailType: dv.ThumbnailType,
+			SheetCount: dv.SheetCount,
 		})
 	}
 	return publicDvs

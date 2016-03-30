@@ -61,6 +61,7 @@ func (h *helper) GetChildrenDocumentsWithLatestVersionAndFirstSheetInfo(forUser 
 						FileExtension: ver.FileExtension,
 						Status: ver.Status,
 						ThumbnailType: ver.ThumbnailType,
+						SheetCount: ver.SheetCount,
 					}
 					if ver.FileType == "lmv" && ver.Status == "success" {
 						sheets, _, _ := h.ss.GetForDocumentVersion(forUser, ver.Id, 0, 1, sheet.NameAsc)

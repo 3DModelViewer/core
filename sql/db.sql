@@ -1309,7 +1309,7 @@ BEGIN
     IF forUserRole IN ('owner', 'admin', 'organiser', 'contributor') THEN
 		INSERT INTO documentVersion (id, document, version, project, uploaded, uploadComment, uploadedBy, fileType, fileExtension, urn, status, thumbnailType)
         VALUES (UNHEX(documentVersionId), UNHEX(documentId), version, projectId, UTC_TIMESTAMP(), uploadComment, UNHEX(forUserId), fileType, fileExtension, urn, status, thumbnailType);
-        SELECT lex(dv.id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, fileType, fileExtension, urn, status, thumbnailType FROM documentVersion AS dv WHERE dv.id = UNHEX(documentVersionId);
+        SELECT lex(dv.id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, fileType, fileExtension, urn, status, thumbnailType, 0 AS sheetCount FROM documentVersion AS dv WHERE dv.id = UNHEX(documentVersionId);
 	ELSE
 		SIGNAL SQLSTATE 
 			'45002'
@@ -1339,7 +1339,7 @@ BEGIN
 		SELECT project INTO projectId FROM documentVersion WHERE id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
         SELECT COUNT(DISTINCT project) INTO distinctProjectsCount FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
         IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
-			SELECT lex(dv.id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, fileType, fileExtension, urn, status, thumbnailType FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
+			SELECT lex(dv.id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, fileType, fileExtension, urn, status, thumbnailType, (SELECT COUNT(*) FROM sheet AS s WHERE s.documentVersion = dv.id) AS sheetCount FROM documentVersion AS dv INNER JOIN tempIds AS t ON dv.id = t.id;
         ELSE
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1377,9 +1377,9 @@ BEGIN
         IF os >= totalResults OR l = 0 THEN
 			SELECT totalResults;
 		ELSE IF sortBy = 'versionAsc' THEN
-			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, fileType, fileExtension, urn, status, thumbnailType FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version ASC LIMIT os, l;
+			SELECT totalResults, lex(dv.id) AS id, lex(dv.document) AS document, dv.version, lex(dv.project) AS project, dv.uploaded, dv.uploadComment, lex(dv.uploadedBy) AS uploadedBy, dv.fileType, dv.fileExtension, dv.urn, dv.status, dv.thumbnailType, (SELECT COUNT(*) FROM sheet AS s WHERE s.documentVersion = dv.id) AS sheetCount FROM documentVersion AS dv WHERE dv.document = UNHEX(documentId) ORDER BY version ASC LIMIT os, l;
 		ELSE
-			SELECT totalResults, lex(id) AS id, lex(document) AS document, version, lex(project) AS project, uploaded, uploadComment, lex(uploadedBy) AS uploadedBy, fileType, fileExtension, urn, status, thumbnailType FROM documentVersion WHERE document = UNHEX(documentId) ORDER BY version DESC LIMIT os, l;
+			SELECT totalResults, lex(dv.id) AS id, lex(dv.document) AS document, dv.version, lex(dv.project) AS project, dv.uploaded, dv.uploadComment, lex(dv.uploadedBy) AS uploadedBy, dv.fileType, dv.fileExtension, dv.urn, dv.status, dv.thumbnailType, (SELECT COUNT(*) FROM sheet AS s WHERE s.documentVersion = dv.id) AS sheetCount FROM documentVersion AS dv WHERE dv.document = UNHEX(documentId) ORDER BY version DESC LIMIT os, l;
         END IF;
         END IF;
     ELSE 
