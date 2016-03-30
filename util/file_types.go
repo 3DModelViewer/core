@@ -6,8 +6,6 @@ import (
 )
 
 var fileTypes = map[string]string{
-	//md
-	"md": "md",
 	//open document format
 	"odt": "od",
 	"ods": "od",
@@ -24,6 +22,7 @@ var fileTypes = map[string]string{
 	//text
 	"csv": "text",
 	"txt": "text",
+	"md": "text",
 	//image
 	"png":  "image",
 	"jpeg": "image",
