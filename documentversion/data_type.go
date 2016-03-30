@@ -4,11 +4,6 @@ import (
 	"time"
 )
 
-type _documentVersion struct {
-	DocumentVersion
-	Urn string `json:"urn"`
-}
-
 type DocumentVersion struct {
 	Id            string    `json:"id"`
 	Document      string    `json:"document"`
@@ -22,4 +17,5 @@ type DocumentVersion struct {
 	Status        string    `json:"status"`
 	ThumbnailType string    `json:"thumbnailType"`
 	SheetCount	  int 		`json:"sheetCount"`
+	Urn string 				`json:"-"`
 }

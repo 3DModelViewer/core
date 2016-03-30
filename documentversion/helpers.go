@@ -11,36 +11,15 @@ import (
 	"time"
 )
 
-func convertToPublicFormat(dvs []*_documentVersion) []*DocumentVersion {
-	publicDvs := make([]*DocumentVersion, 0, len(dvs))
-	for _, dv := range dvs {
-		publicDvs = append(publicDvs, &DocumentVersion{
-			Id:            dv.Id,
-			Document:      dv.Document,
-			Version:       dv.Version,
-			Project:       dv.Project,
-			Uploaded:      dv.Uploaded,
-			UploadComment: dv.UploadComment,
-			UploadedBy:    dv.UploadedBy,
-			FileType:      dv.FileType,
-			FileExtension: dv.FileExtension,
-			Status:        dv.Status,
-			ThumbnailType: dv.ThumbnailType,
-			SheetCount: dv.SheetCount,
-		})
-	}
-	return publicDvs
-}
-
-func performStatusCheck(dvs []*_documentVersion, bulkStatusUpdate bulkSetStatus, bulkSaveSheets bulkSaveSheets, statusCheckTimeOut time.Duration, vada vada.VadaClient, log golog.Log) []error {
+func performStatusCheck(dvs []*DocumentVersion, bulkStatusUpdate bulkSetStatus, bulkSaveSheets bulkSaveSheets, statusCheckTimeOut time.Duration, vada vada.VadaClient, log golog.Log) []error {
 	errChan := make(chan error)
-	changeChan := make(chan *_documentVersion)
+	changeChan := make(chan *DocumentVersion)
 	successChan := make(chan *Json)
 	timeOutChan := time.After(statusCheckTimeOut)
 	checkCount := 0
 	for _, e := range dvs {
 		if e.Status == "registered" || e.Status == "pending" || e.Status == "inprogress" || e.Status == "failed_to_register" {
-			go func(dv *_documentVersion) {
+			go func(dv *DocumentVersion) {
 				log.Info("DocumentVersionStore performStatusCheck for docVer: %q ", dv.Id)
 				if dv.Status == "failed_to_register" {
 					log.Info("DocumentVersionStore attempt re-registering of failed file: %q", dv.Id+"."+dv.FileExtension)
@@ -84,7 +63,7 @@ func performStatusCheck(dvs []*_documentVersion, bulkStatusUpdate bulkSetStatus,
 		}
 	}
 	errs := make([]error, 0, checkCount)
-	changes := make([]*_documentVersion, 0, checkCount)
+	changes := make([]*DocumentVersion, 0, checkCount)
 	successes := make([]*Json, 0, checkCount)
 	for checkCount > 0 {
 		timedOut := false

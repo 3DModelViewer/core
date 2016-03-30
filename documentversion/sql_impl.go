@@ -13,10 +13,10 @@ import (
 
 func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) DocumentVersionStore {
 
-	getter := func(query string, colLen int, args ...interface{}) ([]*_documentVersion, error) {
-		dvs := make([]*_documentVersion, 0, colLen)
+	getter := func(query string, colLen int, args ...interface{}) ([]*DocumentVersion, error) {
+		dvs := make([]*DocumentVersion, 0, colLen)
 		rowsScan := func(rows *sql.Rows) error {
-			dv := _documentVersion{}
+			dv := DocumentVersion{}
 			if err := rows.Scan(&dv.Id, &dv.Document, &dv.Version, &dv.Project, &dv.Uploaded, &dv.UploadComment, &dv.UploadedBy, &dv.FileType, &dv.FileExtension, &dv.Urn, &dv.Status, &dv.ThumbnailType, &dv.SheetCount); err != nil {
 				return err
 			}
@@ -26,14 +26,14 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 		return dvs, util.SqlQuery(db, rowsScan, query, args...)
 	}
 
-	offsetGetter := func(query string, args ...interface{}) ([]*_documentVersion, int, error) {
-		dvs := make([]*_documentVersion, 0, util.DefaultSqlOffsetQueryLimit)
+	offsetGetter := func(query string, args ...interface{}) ([]*DocumentVersion, int, error) {
+		dvs := make([]*DocumentVersion, 0, util.DefaultSqlOffsetQueryLimit)
 		totalResults := 0
 		rowsScan := func(rows *sql.Rows) error {
 			if util.RowsContainsOnlyTotalResults(&totalResults, rows) {
 				return nil
 			}
-			dv := _documentVersion{}
+			dv := DocumentVersion{}
 			if err := rows.Scan(&totalResults, &dv.Id, &dv.Document, &dv.Version, &dv.Project, &dv.Uploaded, &dv.UploadComment, &dv.UploadedBy, &dv.FileType, &dv.FileExtension, &dv.Urn, &dv.Status, &dv.ThumbnailType, &dv.SheetCount); err != nil {
 				return err
 			}
@@ -43,7 +43,7 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 		return dvs, totalResults, util.SqlQuery(db, rowsScan, query, args...)
 	}
 
-	create := func(forUser string, document string, documentVersion string, uploadComment, fileType string, fileExtension string, urn string, status string, thumbnailType string) (*_documentVersion, error) {
+	create := func(forUser string, document string, documentVersion string, uploadComment, fileType string, fileExtension string, urn string, status string, thumbnailType string) (*DocumentVersion, error) {
 		if dvs, err := getter("CALL documentVersionCreate(?, ?, ?, ?, ?, ?, ?, ?, ?)", 1, forUser, document, documentVersion, uploadComment, fileType, fileExtension, urn, status, thumbnailType); len(dvs) == 1 {
 			return dvs[0], err
 		} else {
@@ -51,15 +51,15 @@ func NewSqlDocumentVersionStore(db *sql.DB, statusCheckTimeout time.Duration, va
 		}
 	}
 
-	get := func(forUser string, ids []string) ([]*_documentVersion, error) {
+	get := func(forUser string, ids []string) ([]*DocumentVersion, error) {
 		return getter("CALL documentVersionGet(?, ?)", len(ids), forUser, strings.Join(ids, ","))
 	}
 
-	getForDocument := func(forUser string, document string, offset int, limit int, sortBy sortBy) ([]*_documentVersion, int, error) {
+	getForDocument := func(forUser string, document string, offset int, limit int, sortBy sortBy) ([]*DocumentVersion, int, error) {
 		return offsetGetter("CALL documentVersionGetForDocument(?, ?, ?, ?, ?)", forUser, document, offset, limit, string(sortBy))
 	}
 
-	bulkSetStatus := func(docVers []*_documentVersion) error {
+	bulkSetStatus := func(docVers []*DocumentVersion) error {
 		if len(docVers) > 0 {
 			query := strings.Repeat("CALL documentVersionSetStatus(%q, %q); ", len(docVers))
 			args := make([]interface{}, 0, len(docVers)*2)

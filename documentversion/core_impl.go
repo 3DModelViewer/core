@@ -75,7 +75,7 @@ func (dvs *documentVersionStore) Create(forUser string, document string, uploadC
 			return nil, err
 		} else {
 			dvs.log.Info("DocumentVersionStore.Create success: forUser: %q document: %q uploadComment: %q fileType: %q fileExtension: %q thumbnailType: %q", forUser, document, fileType, uploadComment, fileExtension, thumbnailType)
-			return convertToPublicFormat([]*_documentVersion{dv})[0], nil
+			return dv, nil
 		}
 	}
 }
@@ -87,18 +87,18 @@ func (dvs *documentVersionStore) Get(forUser string, ids []string) ([]*DocumentV
 	} else {
 		dvs.log.Info("DocumentVersionStore.Get success: forUser: %q ids: %v", forUser, ids)
 		performStatusCheck(docVers, dvs.bulkSetStatus, dvs.bulkSaveSheets, dvs.statusCheckTimeout, dvs.vada, dvs.log)
-		return convertToPublicFormat(docVers), nil
+		return docVers, nil
 	}
 }
 
 func (dvs *documentVersionStore) GetForDocument(forUser string, document string, offset int, limit int, sortBy sortBy) ([]*DocumentVersion, int, error) {
 	if docVers, totalResults, err := dvs.getForDocument(forUser, document, offset, limit, sortBy); err != nil {
 		dvs.log.Error("DocumentVersionStore.GetForDocument error: forUser: %q document: %q offset: %d limit: %d sortBy: %q error: %v", forUser, document, offset, limit, sortBy, err)
-		return convertToPublicFormat(docVers), totalResults, err
+		return docVers, totalResults, err
 	} else {
 		dvs.log.Info("DocumentVersionStore.GetForDocument success: forUser: %q document: %q offset: %d limit: %d sortBy: %q totalResults: %d", forUser, document, offset, limit, sortBy, totalResults)
 		performStatusCheck(docVers, dvs.bulkSetStatus, dvs.bulkSaveSheets, dvs.statusCheckTimeout, dvs.vada, dvs.log)
-		return convertToPublicFormat(docVers), totalResults, nil
+		return docVers, totalResults, nil
 	}
 }
 
