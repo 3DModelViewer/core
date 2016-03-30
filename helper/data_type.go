@@ -16,6 +16,7 @@ type latestVersion struct {
 	FileExtension string    `json:"fileExtension"`
 	Status        string    `json:"status"`
 	ThumbnailType string    `json:"thumbnailType"`
+	SheetCount    int       `json:"sheetCount"`
 	FirstSheet *firstSheet 	`json:"firstSheet,omitempty"`
 }
 
