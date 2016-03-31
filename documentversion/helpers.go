@@ -152,9 +152,9 @@ func extractSheetsFromDocJson(docVer string, project string, sheetMatcher map[st
 	for _, s := range sheets {
 		manifestObj := getObjectsWithProperties(s, manifestMatcher)
 		if len(manifestObj) == 0 {
-			return nil, errors.New("DocumentVersionStore etractSheetsFromDocJson: No manifest node found")
+			return nil, errors.New("DocumentVersionStore extractSheetsFromDocJson: No manifest node found")
 		} else if len(manifestObj) > 1 {
-			return nil, errors.New("DocumentVersionStore etractSheetsFromDocJson: More than one manifest node found")
+			return nil, errors.New("DocumentVersionStore extractSheetsFromDocJson: More than one manifest node found")
 		} else {
 			var baseUrn string
 			var manifest string
@@ -170,7 +170,7 @@ func extractSheetsFromDocJson(docVer string, project string, sheetMatcher map[st
 			} else {
 				idx := strings.Index(fullUrnAndPath, "/")
 				if idx == -1 {
-					return nil, errors.New("DocumentVersionStore etractSheetsFromDocJson: Unexpected Urn format, no / character found during manifest path extraction")
+					return nil, errors.New("DocumentVersionStore extractSheetsFromDocJson: Unexpected Urn format, no / character found during manifest path extraction")
 				}
 				baseUrn = fullUrnAndPath[:idx]
 				manifest = fullUrnAndPath[idx:]
@@ -184,7 +184,7 @@ func extractSheetsFromDocJson(docVer string, project string, sheetMatcher map[st
 				} else {
 					idx := strings.Index(fullUrnAndPath, "/")
 					if idx == -1 {
-						return nil, errors.New("DocumentVersionStore etractSheetsFromDocJson: Unexpected Urn format, no / character found during thumbnail path extraction")
+						return nil, errors.New("DocumentVersionStore extractSheetsFromDocJson: Unexpected Urn format, no / character found during thumbnail path extraction")
 					}
 					addToThumbnails(fullUrnAndPath[idx:])
 				}
