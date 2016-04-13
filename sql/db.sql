@@ -241,9 +241,8 @@ CREATE TABLE clashTest(
 	id BINARY(16) NOT NULL,
     leftSheetTransform BINARY(16) NOT NULL,
     rightSheetTransform BINARY(16) NOT NULL,
-	status VARCHAR(50) NOT NULL,
-	PRIMARY KEY (id),
-	UNIQUE INDEX (leftSheetTransform, rightSheetTransform),
+	PRIMARY KEY (leftSheetTransform, rightSheetTransform),
+	UNIQUE INDEX (id),
     FOREIGN KEY (leftSheetTransform) REFERENCES sheetTransform(id) ON DELETE CASCADE,
     FOREIGN KEY (rightSheetTransform) REFERENCES sheetTransform(id) ON DELETE CASCADE
 );
@@ -1839,12 +1838,20 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS clashTestCreate;
 DELIMITER $$
-CREATE PROCEDURE clashTestCreate(clashTestId VARCHAR(32), sheetTransformA VARCHAR(32), sheetTransformB VARCHAR(32), status VARCHAR(50))
+CREATE PROCEDURE clashTestCreate(clashTestId VARCHAR(32), sheetTransformA VARCHAR(32), sheetTransformB VARCHAR(32))
 BEGIN
 	DECLARE lst BINARY(16) DEFAULT UNHEX(sheetTransformA);
 	DECLARE rst BINARY(16) DEFAULT UNHEX(sheetTransformB);
 	DECLARE lstProjectId BINARY(16) DEFAULT (SELECT s.project FROM sheet AS s INNER JOIN sheetTransform AS st ON s.id = st.sheet WHERE st.id = lst);
 	DECLARE rstProjectId BINARY(16) DEFAULT (SELECT s.project FROM sheet AS s INNER JOIN sheetTransform AS st ON s.id = st.sheet WHERE st.id = rst);
+    
+    IF sheetTransformA = sheetTransformB THEN
+		SIGNAL SQLSTATE 
+			'45003'
+		SET
+			MESSAGE_TEXT = 'Invalid action: clashTestCreate same sheetTransform',
+			MYSQL_ERRNO = 45003;   
+    END IF;
     
     IF sheetTransformB < sheetTransformA THEN
 		SET lst = UNHEX(sheetTransformB);
@@ -1852,8 +1859,8 @@ BEGIN
     END IF;
     
     IF lstProjectId = rstProjectId THEN
-		INSERT INTO clashTest (id, leftSheetTransform, rightSheetTransform, status)
-		VALUES (UNHEX(clashTestId), lst, rst, status);
+		INSERT INTO clashTest (id, leftSheetTransform, rightSheetTransform)
+		VALUES (UNHEX(clashTestId), lst, rst);
     ELSE
 		SIGNAL SQLSTATE 
 			'45002'
@@ -1876,7 +1883,7 @@ BEGIN
 		SET rst = UNHEX(sheetTransformA);
     END IF;
     
-    SELECT id, leftSheetTransform, rightSheetTransform, status FROM clashTest WHERE leftSheetTransform = lst AND rightSheetTransform = rst;
+    SELECT id, leftSheetTransform, rightSheetTransform FROM clashTest WHERE leftSheetTransform = lst AND rightSheetTransform = rst;
 END$$
 DELIMITER ;
 
