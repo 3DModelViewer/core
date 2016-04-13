@@ -136,7 +136,7 @@ INSERT INTO treeNodeType (id)
 	VALUES
 		('folder'),
         ('document'),
-		('viewerState');
+		('projectSpace');
 
 DROP TABLE IF EXISTS treeNode;
 CREATE TABLE treeNode(
@@ -178,6 +178,24 @@ CREATE TABLE documentVersion(
     FOREIGN KEY (uploadedBy) REFERENCES user(id) ON DELETE CASCADE
 );
 
+DROP TABLE IF EXISTS projectSpaceVersion;
+CREATE TABLE projectSpaceVersion(
+	id BINARY(16) NOT NULL,
+	projectSpace BINARY(16) NOT NULL,
+    version MEDIUMINT NOT NULL,
+    project BINARY(16) NOT NULL,
+    created DATETIME NOT NULL,
+    createComment VARCHAR(250) NOT NULL,
+    createdBy BINARY(16) NOT NULL,
+    thumbnailType VARCHAR(50) NOT NULL,
+    cameraJson VARCHAR(1000) NOT NULL,
+	PRIMARY KEY (projectSpace, version, id),
+    UNIQUE INDEX (id),
+    FOREIGN KEY (project) REFERENCES project(id) ON DELETE CASCADE,
+    FOREIGN KEY (projectSpace) REFERENCES treeNode(id) ON DELETE CASCADE,
+    FOREIGN KEY (createdBy) REFERENCES user(id) ON DELETE CASCADE
+);
+
 DROP TABLE IF EXISTS sheet;
 CREATE TABLE sheet(
 	id BINARY(16) NOT NULL,
@@ -195,6 +213,39 @@ CREATE TABLE sheet(
     FULLTEXT(name),
     FOREIGN KEY (project) REFERENCES project(id) ON DELETE CASCADE,
     FOREIGN KEY (documentVersion) REFERENCES documentVersion(id) ON DELETE CASCADE
+);
+
+DROP TABLE IF EXISTS sheetTransform;
+CREATE TABLE sheetTransform(
+	id BINARY(16) NOT NULL,
+	sheet BINARY(16) NOT NULL,
+    sheetTransformHashJson VARCHAR(1000) NOT NULL,
+    clashChangeRegId BINARY(16) NOT NULL,
+	PRIMARY KEY (id),
+    UNIQUE INDEX (sheetTransformHashJson),
+    UNIQUE INDEX (clashChangeRegId),
+    FOREIGN KEY (sheet) REFERENCES sheet(id) ON DELETE CASCADE
+);
+
+DROP TABLE IF EXISTS projectSpaceVersionSheetTransform;
+CREATE TABLE projectSpaceVersionSheetTransform(
+	projectSpaceVersion BINARY(16) NOT NULL,
+	sheetTransform BINARY(16) NOT NULL,
+	PRIMARY KEY (projectSpaceVersion, sheetTransform),
+    FOREIGN KEY (projectSpaceVersion) REFERENCES projectSpaceVersion(id) ON DELETE CASCADE,
+    FOREIGN KEY (sheetTransform) REFERENCES sheetTransform(id) ON DELETE CASCADE
+);
+
+DROP TABLE IF EXISTS clashTest;
+CREATE TABLE clashTest(
+	id BINARY(16) NOT NULL,
+    leftSheetTransform BINARY(16) NOT NULL,
+    rightSheetTransform BINARY(16) NOT NULL,
+	status VARCHAR(50) NOT NULL,
+	PRIMARY KEY (id),
+	UNIQUE INDEX (leftSheetTransform, rightSheetTransform),
+    FOREIGN KEY (leftSheetTransform) REFERENCES sheetTransform(id) ON DELETE CASCADE,
+    FOREIGN KEY (rightSheetTransform) REFERENCES sheetTransform(id) ON DELETE CASCADE
 );
 
 # END TABLES
@@ -955,13 +1006,14 @@ BEGIN
 END$$
 DELIMITER ;
 
-DROP PROCEDURE IF EXISTS treeNodeCreateViewerState;
+DROP PROCEDURE IF EXISTS treeNodeCreateProjectSpace;
 DELIMITER $$
-CREATE PROCEDURE treeNodeCreateViewerState(forUserId VARCHAR(32), parentId VARCHAR(32), viewerStateName VARCHAR(250))
+CREATE PROCEDURE treeNodeCreateProjectSpace(forUserId VARCHAR(32), parentId VARCHAR(32), projectSpaceName VARCHAR(250), projectSpaceVersionId VARCHAR(32), createComment VARCHAR(250), thumbnailType VARCHAR(50), cameraJson VARCHAR(1000))
 BEGIN
     DECLARE newTreeNodeId BINARY(16) DEFAULT opUuid();
-	CALL _treeNode_createNode(forUserId, newTreeNodeId, parentId, viewerStateName, 'viewerState');
-    #TODO insert viewerState rows
+    DECLARE newProjectSpaceVersionId BINARY(16) DEFAULT opUuid();
+	CALL _treeNode_createNode(forUserId, newTreeNodeId, parentId, projectSpaceName, 'projectSpace');
+    CALL projectSpaceVersionCreate(forUserId, lex(newTreeNodeId), projectSpaceVersionId, createComment, thumbnailType, cameraJson);
 END$$
 DELIMITER ;
 
@@ -1395,6 +1447,96 @@ DELIMITER ;
 
 # END DOCUMENTVERSION
 
+# START PROJECTSPACEVERSION
+
+DROP PROCEDURE IF EXISTS projectSpaceVersionCreate;
+DELIMITER $$
+CREATE PROCEDURE projectSpaceVersionCreate(forUserId VARCHAR(32), projectSpaceId VARCHAR(32), projectSpaceVersionId VARCHAR(32), createComment VARCHAR(250), thumbnailType VARCHAR(50), cameraJson VARCHAR(1000))
+BEGIN
+	DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM treeNode WHERE id = UNHEX(projectSpaceId));
+    DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
+    DECLARE version INT DEFAULT (SELECT COUNT(*) FROM projectSpaceVersion WHERE projectSpace = UNHEX(projectSpaceId)) + 1;
+    
+    IF forUserRole IN ('owner', 'admin', 'organiser', 'contributor') THEN
+		INSERT INTO projectSpaceVersion (id, projectSpace, version, project, created, createComment, createdBy, thumbnailType, cameraJson)
+        VALUES (UNHEX(projectSpaceVersionId), UNHEX(projectSpaceId), version, projectId, UTC_TIMESTAMP(), createComment, UNHEX(forUserId), thumbnailType, cameraJson);
+        SELECT lex(psv.id) AS id, lex(projectSpace) AS projectSpace, version, lex(project) AS project, created, createComment, lex(createdBy) AS createdBy, thumbnailType, cameraJson, 0 AS sheetTransformCount FROM projectSpaceVersion AS psv WHERE psv.id = UNHEX(projectSpaceVersionId);
+	ELSE
+		SIGNAL SQLSTATE 
+			'45002'
+		SET
+			MESSAGE_TEXT = 'Unauthorized action: projectSpaceVersion create',
+			MYSQL_ERRNO = 45002;
+    END IF;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS projectSpaceVersionGet;
+DELIMITER $$
+CREATE PROCEDURE projectSpaceVersionGet(forUserId VARCHAR(32), projectSpaceVersions VARCHAR(3300))
+BEGIN
+	DECLARE projectId BINARY(16) DEFAULT NULL;
+    DECLARE distinctProjectsCount INT DEFAULT 0;
+    
+	IF createTempIdsTable(projectSpaceVersions) THEN
+		SELECT project INTO projectId FROM projectSpaceVersion WHERE id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
+        SELECT COUNT(DISTINCT project) INTO distinctProjectsCount FROM projectSpaceVersion AS psv INNER JOIN tempIds AS t ON psv.id = t.id;
+        IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
+			SELECT lex(psv.id) AS id, lex(projectSpace) AS projectSpace, version, lex(project) AS project, created, createComment, lex(createdBy) AS createdBy, thumbnailType, cameraJson, (SELECT COUNT(*) FROM projectSpaceVersionsheetTransform AS psvst WHERE psvst.projectSpaceVersion = psv.id) AS sheetTransformCount FROM projectSpaceVersion AS psv INNER JOIN tempIds AS t ON psv.id = t.id;
+        ELSE
+			SIGNAL SQLSTATE 
+				'45002'
+			SET
+				MESSAGE_TEXT = 'Unauthorized action: projectSpaceVersion get cross project',
+				MYSQL_ERRNO = 45002;
+        END IF;		
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS tempIds;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS projectSpaceVersionGetForProjectSpace;
+DELIMITER $$
+CREATE PROCEDURE projectSpaceVersionGetForProjectSpace(forUserId VARCHAR(32), projectSpaceId VARCHAR(32), os INT, l INT, sortBy VARCHAR(50))
+BEGIN
+	DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM treeNode WHERE id = UNHEX(projectSpaceId));
+	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
+    DECLARE totalResults INT DEFAULT 0;
+    
+	IF os < 0 THEN
+		SET os = 0;
+	END IF;
+    
+	IF l < 0 THEN
+		SET l = 0;
+	END IF;
+    
+	IF l > 100 THEN
+		SET l = 100;
+	END IF;
+    
+	IF forUserRole IS NOT NULL THEN
+		SELECT COUNT(*) INTO totalResults FROM projectSpaceVesion WHERE projectSpace = UNHEX(projectSpaceId);
+        IF os >= totalResults OR l = 0 THEN
+			SELECT totalResults;
+		ELSE IF sortBy = 'versionAsc' THEN
+			SELECT totalResults, lex(psv.id) AS id, lex(psv.projectSpace) AS projectSpace, psv.version, lex(psv.project) AS project, psv.created, psv.createComment, lex(psv.createdBy) AS createdBy, psv.thumbnailType, cameraJson, (SELECT COUNT(*) FROM projectSpaceVersionsheetTransform AS psvst WHERE psvst.projectSpaceVersion = psv.id) AS sheetTransformCount FROM projectSpaceVersion AS psv WHERE psv.projectSpace = UNHEX(projectSpaceId) ORDER BY version ASC LIMIT os, l;
+		ELSE
+			SELECT totalResults, lex(psv.id) AS id, lex(psv.projectSpace) AS projectSpace, psv.version, lex(psv.project) AS project, psv.created, psv.createComment, lex(psv.createdBy) AS createdBy, psv.thumbnailType, cameraJson, (SELECT COUNT(*) FROM projectSpaceVersionsheetTransform AS psvst WHERE psvst.projectSpaceVersion = psv.id) AS sheetTransformCount FROM projectSpaceVersion AS psv WHERE psv.projectSpace = UNHEX(projectSpaceId) ORDER BY version DESC LIMIT os, l;
+        END IF;
+        END IF;
+    ELSE 
+		SIGNAL SQLSTATE 
+			'45002'
+		SET
+			MESSAGE_TEXT = 'Unauthorized action: projectSpaceVersion get by projectSpace',
+			MYSQL_ERRNO = 45002;
+    END IF;
+END$$
+DELIMITER ;
+
+# END PROJECTSPACEVERSION
+
 # START SHEET
 
 DROP PROCEDURE IF EXISTS sheetCreate;
@@ -1596,6 +1738,149 @@ END$$
 DELIMITER ;
 
 # END SHEET
+
+# START SHEETTRANSFORM
+
+DROP PROCEDURE IF EXISTS sheetTransformCreate;
+DELIMITER $$
+CREATE PROCEDURE sheetTransformCreate(sheet VARCHAR(32), sheetTransformHashJson VARCHAR(1000), clashChangeRegId VARCHAR(32))
+BEGIN
+	INSERT INTO sheetTransform (id, sheet, sheetTransformHashJson, clashChangeRegId)
+    VALUES (opUuid(), UNHEX(sheet), sheetTransformHashJson, UNHEX(clashChangeRegId));
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sheetTransformGet;
+DELIMITER $$
+CREATE PROCEDURE sheetTransformGet(forUserId VARCHAR(32), sheetTransforms VARCHAR(3300))
+BEGIN
+	DECLARE projectId BINARY(16) DEFAULT NULL;
+    DECLARE distinctProjectsCount INT DEFAULT 0;
+    
+	IF createTempIdsTable(sheetTransforms) THEN
+		SELECT s.project INTO projectId FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id WHERE st.id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
+        SELECT COUNT(DISTINCT s.project) INTO distinctProjectsCount FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempIds AS t ON st.id = t.id;
+        IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
+			SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, st.clashChangeRegId, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempIds AS t ON st.id = t.id;
+        ELSE
+			SIGNAL SQLSTATE 
+				'45002'
+			SET
+				MESSAGE_TEXT = 'Unauthorized action: sheetTransform get cross project',
+				MYSQL_ERRNO = 45002;
+        END IF;		
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS tempIds;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sheetTransformGetForProjectSpaceVersion;
+DELIMITER $$
+CREATE PROCEDURE sheetTransformGetForProjectSpaceVersion(forUserId VARCHAR(32), projectSpaceVersionId VARCHAR(32), os INT, l INT, sortBy VARCHAR(50))
+BEGIN
+    DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM projectSpaceVersion WHERE id = UNHEX(projectSpaceVersionId));
+	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
+    DECLARE totalResults INT DEFAULT 0;
+    
+	IF os < 0 THEN
+		SET os = 0;
+	END IF;
+    
+	IF l < 0 THEN
+		SET l = 0;
+	END IF;
+    
+	IF l > 100 THEN
+		SET l = 100;
+	END IF;
+    
+	IF forUserRole IS NOT NULL THEN
+		SELECT COUNT(*) INTO totalResults FROM projectSpaceVersionSheetTransform WHERE projectSpaceVersion = UNHEX(projectSpaceVersionId);
+        IF os >= totalResults OR l = 0 THEN
+			SELECT totalResults;
+		ELSE IF sortBy = 'nameDesc' THEN
+			SELECT totalResults, lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, st.clashChangeRegId, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId) ORDER BY s.name DESC LIMIT os, l;
+		ELSE
+			SELECT totalResults, lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, st.clashChangeRegId, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId) ORDER BY s.name DESC LIMIT os, l;
+        END IF;
+        END IF;
+    ELSE 
+		SIGNAL SQLSTATE 
+			'45002'
+		SET
+			MESSAGE_TEXT = 'Unauthorized action: sheetTransform get by projectSpaceVersion',
+			MYSQL_ERRNO = 45002;
+    END IF;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS projectSpaceVersionSheetTransformCreate;
+DELIMITER $$
+CREATE PROCEDURE projectSpaceVersionSheetTransformCreate(projectSpaceVersionId VARCHAR(32), sheetTransformId VARCHAR(32))
+BEGIN
+	DECLARE projectSpaceVersionProjectId BINARY(16) DEFAULT (SELECT project FROM projectSpaceVersion WHERE id = UNHEX(projectSpaceVersionId));
+	DECLARE sheetProjectId BINARY(16) DEFAULT (SELECT s.project FROM sheet as s INNER JOIN sheetTransform AS st ON s.id = st.sheet WHERE st.id = UNHEX(sheetTransformId));
+    IF projectSpaceVersionProjectId = sheetProjectId THEN
+		INSERT INTO projectSpaceVersionSheetTransform (projectSpaceVersion, sheetTransform)
+		VALUES (UNHEX(projectSpaceVersionId), UNHEX(sheetTransformId));
+    ELSE 
+		SIGNAL SQLSTATE 
+			'45002'
+		SET
+			MESSAGE_TEXT = 'Unauthorized action: projectSpaceVersionSheetTransformCreate cross project',
+			MYSQL_ERRNO = 45002;
+    END IF;
+END$$
+DELIMITER ;
+
+# END SHEETTRANSFORM
+
+# START CLASH
+
+DROP PROCEDURE IF EXISTS clashTestCreate;
+DELIMITER $$
+CREATE PROCEDURE clashTestCreate(clashTestId VARCHAR(32), sheetTransformA VARCHAR(32), sheetTransformB VARCHAR(32), status VARCHAR(50))
+BEGIN
+	DECLARE lst BINARY(16) DEFAULT UNHEX(sheetTransformA);
+	DECLARE rst BINARY(16) DEFAULT UNHEX(sheetTransformB);
+	DECLARE lstProjectId BINARY(16) DEFAULT (SELECT s.project FROM sheet AS s INNER JOIN sheetTransform AS st ON s.id = st.sheet WHERE st.id = lst);
+	DECLARE rstProjectId BINARY(16) DEFAULT (SELECT s.project FROM sheet AS s INNER JOIN sheetTransform AS st ON s.id = st.sheet WHERE st.id = rst);
+    
+    IF sheetTransformB < sheetTransformA THEN
+		SET lst = UNHEX(sheetTransformB);
+		SET rst = UNHEX(sheetTransformA);
+    END IF;
+    
+    IF lstProjectId = rstProjectId THEN
+		INSERT INTO clashTest (id, leftSheetTransform, rightSheetTransform, status)
+		VALUES (UNHEX(clashTestId), lst, rst, status);
+    ELSE
+		SIGNAL SQLSTATE 
+			'45002'
+		SET
+			MESSAGE_TEXT = 'Unauthorized action: clashTestCreate cross project',
+			MYSQL_ERRNO = 45002;    
+    END IF;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS clashTestGetForSheetTransforms;
+DELIMITER $$
+CREATE PROCEDURE clashTestGetForSheetTransforms(sheetTransformA VARCHAR(32), sheetTransformB VARCHAR(32))
+BEGIN
+	DECLARE lst BINARY(16) DEFAULT UNHEX(sheetTransformA);
+	DECLARE rst BINARY(16) DEFAULT UNHEX(sheetTransformB);
+    
+    IF sheetTransformB < sheetTransformA THEN
+		SET lst = UNHEX(sheetTransformB);
+		SET rst = UNHEX(sheetTransformA);
+    END IF;
+    
+    SELECT id, leftSheetTransform, rightSheetTransform, status FROM clashTest WHERE leftSheetTransform = lst AND rightSheetTransform = rst;
+END$$
+DELIMITER ;
+
+# END CLASH
 
 # This username and password are for local testing purposes only, 
 # formally deployed environments should have cryptographically
