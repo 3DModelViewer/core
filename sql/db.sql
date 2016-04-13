@@ -1760,7 +1760,7 @@ BEGIN
 		SELECT s.project INTO projectId FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id WHERE st.id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
         SELECT COUNT(DISTINCT s.project) INTO distinctProjectsCount FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempIds AS t ON st.id = t.id;
         IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
-			SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, st.clashChangeRegId, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempIds AS t ON st.id = t.id;
+			SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, st.clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempIds AS t ON st.id = t.id;
         ELSE
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1775,34 +1775,23 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS sheetTransformGetForProjectSpaceVersion;
 DELIMITER $$
-CREATE PROCEDURE sheetTransformGetForProjectSpaceVersion(forUserId VARCHAR(32), projectSpaceVersionId VARCHAR(32), os INT, l INT, sortBy VARCHAR(50))
+CREATE PROCEDURE sheetTransformGetForProjectSpaceVersion(forUserId VARCHAR(32), projectSpaceVersionId VARCHAR(32))
 BEGIN
     DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM projectSpaceVersion WHERE id = UNHEX(projectSpaceVersionId));
 	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
-    DECLARE totalResults INT DEFAULT 0;
-    
-	IF os < 0 THEN
-		SET os = 0;
-	END IF;
-    
-	IF l < 0 THEN
-		SET l = 0;
-	END IF;
-    
-	IF l > 100 THEN
-		SET l = 100;
-	END IF;
+    DECLARE projectSpaceId BINARY(16) DEFAULT NULL;
     
 	IF forUserRole IS NOT NULL THEN
-		SELECT COUNT(*) INTO totalResults FROM projectSpaceVersionSheetTransform WHERE projectSpaceVersion = UNHEX(projectSpaceVersionId);
-        IF os >= totalResults OR l = 0 THEN
-			SELECT totalResults;
-		ELSE IF sortBy = 'nameDesc' THEN
-			SELECT totalResults, lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, st.clashChangeRegId, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId) ORDER BY s.name DESC LIMIT os, l;
-		ELSE
-			SELECT totalResults, lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, st.clashChangeRegId, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId) ORDER BY s.name DESC LIMIT os, l;
+		IF (SELECT COUNT(*) FROM projectSpaceVersionSheetTransform WHERE projectSpaceVersion = UNHEX(projectSpaceVersionId)) = 0 THEN
+			SELECT projectSpace INTO projectSpaceId FROM projectSpaceVersion WHERE id = UNHEX(projectSpaceVersionId);
+			DELETE FROM projectSpaceVersion WHERE id = UNHEX(projectSpaceVersionId);
+            IF (SELECT COUNT(*) FROM projectSpaceVersion WHERE projectSpace = UNHEX(projectSpaceId)) = 0 THEN
+				DELETE FROM treeNode WHERE id = projectSpaceId;
+            END IF;
         END IF;
-        END IF;
+        
+		SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, st.clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId);
+
     ELSE 
 		SIGNAL SQLSTATE 
 			'45002'
