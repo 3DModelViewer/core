@@ -17,16 +17,12 @@ func DocumentUploadHelper(fileName string, fileType string, file io.ReadCloser, 
 		return "", "", "", "", fileType, "", err
 	}
 	defer file.Close()
-	if thumbnail != nil {
-		defer thumbnail.Close()
-	}
 
 	fileExtension := filepath.Ext(fileName)
 	if len(fileExtension) >= 1 {
 		fileExtension = fileExtension[1:] //cut of the .
 	}
 	fExt = fileExtension
-	tnType = thumbnailType
 
 	fType, _ = getFileType(fileExtension)
 	if fType == "image" || fType == "video" || fType == "audio" || fType == "" {
@@ -40,13 +36,7 @@ func DocumentUploadHelper(fileName string, fileType string, file io.ReadCloser, 
 		return "", "", "", fExt, fType, "", err
 	}
 
-	if thumbnail != nil && strings.HasPrefix(thumbnailType, "image/") {
-		if _, err = vada.UploadFile(newDocVerId+".tn.tn", ossBucket, thumbnail); err != nil {
-			tnType = ""
-		}
-	} else {
-		tnType = ""
-	}
+	tnType, err = ThumbnailUploadHelper(newDocVerId, thumbnailType, thumbnail, ossBucket, vada)
 
 	urn, err = uploadResp.String("objectId")
 	if err != nil {
@@ -67,6 +57,20 @@ func DocumentUploadHelper(fileName string, fileType string, file io.ReadCloser, 
 	}
 
 	return newDocVerId, status, urn, fExt, fType, tnType, err
+}
+
+func ThumbnailUploadHelper(id string, thumbnailType string, thumbnail io.ReadCloser, ossBucket string, vada vada.VadaClient) (tnType string, err error) {
+	if thumbnail != nil {
+		defer thumbnail.Close()
+		if thumbnail != nil && strings.HasPrefix(thumbnailType, "image/") {
+			if _, err = vada.UploadFile(id+".tn.tn", ossBucket, thumbnail); err != nil {
+				return "", err
+			} else {
+				return thumbnailType, nil
+			}
+		}
+	}
+	return "", nil
 }
 
 func ToBase64(str string) string {

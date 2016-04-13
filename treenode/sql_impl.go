@@ -61,7 +61,7 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		}
 	}
 
-	createViewerState := func(forUser string, parent string, name string, createComment string, definition *json.Json) (*TreeNode, error) {
+	createProjectSpace := func(forUser string, parent string, name string, projectSpaceVersion string, createComment string, definition *json.Json, thumbnailType string) (*TreeNode, error) {
 		// TODO
 		return nil, nil
 	}
@@ -94,5 +94,5 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		return offsetGetter("CALL treeNodeProjectSearch(?, ?, ?, ?, ?, ?, ?)", forUser, project, search, string(nt), offset, limit, string(sortBy))
 	}
 
-	return newTreeNodeStore(createFolder, createDocument, createViewerState, setName, move, get, getChildren, getParents, globalSearch, projectSearch, util.GetRoleFunc(db), vada, ossBucketPrefix, log)
+	return newTreeNodeStore(createFolder, createDocument, createProjectSpace, setName, move, get, getChildren, getParents, globalSearch, projectSearch, util.GetRoleFunc(db), vada, ossBucketPrefix, log)
 }

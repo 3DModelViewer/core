@@ -11,7 +11,7 @@ const (
 	Any         = nodeType("any") //used for results filtering only
 	Folder      = nodeType("folder")
 	Document    = nodeType("document")
-	ViewerState = nodeType("viewerState")
+	ProjectSpace = nodeType("projectSpace")
 )
 
 type sortBy string
@@ -32,8 +32,8 @@ func NodeType(nt string) nodeType {
 		return Folder
 	case "document":
 		return Document
-	case "viewerstate":
-		return ViewerState
+	case "projectspace":
+		return ProjectSpace
 	default:
 		return Any
 	}
