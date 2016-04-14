@@ -1,4 +1,4 @@
-package documentversion
+package projectspaceversion
 
 import (
 	"time"

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/modelhub/core/documentversion"
+	"github.com/modelhub/core/helper"
 	"github.com/modelhub/core/project"
 	"github.com/modelhub/core/sheet"
 	"github.com/modelhub/core/treenode"
@@ -11,7 +12,6 @@ import (
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	"time"
-	"github.com/modelhub/core/helper"
 )
 
 func NewSqlCoreApi(mySqlConnection string, vada vada.VadaClient, statusCheckTimeout time.Duration, batchGetTimeout time.Duration, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) (CoreApi, error) {

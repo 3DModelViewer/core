@@ -8,9 +8,9 @@ const (
 	NameAsc  = sortBy("nameAsc")
 	NameDesc = sortBy("nameDesc")
 
-	Any         = nodeType("any") //used for results filtering only
-	Folder      = nodeType("folder")
-	Document    = nodeType("document")
+	Any          = nodeType("any") //used for results filtering only
+	Folder       = nodeType("folder")
+	Document     = nodeType("document")
 	ProjectSpace = nodeType("projectSpace")
 )
 

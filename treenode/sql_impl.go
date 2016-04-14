@@ -7,6 +7,7 @@ import (
 	"github.com/robsix/golog"
 	"github.com/robsix/json"
 	"strings"
+	"github.com/modelhub/core/sheettransform"
 )
 
 func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
@@ -61,8 +62,14 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		}
 	}
 
-	createProjectSpace := func(forUser string, parent string, name string, projectSpaceVersion string, createComment string, definition *json.Json, thumbnailType string) (*TreeNode, error) {
-		// TODO
+	createProjectSpace := func(forUser string, parent string, name string, projectSpaceVersion string, createComment string, sheetTransforms []*sheettransform.SheetTransform, camera *json.Json, thumbnailType string) (*TreeNode, error) {
+		cameraStr, _ := camera.ToString();
+		if tns, err := getter("CALL treeNodeCreateProjectSpace(?, ?, ?, ?, ?, ?, ?)", 1, forUser, parent, name, projectSpaceVersion, createComment, cameraStr, thumbnailType); len(tns) == 1 {
+			//TODO save sheetTransforms
+			return tns[0], err
+		} else {
+			return nil, err
+		}
 		return nil, nil
 	}
 

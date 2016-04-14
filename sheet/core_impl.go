@@ -103,7 +103,7 @@ func convertToPublicFormat(sheets []*Sheet_) []*Sheet {
 			Thumbnails:      s.Thumbnails,
 			Project:         s.Project,
 			Manifest:        s.Manifest,
-			Role:        	 s.Role,
+			Role:            s.Role,
 		})
 	}
 	return publicSheets

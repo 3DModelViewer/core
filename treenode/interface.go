@@ -1,13 +1,14 @@
 package treenode
 
 import (
-	"github.com/robsix/json"
 	"io"
+	"github.com/modelhub/core/sheettransform"
+	"github.com/robsix/json"
 )
 
 type createFolder func(forUser string, parent string, name string) (*TreeNode, error)
 type createDocument func(forUser string, parent string, name string, documentVersion string, uploadComment string, fileType string, fileExtension string, urn string, status string, thumbnailType string) (*TreeNode, error)
-type createProjectSpace func(forUser string, parent string, name string, projectSpaceVersion string, createComment string, definition *json.Json, thumbnailType string) (*TreeNode, error)
+type createProjectSpace func(forUser string, parent string, name string, projectSpaceVersion string, createComment string, sheetTransforms []*sheettransform.SheetTransform, camera *json.Json, thumbnailType string) (*TreeNode, error)
 type setName func(forUser string, id string, newName string) error
 type move func(forUser string, newParent string, ids []string) error
 type get func(forUser string, ids []string) ([]*TreeNode, error)
@@ -19,7 +20,7 @@ type projectSearch func(forUser string, project string, search string, nodeType 
 type TreeNodeStore interface {
 	CreateFolder(forUser string, parent string, name string) (*TreeNode, error)
 	CreateDocument(forUser string, parent string, name string, uploadComment string, fileType string, fileName string, file io.ReadCloser, thumbnailType string, thumbnail io.ReadCloser) (*TreeNode, error)
-	CreateProjectSpace(forUser string, parent string, name string, createComment string, definition *json.Json, thumbnailType string, thumbnail io.ReadCloser) (*TreeNode, error)
+	CreateProjectSpace(forUser string, parent string, name string, createComment string, sheetTransforms []*sheettransform.SheetTransform, camera *json.Json, thumbnailType string, thumbnail io.ReadCloser) (*TreeNode, error)
 	SetName(forUser string, id string, newName string) error
 	Move(forUser string, newParent string, ids []string) error
 	Get(forUser string, ids []string) ([]*TreeNode, error)

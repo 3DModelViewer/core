@@ -1,29 +1,29 @@
 package helper
 
 import (
-	"time"
-	"github.com/modelhub/core/treenode"
 	"github.com/modelhub/core/documentversion"
 	"github.com/modelhub/core/sheet"
+	"github.com/modelhub/core/treenode"
 	"github.com/robsix/golog"
+	"time"
 )
 
 func NewHelper(tns treenode.TreeNodeStore, dvs documentversion.DocumentVersionStore, ss sheet.SheetStore, batchGetTimeout time.Duration, log golog.Log) Helper {
 	return &helper{
-		tns: tns,
-		dvs: dvs,
-		ss: ss,
+		tns:             tns,
+		dvs:             dvs,
+		ss:              ss,
 		batchGetTimeout: batchGetTimeout,
-		log: log,
+		log:             log,
 	}
 }
 
 type helper struct {
-	tns treenode.TreeNodeStore
-	dvs documentversion.DocumentVersionStore
-	ss sheet.SheetStore
+	tns             treenode.TreeNodeStore
+	dvs             documentversion.DocumentVersionStore
+	ss              sheet.SheetStore
 	batchGetTimeout time.Duration
-	log golog.Log
+	log             golog.Log
 }
 
 func (h *helper) GetChildrenDocumentsWithLatestVersionAndFirstSheetInfo(forUser string, folder string, offset int, limit int, sortBy sortBy) ([]*DocumentNode, int, error) {
@@ -33,10 +33,10 @@ func (h *helper) GetChildrenDocumentsWithLatestVersionAndFirstSheetInfo(forUser 
 		countDown := len(docs)
 		timeOutChan := time.After(h.batchGetTimeout)
 		res := make([]*DocumentNode, 0, totalResults)
-		resVerChan := make(chan *struct{
-			resIdx int
+		resVerChan := make(chan *struct {
+			resIdx        int
 			latestVersion *latestVersion
-			err error
+			err           error
 		})
 		for idx, doc := range docs {
 			res = append(res, &DocumentNode{
@@ -44,34 +44,34 @@ func (h *helper) GetChildrenDocumentsWithLatestVersionAndFirstSheetInfo(forUser 
 			})
 			go func(idx int, doc *treenode.TreeNode) {
 				vers, _, er := h.dvs.GetForDocument(forUser, doc.Id, 0, 1, documentversion.VersionDesc)
-				resVer := &struct{
-					resIdx int
+				resVer := &struct {
+					resIdx        int
 					latestVersion *latestVersion
-					err error
+					err           error
 				}{
-					resIdx: idx,
+					resIdx:        idx,
 					latestVersion: nil,
-					err: er,
+					err:           er,
 				}
 				if vers != nil && len(vers) > 0 {
 					ver := vers[0]
 					resVer.latestVersion = &latestVersion{
-						Id: ver.Id,
-						FileType: ver.FileType,
+						Id:            ver.Id,
+						FileType:      ver.FileType,
 						FileExtension: ver.FileExtension,
-						Status: ver.Status,
+						Status:        ver.Status,
 						ThumbnailType: ver.ThumbnailType,
-						SheetCount: ver.SheetCount,
+						SheetCount:    ver.SheetCount,
 					}
 					if ver.FileType == "lmv" && ver.Status == "success" {
 						sheets, _, _ := h.ss.GetForDocumentVersion(forUser, ver.Id, 0, 1, sheet.NameAsc)
 						if sheets != nil && len(sheets) > 0 {
 							sheet := sheets[0]
 							resVer.latestVersion.FirstSheet = &firstSheet{
-								Id: sheet.Id,
+								Id:         sheet.Id,
 								Thumbnails: sheet.Thumbnails,
-								Manifest: sheet.Manifest,
-								Role: sheet.Role,
+								Manifest:   sheet.Manifest,
+								Role:       sheet.Role,
 							}
 						}
 					}
@@ -82,7 +82,7 @@ func (h *helper) GetChildrenDocumentsWithLatestVersionAndFirstSheetInfo(forUser 
 		for countDown > 0 {
 			timedOut := false
 			select {
-			case resVer := <- resVerChan:
+			case resVer := <-resVerChan:
 				countDown--
 				if resVer.latestVersion != nil {
 					res[resVer.resIdx].LatestVersion = resVer.latestVersion
@@ -106,10 +106,10 @@ func (h *helper) GetDocumentVersionsWithFirstSheetInfo(forUser string, document 
 		countDown := len(docVers)
 		timeOutChan := time.After(h.batchGetTimeout)
 		res := make([]*DocumentVersion, 0, totalResults)
-		resSheetChan := make(chan *struct{
-			resIdx int
+		resSheetChan := make(chan *struct {
+			resIdx     int
 			firstSheet *firstSheet
-			err error
+			err        error
 		})
 		for idx, docVer := range docVers {
 			res = append(res, &DocumentVersion{
@@ -119,21 +119,21 @@ func (h *helper) GetDocumentVersionsWithFirstSheetInfo(forUser string, document 
 				go func(idx int, docVer *documentversion.DocumentVersion) {
 					sheets, _, er := h.ss.GetForDocumentVersion(forUser, docVer.Id, 0, 1, sheet.NameAsc)
 					resSheet := &struct {
-						resIdx int
-						firstSheet  *firstSheet
-						err    error
+						resIdx     int
+						firstSheet *firstSheet
+						err        error
 					}{
-						resIdx: idx,
+						resIdx:     idx,
 						firstSheet: nil,
-						err: er,
+						err:        er,
 					}
 					if sheets != nil && len(sheets) > 0 {
 						sheet := sheets[0]
 						resSheet.firstSheet = &firstSheet{
-							Id: sheet.Id,
+							Id:         sheet.Id,
 							Thumbnails: sheet.Thumbnails,
-							Manifest: sheet.Manifest,
-							Role: sheet.Role,
+							Manifest:   sheet.Manifest,
+							Role:       sheet.Role,
 						}
 					}
 					resSheetChan <- resSheet
@@ -145,7 +145,7 @@ func (h *helper) GetDocumentVersionsWithFirstSheetInfo(forUser string, document 
 		for countDown > 0 {
 			timedOut := false
 			select {
-			case resSheet := <- resSheetChan:
+			case resSheet := <-resSheetChan:
 				countDown--
 				if resSheet.firstSheet != nil {
 					res[resSheet.resIdx].FirstSheet = resSheet.firstSheet

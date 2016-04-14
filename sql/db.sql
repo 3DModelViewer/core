@@ -49,6 +49,34 @@ BEGIN
 END$$
 DELIMITER ;
 
+DROP FUNCTION IF EXISTS createTempSheetTransformHashJsonsTable;
+DELIMITER $$
+CREATE FUNCTION createTempSheetTransformHashJsonsTable(sheetTransformHashJsons varchar(21000)) RETURNS BOOL NOT DETERMINISTIC
+BEGIN
+    DROP TEMPORARY TABLE IF EXISTS tempSheetTransformHashJsons;
+    CREATE TEMPORARY TABLE tempSheetTransformHashJsons(
+		hashJson VARCHAR(1000) NOT NULL, 
+		PRIMARY KEY (hashJson)
+	);
+    
+    IF ids IS NULL THEN
+		SIGNAL SQLSTATE 
+			'45001'
+		SET
+			MESSAGE_TEXT = 'Invalid sheetHashTransformHashJsons argument',
+            MYSQL_ERRNO = 45001;
+		RETURN FALSE;
+    END IF;
+ 
+	WHILE sheetHashTransformHashJsons != '' > 0 DO
+		INSERT INTO tempSheetTransformHashJsons (hashJson) VALUES (UNHEX(SUBSTRING_INDEX(sheetTransformHashJsons, '#', 1)));
+		SET sheetTransformHashJsons = SUBSTRING(sheetTransformHashJsons, INSTR(sheetTransformHashJsons, '#') + 1);
+	END WHILE;
+    
+    RETURN TRUE;
+END$$
+DELIMITER ;
+
 # END UTIL
 
 # START TABLES
@@ -1007,12 +1035,12 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS treeNodeCreateProjectSpace;
 DELIMITER $$
-CREATE PROCEDURE treeNodeCreateProjectSpace(forUserId VARCHAR(32), parentId VARCHAR(32), projectSpaceName VARCHAR(250), projectSpaceVersionId VARCHAR(32), createComment VARCHAR(250), thumbnailType VARCHAR(50), cameraJson VARCHAR(1000))
+CREATE PROCEDURE treeNodeCreateProjectSpace(forUserId VARCHAR(32), parentId VARCHAR(32), projectSpaceName VARCHAR(250), projectSpaceVersionId VARCHAR(32), createComment VARCHAR(250), cameraJson VARCHAR(1000), thumbnailType VARCHAR(50))
 BEGIN
     DECLARE newTreeNodeId BINARY(16) DEFAULT opUuid();
     DECLARE newProjectSpaceVersionId BINARY(16) DEFAULT opUuid();
 	CALL _treeNode_createNode(forUserId, newTreeNodeId, parentId, projectSpaceName, 'projectSpace');
-    CALL projectSpaceVersionCreate(forUserId, lex(newTreeNodeId), projectSpaceVersionId, createComment, thumbnailType, cameraJson);
+    CALL projectSpaceVersionCreate(forUserId, lex(newTreeNodeId), projectSpaceVersionId, createComment, cameraJson, thumbnailType);
 END$$
 DELIMITER ;
 
@@ -1450,16 +1478,16 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS projectSpaceVersionCreate;
 DELIMITER $$
-CREATE PROCEDURE projectSpaceVersionCreate(forUserId VARCHAR(32), projectSpaceId VARCHAR(32), projectSpaceVersionId VARCHAR(32), createComment VARCHAR(250), thumbnailType VARCHAR(50), cameraJson VARCHAR(1000))
+CREATE PROCEDURE projectSpaceVersionCreate(forUserId VARCHAR(32), projectSpaceId VARCHAR(32), projectSpaceVersionId VARCHAR(32), createComment VARCHAR(250), cameraJson VARCHAR(1000), thumbnailType VARCHAR(50))
 BEGIN
 	DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM treeNode WHERE id = UNHEX(projectSpaceId));
     DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
     DECLARE version INT DEFAULT (SELECT COUNT(*) FROM projectSpaceVersion WHERE projectSpace = UNHEX(projectSpaceId)) + 1;
     
     IF forUserRole IN ('owner', 'admin', 'organiser', 'contributor') THEN
-		INSERT INTO projectSpaceVersion (id, projectSpace, version, project, created, createComment, createdBy, thumbnailType, cameraJson)
-        VALUES (UNHEX(projectSpaceVersionId), UNHEX(projectSpaceId), version, projectId, UTC_TIMESTAMP(), createComment, UNHEX(forUserId), thumbnailType, cameraJson);
-        SELECT lex(psv.id) AS id, lex(projectSpace) AS projectSpace, version, lex(project) AS project, created, createComment, lex(createdBy) AS createdBy, thumbnailType, cameraJson, 0 AS sheetTransformCount FROM projectSpaceVersion AS psv WHERE psv.id = UNHEX(projectSpaceVersionId);
+		INSERT INTO projectSpaceVersion (id, projectSpace, version, project, created, createComment, createdBy, cameraJson, thumbnailType)
+        VALUES (UNHEX(projectSpaceVersionId), UNHEX(projectSpaceId), version, projectId, UTC_TIMESTAMP(), createComment, UNHEX(forUserId), cameraJson, thumbnailType);
+        SELECT lex(psv.id) AS id, lex(projectSpace) AS projectSpace, version, lex(project) AS project, created, createComment, lex(createdBy) AS createdBy, cameraJson, thumbnailType, 0 AS sheetTransformCount FROM projectSpaceVersion AS psv WHERE psv.id = UNHEX(projectSpaceVersionId);
 	ELSE
 		SIGNAL SQLSTATE 
 			'45002'
@@ -1742,10 +1770,23 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS sheetTransformCreate;
 DELIMITER $$
-CREATE PROCEDURE sheetTransformCreate(sheet VARCHAR(32), sheetTransformHashJson VARCHAR(1000), clashChangeRegId VARCHAR(32))
+CREATE PROCEDURE sheetTransformCreate(forUserId VARCHAR(32), sheetId VARCHAR(32), sheetTransformHashJson VARCHAR(1000), clashChangeRegId VARCHAR(32))
 BEGIN
-	INSERT INTO sheetTransform (id, sheet, sheetTransformHashJson, clashChangeRegId)
-    VALUES (opUuid(), UNHEX(sheet), sheetTransformHashJson, UNHEX(clashChangeRegId));
+	DECLARE projectId BINARY(16) DEFAULT NULL;
+	DECLARE forUserRole VARCHAR(50) DEFAULT NULL;
+    
+    SELECT project INTO projectId FROM sheet WHERE id = UNHEX(sheetId);
+    SET forUserRole = _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
+    
+    IF forUserRole IN ('owner', 'admin', 'organiser', 'contributor') THEN
+		INSERT INTO sheetTransform (id, sheet, sheetTransformHashJson, clashChangeRegId)
+		VALUES (opUuid(), UNHEX(sheetId), sheetTransformHashJson, UNHEX(clashChangeRegId))
+        ON DUPLICATE KEY UPDATE
+			id = id,
+            sheet = sheet,
+            sheetTransformHashJson = sheetTransformHashJson,
+            clashChangeRegId = clashChangeRegId;
+	END IF;
 END$$
 DELIMITER ;
 
@@ -1760,7 +1801,7 @@ BEGIN
 		SELECT s.project INTO projectId FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id WHERE st.id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
         SELECT COUNT(DISTINCT s.project) INTO distinctProjectsCount FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempIds AS t ON st.id = t.id;
         IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
-			SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, st.clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempIds AS t ON st.id = t.id;
+			SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempIds AS t ON st.id = t.id;
         ELSE
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1770,6 +1811,17 @@ BEGIN
         END IF;		
     END IF;
     DROP TEMPORARY TABLE IF EXISTS tempIds;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sheetTransformGetForHashJsons;
+DELIMITER $$
+CREATE PROCEDURE sheetTransformGetForHashJsons(hashJsons VARCHAR(21000))
+BEGIN    
+	IF createTempSheetHashTransformHashJsonsTable(hashJsons) THEN
+		SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempSheetTransformHashJsons AS tsthj ON s.sheetTransformHashJson = tsthj.hashJson;
+	END IF;
+    DROP TEMPORARY TABLE IF EXISTS tempSheetTransformHashJsons;
 END$$
 DELIMITER ;
 
@@ -1790,7 +1842,7 @@ BEGIN
             END IF;
         END IF;
         
-		SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, st.clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId);
+		SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId);
 
     ELSE 
 		SIGNAL SQLSTATE 

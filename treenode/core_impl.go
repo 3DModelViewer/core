@@ -5,44 +5,45 @@ import (
 	"github.com/modelhub/core/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
-	"github.com/robsix/json"
 	"io"
+	"github.com/modelhub/core/sheettransform"
+	"github.com/robsix/json"
 )
 
 func newTreeNodeStore(createFolder createFolder, createDocument createDocument, createProjectSpace createProjectSpace, setName setName, move move, get get, getChildren getChildren, getParents getParents, globalSearch globalSearch, projectSearch projectSearch, getRole util.GetRole, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
 	return &treeNodeStore{
-		createFolder:      createFolder,
-		createDocument:    createDocument,
+		createFolder:       createFolder,
+		createDocument:     createDocument,
 		createProjectSpace: createProjectSpace,
-		setName:           setName,
-		move:              move,
-		get:               get,
-		getChildren:       getChildren,
-		getParents:        getParents,
-		globalSearch:      globalSearch,
-		projectSearch:     projectSearch,
-		getRole:           getRole,
-		vada:              vada,
-		ossBucketPrefix:   ossBucketPrefix,
-		log:               log,
+		setName:            setName,
+		move:               move,
+		get:                get,
+		getChildren:        getChildren,
+		getParents:         getParents,
+		globalSearch:       globalSearch,
+		projectSearch:      projectSearch,
+		getRole:            getRole,
+		vada:               vada,
+		ossBucketPrefix:    ossBucketPrefix,
+		log:                log,
 	}
 }
 
 type treeNodeStore struct {
-	createFolder      createFolder
-	createDocument    createDocument
+	createFolder       createFolder
+	createDocument     createDocument
 	createProjectSpace createProjectSpace
-	setName           setName
-	move              move
-	get               get
-	getChildren       getChildren
-	getParents        getParents
-	globalSearch      globalSearch
-	projectSearch     projectSearch
-	getRole           util.GetRole
-	vada              vada.VadaClient
-	ossBucketPrefix   string
-	log               golog.Log
+	setName            setName
+	move               move
+	get                get
+	getChildren        getChildren
+	getParents         getParents
+	globalSearch       globalSearch
+	projectSearch      projectSearch
+	getRole            util.GetRole
+	vada               vada.VadaClient
+	ossBucketPrefix    string
+	log                golog.Log
 }
 
 func (tns *treeNodeStore) CreateFolder(forUser string, parent string, name string) (*TreeNode, error) {
@@ -96,7 +97,7 @@ func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name str
 	}
 }
 
-func (tns *treeNodeStore) CreateProjectSpace(forUser string, parent string, name string, createComment string, definition *json.Json, thumbnailType string, thumbnail io.ReadCloser) (*TreeNode, error) {
+func (tns *treeNodeStore) CreateProjectSpace(forUser string, parent string, name string, createComment string, sheetTransforms []string, camera *json.Json, thumbnailType string, thumbnail io.ReadCloser) (*TreeNode, error) {
 	var projectId string
 
 	if thumbnail != nil {
@@ -120,7 +121,7 @@ func (tns *treeNodeStore) CreateProjectSpace(forUser string, parent string, name
 
 	newProjVerId := util.NewId()
 	thumbnailType, _ = util.ThumbnailUploadHelper(newProjVerId, thumbnailType, thumbnail, tns.ossBucketPrefix+projectId, tns.vada)
-	if treeNode, err := tns.createProjectSpace(forUser, parent, name, newProjVerId, createComment, definition, thumbnailType); err != nil {
+	if treeNode, err := tns.createProjectSpace(forUser, parent, name, newProjVerId, createComment, sheetTransforms, camera, thumbnailType); err != nil {
 		tns.log.Error("TreeNodeStore.CreateProjectSpace error: forUser: %q parent: %q name: %q createComment: %q thumbnailType: %q error: %v", forUser, parent, name, createComment, thumbnailType, err)
 		return treeNode, err
 	} else {

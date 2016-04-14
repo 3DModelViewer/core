@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	NameAsc  = sortBy("nameAsc")
-	NameDesc = sortBy("nameDesc")
-	VersionAsc = sortBy("versionAsc")
+	NameAsc     = sortBy("nameAsc")
+	NameDesc    = sortBy("nameDesc")
+	VersionAsc  = sortBy("versionAsc")
 	VersionDesc = sortBy("versionDesc")
 )
 

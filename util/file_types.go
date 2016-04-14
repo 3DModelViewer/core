@@ -7,11 +7,11 @@ import (
 
 var fileTypes = map[string]string{
 	//open document format
-	"odt": "od",
-	"ods": "od",
-	"odp": "od",
-	"odg": "od",
-	"odf": "od",
+	"odt":  "od",
+	"ods":  "od",
+	"odp":  "od",
+	"odg":  "od",
+	"odf":  "od",
 	"fodt": "od",
 	"fods": "od",
 	"fodp": "od",
@@ -22,7 +22,7 @@ var fileTypes = map[string]string{
 	//text
 	"csv": "text",
 	"txt": "text",
-	"md": "text",
+	"md":  "text",
 	//image
 	"png":  "image",
 	"jpeg": "image",

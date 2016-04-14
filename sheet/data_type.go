@@ -2,7 +2,7 @@ package sheet
 
 type Sheet_ struct {
 	Sheet
-	BaseUrn string `json:"baseUrn"`
+	BaseUrn string `json:"-"`
 }
 
 type Sheet struct {

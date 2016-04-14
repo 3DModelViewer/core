@@ -3,11 +3,11 @@ package core
 import (
 	"errors"
 	"github.com/modelhub/core/documentversion"
+	"github.com/modelhub/core/helper"
 	"github.com/modelhub/core/project"
 	"github.com/modelhub/core/sheet"
 	"github.com/modelhub/core/treenode"
 	"github.com/modelhub/core/user"
-	"github.com/modelhub/core/helper"
 )
 
 func newCoreApi(us user.UserStore, ps project.ProjectStore, tns treenode.TreeNodeStore, dvs documentversion.DocumentVersionStore, ss sheet.SheetStore, h helper.Helper) (CoreApi, error) {
@@ -20,7 +20,7 @@ func newCoreApi(us user.UserStore, ps project.ProjectStore, tns treenode.TreeNod
 		tns: tns,
 		dvs: dvs,
 		ss:  ss,
-		h: h,
+		h:   h,
 	}, nil
 }
 
@@ -30,7 +30,7 @@ type coreApi struct {
 	tns treenode.TreeNodeStore
 	dvs documentversion.DocumentVersionStore
 	ss  sheet.SheetStore
-	h helper.Helper
+	h   helper.Helper
 }
 
 func (ca *coreApi) User() user.UserStore {
