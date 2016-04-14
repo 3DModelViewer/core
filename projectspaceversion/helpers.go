@@ -3,13 +3,13 @@ package projectspaceversion
 import (
 	"errors"
 	"github.com/modelhub/core/sheet"
+	"github.com/modelhub/core/sheettransform"
 	"github.com/modelhub/core/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
 	. "github.com/robsix/json"
 	"strings"
 	"time"
-	"github.com/modelhub/core/sheettransform"
 )
 
 func registerWithClashChangeService(sts []*sheettransform.SheetTransform, registerTimeout time.Duration, vada vada.VadaClient, log golog.Log) []error {

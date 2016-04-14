@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	VersionAsc                  = sortBy("versionAsc")
-	VersionDesc                 = sortBy("versionDesc")
+	VersionAsc  = sortBy("versionAsc")
+	VersionDesc = sortBy("versionDesc")
 )
 
 type sortBy string

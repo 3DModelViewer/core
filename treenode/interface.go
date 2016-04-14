@@ -1,14 +1,15 @@
 package treenode
 
 import (
-	"io"
 	"github.com/modelhub/core/sheettransform"
 	"github.com/robsix/json"
+	"io"
 )
 
 type createFolder func(forUser string, parent string, name string) (*TreeNode, error)
 type createDocument func(forUser string, parent string, name string, documentVersion string, uploadComment string, fileType string, fileExtension string, urn string, status string, thumbnailType string) (*TreeNode, error)
-type createProjectSpace func(forUser string, parent string, name string, projectSpaceVersion string, createComment string, sheetTransforms []*sheettransform.SheetTransform, camera *json.Json, thumbnailType string) (*TreeNode, error)
+type createProjectSpace func(forUser string, parent string, name string, projectSpaceVersion string, createComment string, sheetTransforms []string, camera *json.Json, thumbnailType string) (*TreeNode, error)
+type saveSheetTransformsForProjectSpace func(forUser string, sheetTransforms []*sheettransform.SheetTransform) ([]*sheettransform.SheetTransform, error)
 type setName func(forUser string, id string, newName string) error
 type move func(forUser string, newParent string, ids []string) error
 type get func(forUser string, ids []string) ([]*TreeNode, error)

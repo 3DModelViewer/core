@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func GetSheetTransformHashJson(st *SheetTransform) (string, error) {
+func getSheetTransformHashJson(st *SheetTransform) (string, error) {
 	obj := &sheetTransformHashObj{
 		Id:        st.Sheet,
 		Transform: &st.Transform,
@@ -69,23 +69,21 @@ func GetSheetTransformHashJson(st *SheetTransform) (string, error) {
 	}
 }
 
-func GetTransformFromHashJson(hashJson string) (*Transform, error) {
-	dst := &Transform{
-		Scale: Vector3{
-			X: 1,
-			Y: 1,
-			Z: 1,
-		},
-		Rotate: Quaternion{
-			W: 1,
+func getTransformFromHashJson(hashJson string) (*Transform, error) {
+	dst := &sheetTransformHashObj{
+		Transform: &Transform{
+			Scale: Vector3{
+				X: 1,
+				Y: 1,
+				Z: 1,
+			},
+			Rotate: Quaternion{
+				W: 1,
+			},
 		},
 	}
 	err := json.Unmarshal([]byte(hashJson), dst)
 	return dst, err
-}
-
-func BulkSaveSheetTransforms(){
-
 }
 
 type sheetTransformHashObj struct {

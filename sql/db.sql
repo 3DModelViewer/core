@@ -1856,13 +1856,15 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS projectSpaceVersionSheetTransformCreate;
 DELIMITER $$
-CREATE PROCEDURE projectSpaceVersionSheetTransformCreate(projectSpaceVersionId VARCHAR(32), sheetTransformId VARCHAR(32))
+CREATE PROCEDURE projectSpaceVersionSheetTransformCreate(projectSpaceVersionId VARCHAR(32), sheetTransformIds VARCHAR(3300))
 BEGIN
 	DECLARE projectSpaceVersionProjectId BINARY(16) DEFAULT (SELECT project FROM projectSpaceVersion WHERE id = UNHEX(projectSpaceVersionId));
 	DECLARE sheetProjectId BINARY(16) DEFAULT (SELECT s.project FROM sheet as s INNER JOIN sheetTransform AS st ON s.id = st.sheet WHERE st.id = UNHEX(sheetTransformId));
     IF projectSpaceVersionProjectId = sheetProjectId THEN
-		INSERT INTO projectSpaceVersionSheetTransform (projectSpaceVersion, sheetTransform)
-		VALUES (UNHEX(projectSpaceVersionId), UNHEX(sheetTransformId));
+		IF createTempIdsTable(users) THEN
+			INSERT INTO projectSpaceVersionSheetTransform (projectSpaceVersion, sheetTransform)
+			SELECT UNHEX(projectSpaceVersionId), t.id FROM tempIds AS t;
+        END IF;
     ELSE 
 		SIGNAL SQLSTATE 
 			'45002'
