@@ -28,12 +28,12 @@ func (sts *sheetTransformStore) Get(forUser string, ids []string) ([]*SheetTrans
 	}
 }
 
-func (sts *sheetTransformStore) GetForProjectSpaceVersion(forUser string, projectSpaceVersion string) ([]*SheetTransform, error) {
-	if sheetTransforms, err := sts.getForProjectSpaceVersion(forUser, projectSpaceVersion); err != nil {
-		sts.log.Error("SheetTransformStore.GetForProjectSpaceVersion error: forUser: %q projectSpaceVersion: %q error: %v", forUser, projectSpaceVersion, err)
+func (sts *sheetTransformStore) GetForProjectSpaceVersion(forUser string, projectSpaceVersion string, offset int, limit int, sortBy sortBy) ([]*SheetTransform, error) {
+	if sheetTransforms, err := sts.getForProjectSpaceVersion(forUser, projectSpaceVersion, offset, limit, sortBy); err != nil {
+		sts.log.Error("SheetTransformStore.GetForProjectSpaceVersion error: forUser: %q projectSpaceVersion: %q offset: %d limit: %d sortBy: %q error: %v", forUser, projectSpaceVersion, offset, limit, sortBy, err)
 		return sheetTransforms, err
 	} else {
-		sts.log.Info("SheetTransformStore.GetForProjectSpaceVersion success: forUser: %q projectSpaceVersion: %q", forUser, projectSpaceVersion)
+		sts.log.Info("SheetTransformStore.GetForProjectSpaceVersion success: forUser: %q projectSpaceVersion: %q offset: %d limit: %d sortBy: %q", forUser, projectSpaceVersion, offset, limit, sortBy)
 		return sheetTransforms, nil
 	}
 }

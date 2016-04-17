@@ -59,7 +59,7 @@ BEGIN
 		PRIMARY KEY (hashJson)
 	);
     
-    IF ids IS NULL THEN
+    IF sheetTransformHashJsons IS NULL THEN
 		SIGNAL SQLSTATE 
 			'45001'
 		SET
@@ -1827,14 +1827,32 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS sheetTransformGetForProjectSpaceVersion;
 DELIMITER $$
-CREATE PROCEDURE sheetTransformGetForProjectSpaceVersion(forUserId VARCHAR(32), projectSpaceVersionId VARCHAR(32))
+CREATE PROCEDURE sheetTransformGetForProjectSpaceVersion(forUserId VARCHAR(32), projectSpaceVersionId VARCHAR(32), os INT, l INT, sortBy VARCHAR(50))
 BEGIN
     DECLARE projectId BINARY(16) DEFAULT (SELECT project FROM projectSpaceVersion WHERE id = UNHEX(projectSpaceVersionId));
 	DECLARE forUserRole VARCHAR(50) DEFAULT _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
     DECLARE projectSpaceId BINARY(16) DEFAULT NULL;
+    DECLARE totalResults INT DEFAULT 0;
+
+    IF os < 0 THEN
+        SET os = 0;
+    END IF;
+    
+    IF l < 0 THEN
+        SET l = 0;
+    END IF;
+    
+    IF l > 100 THEN
+        SET l = 100;
+    END IF;
+
     
 	IF forUserRole IS NOT NULL THEN
-		IF (SELECT COUNT(*) FROM projectSpaceVersionSheetTransform WHERE projectSpaceVersion = UNHEX(projectSpaceVersionId)) = 0 THEN
+    
+        SELECT COUNT(*) INTO totalResults FROM projectSpaceVersionSheetTransform WHERE projectSpaceVersion = UNHEX(projectSpaceVersionId);
+
+    
+		IF totalResults = 0 THEN
 			SELECT projectSpace INTO projectSpaceId FROM projectSpaceVersion WHERE id = UNHEX(projectSpaceVersionId);
 			DELETE FROM projectSpaceVersion WHERE id = UNHEX(projectSpaceVersionId);
             IF (SELECT COUNT(*) FROM projectSpaceVersion WHERE projectSpace = UNHEX(projectSpaceId)) = 0 THEN
@@ -1842,8 +1860,15 @@ BEGIN
             END IF;
         END IF;
         
-		SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId);
-
+        IF os >= totalResults OR l = 0 THEN
+            SELECT totalResults;
+        ELSE IF sortBy = 'nameDesc' THEN
+            SELECT totalResults, lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId) ORDER BY s.name DESC LIMIT os, l;
+        ELSE
+            SELECT totalResults, lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId) ORDER BY s.name ASC LIMIT os, l;
+        END IF;
+        END IF;
+        
     ELSE 
 		SIGNAL SQLSTATE 
 			'45002'

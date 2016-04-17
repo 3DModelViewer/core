@@ -11,11 +11,11 @@ import (
 func NewSqlSheetTransformStore(db *sql.DB, log golog.Log) SheetTransformStore {
 
 	get := func(forUser string, ids []string) ([]*SheetTransform, error) {
-		return getter(db, "CALL sheetGet(?, ?)", len(ids), forUser, strings.Join(ids, ","))
+		return getter(db, "CALL sheetTransformGet(?, ?)", len(ids), forUser, strings.Join(ids, ","))
 	}
 
-	getForProjectSpaceVersion := func(forUser string, projectSpaceVersion string) ([]*SheetTransform, error) {
-		return getter(db, "CALL sheetGetForProjectSpaceVersion(?, ?)", forUser, projectSpaceVersion)
+	getForProjectSpaceVersion := func(forUser string, projectSpaceVersion string, offset int, limit int, sortBy sortBy) ([]*SheetTransform, error) {
+		return getter(db, "CALL sheetGetForProjectSpaceVersion(?, ?, ?, ?, ?)", forUser, projectSpaceVersion)
 	}
 
 	return newSheetTransformStore(get, getForProjectSpaceVersion, log)
@@ -24,7 +24,7 @@ func NewSqlSheetTransformStore(db *sql.DB, log golog.Log) SheetTransformStore {
 func NewSqlSaveSheetTransformsFunc(db *sql.DB) func(forUser string, sheetTransforms []*SheetTransform) ([]*SheetTransform, error) {
 	return func(forUser string, sheetTransforms []*SheetTransform) ([]*SheetTransform, error) {
 		if len(sheetTransforms) > 0 {
-			query := strings.Repeat("CALL sheetTransformCreate('%v', '%v', '%v', '%v'); ", len(sheetTransforms))
+			query := strings.Repeat("CALL sheetTransformCreate(%q, %q, '%v', %q); ", len(sheetTransforms))
 			args := make([]interface{}, 0, len(sheetTransforms)*4)
 			hashes := make([]string, 0, len(sheetTransforms))
 			for _, st := range sheetTransforms {
