@@ -10,7 +10,7 @@ import (
 	"io"
 )
 
-func newTreeNodeStore(createFolder createFolder, createDocument createDocument, createProjectSpace createProjectSpace, saveSheetTransformsForProjectSpace saveSheetTransformsForProjectSpace, setName setName, move move, get get, getChildren getChildren, getParents getParents, globalSearch globalSearch, projectSearch projectSearch, getRole util.GetRole, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
+func newTreeNodeStore(createFolder createFolder, createDocument createDocument, createProjectSpace createProjectSpace, saveSheetTransformsForProjectSpace sheettransform.SaveSheetTransformsForProjectSpace, setName setName, move move, get get, getChildren getChildren, getParents getParents, globalSearch globalSearch, projectSearch projectSearch, getRole util.GetRole, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
 	return &treeNodeStore{
 		createFolder:                       createFolder,
 		createDocument:                     createDocument,
@@ -34,7 +34,7 @@ type treeNodeStore struct {
 	createFolder                       createFolder
 	createDocument                     createDocument
 	createProjectSpace                 createProjectSpace
-	saveSheetTransformsForProjectSpace saveSheetTransformsForProjectSpace
+	saveSheetTransformsForProjectSpace sheettransform.SaveSheetTransformsForProjectSpace
 	setName                            setName
 	move                               move
 	get                                get

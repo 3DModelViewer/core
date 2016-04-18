@@ -2,6 +2,7 @@ package treenode
 
 import (
 	"database/sql"
+	"github.com/modelhub/core/sheettransform"
 	"github.com/modelhub/core/util"
 	"github.com/modelhub/vada"
 	"github.com/robsix/golog"
@@ -64,7 +65,7 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 	createProjectSpace := func(forUser string, parent string, name string, projectSpaceVersion string, createComment string, sheetTransforms []string, camera *json.Json, thumbnailType string) (*TreeNode, error) {
 		cameraStr, _ := camera.ToString()
 		if tns, err := getter("CALL treeNodeCreateProjectSpace(?, ?, ?, ?, ?, ?, ?)", 1, forUser, parent, name, projectSpaceVersion, createComment, cameraStr, thumbnailType); len(tns) == 1 {
-			//TODO save projectSpaceVersionSheetTransforms
+			err = util.SqlExec(db, "CALL projectSpaceVersionSheetTransformCreate(?, ?)", projectSpaceVersion, strings.Join(sheetTransforms, ","))
 			return tns[0], err
 		} else {
 			return nil, err
@@ -100,5 +101,5 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		return offsetGetter("CALL treeNodeProjectSearch(?, ?, ?, ?, ?, ?, ?)", forUser, project, search, string(nt), offset, limit, string(sortBy))
 	}
 
-	return newTreeNodeStore(createFolder, createDocument, createProjectSpace, setName, move, get, getChildren, getParents, globalSearch, projectSearch, util.GetRoleFunc(db), vada, ossBucketPrefix, log)
+	return newTreeNodeStore(createFolder, createDocument, createProjectSpace, sheettransform.NewSqlSaveSheetTransformsFunc(db), setName, move, get, getChildren, getParents, globalSearch, projectSearch, util.GetRoleFunc(db), vada, ossBucketPrefix, log)
 }

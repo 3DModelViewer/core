@@ -1509,7 +1509,7 @@ BEGIN
 		SELECT project INTO projectId FROM projectSpaceVersion WHERE id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
         SELECT COUNT(DISTINCT project) INTO distinctProjectsCount FROM projectSpaceVersion AS psv INNER JOIN tempIds AS t ON psv.id = t.id;
         IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
-			SELECT lex(psv.id) AS id, lex(projectSpace) AS projectSpace, version, lex(project) AS project, created, createComment, lex(createdBy) AS createdBy, thumbnailType, cameraJson, (SELECT COUNT(*) FROM projectSpaceVersionsheetTransform AS psvst WHERE psvst.projectSpaceVersion = psv.id) AS sheetTransformCount FROM projectSpaceVersion AS psv INNER JOIN tempIds AS t ON psv.id = t.id;
+			SELECT lex(psv.id) AS id, lex(projectSpace) AS projectSpace, version, lex(project) AS project, created, createComment, lex(createdBy) AS createdBy, cameraJson, thumbnailType, (SELECT COUNT(*) FROM projectSpaceVersionsheetTransform AS psvst WHERE psvst.projectSpaceVersion = psv.id) AS sheetTransformCount FROM projectSpaceVersion AS psv INNER JOIN tempIds AS t ON psv.id = t.id;
         ELSE
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1547,9 +1547,9 @@ BEGIN
         IF os >= totalResults OR l = 0 THEN
 			SELECT totalResults;
 		ELSE IF sortBy = 'versionAsc' THEN
-			SELECT totalResults, lex(psv.id) AS id, lex(psv.projectSpace) AS projectSpace, psv.version, lex(psv.project) AS project, psv.created, psv.createComment, lex(psv.createdBy) AS createdBy, psv.thumbnailType, cameraJson, (SELECT COUNT(*) FROM projectSpaceVersionsheetTransform AS psvst WHERE psvst.projectSpaceVersion = psv.id) AS sheetTransformCount FROM projectSpaceVersion AS psv WHERE psv.projectSpace = UNHEX(projectSpaceId) ORDER BY version ASC LIMIT os, l;
+			SELECT totalResults, lex(psv.id) AS id, lex(psv.projectSpace) AS projectSpace, psv.version, lex(psv.project) AS project, psv.created, psv.createComment, lex(psv.createdBy) AS createdBy, cameraJson, psv.thumbnailType, (SELECT COUNT(*) FROM projectSpaceVersionsheetTransform AS psvst WHERE psvst.projectSpaceVersion = psv.id) AS sheetTransformCount FROM projectSpaceVersion AS psv WHERE psv.projectSpace = UNHEX(projectSpaceId) ORDER BY version ASC LIMIT os, l;
 		ELSE
-			SELECT totalResults, lex(psv.id) AS id, lex(psv.projectSpace) AS projectSpace, psv.version, lex(psv.project) AS project, psv.created, psv.createComment, lex(psv.createdBy) AS createdBy, psv.thumbnailType, cameraJson, (SELECT COUNT(*) FROM projectSpaceVersionsheetTransform AS psvst WHERE psvst.projectSpaceVersion = psv.id) AS sheetTransformCount FROM projectSpaceVersion AS psv WHERE psv.projectSpace = UNHEX(projectSpaceId) ORDER BY version DESC LIMIT os, l;
+			SELECT totalResults, lex(psv.id) AS id, lex(psv.projectSpace) AS projectSpace, psv.version, lex(psv.project) AS project, psv.created, psv.createComment, lex(psv.createdBy) AS createdBy, cameraJson, psv.thumbnailType, (SELECT COUNT(*) FROM projectSpaceVersionsheetTransform AS psvst WHERE psvst.projectSpaceVersion = psv.id) AS sheetTransformCount FROM projectSpaceVersion AS psv WHERE psv.projectSpace = UNHEX(projectSpaceId) ORDER BY version DESC LIMIT os, l;
         END IF;
         END IF;
     ELSE 

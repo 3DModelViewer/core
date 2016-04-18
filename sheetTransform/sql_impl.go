@@ -10,12 +10,37 @@ import (
 
 func NewSqlSheetTransformStore(db *sql.DB, log golog.Log) SheetTransformStore {
 
+	offsetGetter := func(query string, args ...interface{}) ([]*SheetTransform, int, error) {
+		sts := make([]*SheetTransform, 0, util.DefaultSqlOffsetQueryLimit)
+		totalResults := 0
+		rowsScan := func(rows *sql.Rows) error {
+			if util.RowsContainsOnlyTotalResults(&totalResults, rows) {
+				return nil
+			}
+			st := SheetTransform{}
+			thumbnails := ""
+			hash := ""
+			if err := rows.Scan(&totalResults, &st.Id, &st.Sheet, &hash, &st.ClashChangeRegId, &st.DocumentVersion, &st.Project, &st.Name, &st.Manifest, &thumbnails, &st.Role); err != nil {
+				return err
+			}
+			if tran, err := getTransformFromHashJson(hash); err != nil {
+				return err
+			} else {
+				st.Transform = *tran
+			}
+			st.Thumbnails = strings.Split(thumbnails, ",")
+			sts = append(sts, &st)
+			return nil
+		}
+		return sts, totalResults, util.SqlQuery(db, rowsScan, query, args...)
+	}
+
 	get := func(forUser string, ids []string) ([]*SheetTransform, error) {
 		return getter(db, "CALL sheetTransformGet(?, ?)", len(ids), forUser, strings.Join(ids, ","))
 	}
 
 	getForProjectSpaceVersion := func(forUser string, projectSpaceVersion string, offset int, limit int, sortBy sortBy) ([]*SheetTransform, error) {
-		return getter(db, "CALL sheetGetForProjectSpaceVersion(?, ?, ?, ?, ?)", forUser, projectSpaceVersion)
+		return offsetGetter(db, "CALL sheetGetForProjectSpaceVersion(?, ?, ?, ?, ?)", forUser, projectSpaceVersion, offset, limit, sortBy)
 	}
 
 	return newSheetTransformStore(get, getForProjectSpaceVersion, log)
