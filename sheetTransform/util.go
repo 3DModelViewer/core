@@ -69,7 +69,7 @@ func getSheetTransformHashJson(st *SheetTransform) (string, error) {
 	}
 }
 
-func getTransformFromHashJson(hashJson string) (*Transform, error) {
+func getTransformFromHashJson(hashJson string) (*sheetTransformHashObj, error) {
 	dst := &sheetTransformHashObj{
 		Transform: &Transform{
 			Scale: Vector3{

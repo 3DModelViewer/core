@@ -6,7 +6,9 @@ import (
 	"github.com/modelhub/core/documentversion"
 	"github.com/modelhub/core/helper"
 	"github.com/modelhub/core/project"
+	"github.com/modelhub/core/projectspaceversion"
 	"github.com/modelhub/core/sheet"
+	"github.com/modelhub/core/sheettransform"
 	"github.com/modelhub/core/treenode"
 	"github.com/modelhub/core/user"
 	"github.com/modelhub/vada"
@@ -22,8 +24,10 @@ func NewSqlCoreApi(mySqlConnection string, vada vada.VadaClient, statusCheckTime
 		ps := project.NewSqlProjectStore(db, vada, ossBucketPrefix, ossBucketPolicy, log)
 		tns := treenode.NewSqlTreeNodeStore(db, vada, ossBucketPrefix, log)
 		dvs := documentversion.NewSqlDocumentVersionStore(db, statusCheckTimeout, vada, ossBucketPrefix, log)
+		psvs := projectspaceversion.NewSqlProjectSpaceVersionStore(db, vada, ossBucketPrefix, log)
 		ss := sheet.NewSqlSheetStore(db, vada, log)
+		sts := sheettransform.NewSqlSheetTransformStore(db, log)
 		h := helper.NewHelper(tns, dvs, ss, batchGetTimeout, log)
-		return newCoreApi(us, ps, tns, dvs, ss, h)
+		return newCoreApi(us, ps, tns, dvs, psvs, ss, sts, h)
 	}
 }

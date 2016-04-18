@@ -35,7 +35,7 @@ type projectSpaceVersionStore struct {
 	log                                golog.Log
 }
 
-func (psvs *projectSpaceVersionStore) Create(forUser string, parent string, name string, createComment string, sheetTransforms []sheettransform.SheetTransform, camera *json.Json, thumbnailType string, thumbnail io.ReadCloser) (*ProjectSpaceVersion, error) {
+func (psvs *projectSpaceVersionStore) Create(forUser string, parent string, createComment string, sheetTransforms []*sheettransform.SheetTransform, camera *json.Json, thumbnailType string, thumbnail io.ReadCloser) (*ProjectSpaceVersion, error) {
 	var projectId string
 
 	if thumbnail != nil {
@@ -43,16 +43,16 @@ func (psvs *projectSpaceVersionStore) Create(forUser string, parent string, name
 	}
 
 	if treeNodes, err := psvs.get(forUser, []string{parent}); err != nil || treeNodes == nil {
-		psvs.log.Error("ProjectSpaceVersionStore.Create error: forUser: %q parent: %q name: %q thumbnailType: %q error: %v", forUser, parent, name, thumbnailType, err)
+		psvs.log.Error("ProjectSpaceVersionStore.Create error: forUser: %q parent: %q thumbnailType: %q error: %v", forUser, parent, thumbnailType, err)
 		return nil, err
 	} else {
 		projectId = treeNodes[0].Project
 		if role, err := psvs.getRole(forUser, projectId); err != nil {
-			psvs.log.Error("ProjectSpaceVersionStore.Create error: forUser: %q parent: %q name: %q thumbnailType: %q error: %v", forUser, parent, name, thumbnailType, err)
+			psvs.log.Error("ProjectSpaceVersionStore.Create error: forUser: %q parent: %q thumbnailType: %q error: %v", forUser, parent, thumbnailType, err)
 			return nil, err
 		} else if !(role == "owner" || role == "admin" || role == "organiser" || role == "contributor") {
 			err := errors.New("Unauthorized Action: treeNode create projectSpace")
-			psvs.log.Error("ProjectSpaceVersionStore.Create error: forUser: %q parent: %q name: %q thumbnailType: %q error: %v", forUser, parent, name, thumbnailType, err)
+			psvs.log.Error("ProjectSpaceVersionStore.Create error: forUser: %q parent: %q thumbnailType: %q error: %v", forUser, parent, thumbnailType, err)
 			return nil, err
 		}
 	}
@@ -68,11 +68,11 @@ func (psvs *projectSpaceVersionStore) Create(forUser string, parent string, name
 
 	newProjVerId := util.NewId()
 	thumbnailType, _ = util.ThumbnailUploadHelper(newProjVerId, thumbnailType, thumbnail, psvs.ossBucketPrefix+projectId, psvs.vada)
-	if treeNode, err := psvs.create(forUser, parent, name, newProjVerId, createComment, sheetTransformIds, camera, thumbnailType); err != nil {
-		psvs.log.Error("ProjectSpaceVersionStore.Create error: forUser: %q parent: %q name: %q createComment: %q thumbnailType: %q error: %v", forUser, parent, name, createComment, thumbnailType, err)
+	if treeNode, err := psvs.create(forUser, parent, newProjVerId, createComment, sheetTransformIds, camera, thumbnailType); err != nil {
+		psvs.log.Error("ProjectSpaceVersionStore.Create error: forUser: %q parent: %q createComment: %q thumbnailType: %q error: %v", forUser, parent, createComment, thumbnailType, err)
 		return treeNode, err
 	} else {
-		psvs.log.Info("ProjectSpaceVersionStore.Create success: forUser: %q parent: %q name: %q createComment: %q thumbnailType: %q treeNode: %v", forUser, parent, name, createComment, thumbnailType, treeNode)
+		psvs.log.Info("ProjectSpaceVersionStore.Create success: forUser: %q parent: %q createComment: %q thumbnailType: %q treeNode: %v", forUser, parent, createComment, thumbnailType, treeNode)
 		return treeNode, nil
 	}
 }

@@ -8,10 +8,9 @@ import (
 	"github.com/robsix/golog"
 	"github.com/robsix/json"
 	"strings"
-	"time"
 )
 
-func NewSqlProjectSpaceVersionStore(db *sql.DB, statusCheckTimeout time.Duration, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) ProjectSpaceVersionStore {
+func NewSqlProjectSpaceVersionStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) ProjectSpaceVersionStore {
 
 	getter := func(query string, colLen int, args ...interface{}) ([]*ProjectSpaceVersion, error) {
 		psvs := make([]*ProjectSpaceVersion, 0, colLen)

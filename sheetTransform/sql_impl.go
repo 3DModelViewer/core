@@ -23,10 +23,10 @@ func NewSqlSheetTransformStore(db *sql.DB, log golog.Log) SheetTransformStore {
 			if err := rows.Scan(&totalResults, &st.Id, &st.Sheet, &hash, &st.ClashChangeRegId, &st.DocumentVersion, &st.Project, &st.Name, &st.Manifest, &thumbnails, &st.Role); err != nil {
 				return err
 			}
-			if tran, err := getTransformFromHashJson(hash); err != nil {
+			if tranObj, err := getTransformFromHashJson(hash); err != nil {
 				return err
 			} else {
-				st.Transform = *tran
+				st.Transform = *tranObj.Transform
 			}
 			st.Thumbnails = strings.Split(thumbnails, ",")
 			sts = append(sts, &st)
@@ -39,8 +39,8 @@ func NewSqlSheetTransformStore(db *sql.DB, log golog.Log) SheetTransformStore {
 		return getter(db, "CALL sheetTransformGet(?, ?)", len(ids), forUser, strings.Join(ids, ","))
 	}
 
-	getForProjectSpaceVersion := func(forUser string, projectSpaceVersion string, offset int, limit int, sortBy sortBy) ([]*SheetTransform, error) {
-		return offsetGetter(db, "CALL sheetGetForProjectSpaceVersion(?, ?, ?, ?, ?)", forUser, projectSpaceVersion, offset, limit, sortBy)
+	getForProjectSpaceVersion := func(forUser string, projectSpaceVersion string, offset int, limit int, sortBy sortBy) ([]*SheetTransform, int, error) {
+		return offsetGetter("CALL sheetGetForProjectSpaceVersion(?, ?, ?, ?, ?)", forUser, projectSpaceVersion, offset, limit, sortBy)
 	}
 
 	return newSheetTransformStore(get, getForProjectSpaceVersion, log)
@@ -53,7 +53,7 @@ func NewSqlSaveSheetTransformsFunc(db *sql.DB) func(forUser string, sheetTransfo
 			args := make([]interface{}, 0, len(sheetTransforms)*4)
 			hashes := make([]string, 0, len(sheetTransforms))
 			for _, st := range sheetTransforms {
-				hash, err := getSheetTransformHashJson(&st.Transform)
+				hash, err := getSheetTransformHashJson(st)
 				hashes = append(hashes, hash)
 				if err != nil {
 					return sheetTransforms, err
@@ -83,10 +83,10 @@ func getter(db *sql.DB, query string, colLen int, args ...interface{}) ([]*Sheet
 		if err := rows.Scan(&st.Id, &st.Sheet, &hash, &st.ClashChangeRegId, &st.DocumentVersion, &st.Project, &st.Name, &st.Manifest, &thumbnails, &st.Role); err != nil {
 			return err
 		}
-		if tran, err := getTransformFromHashJson(hash); err != nil {
+		if tranObj, err := getTransformFromHashJson(hash); err != nil {
 			return err
 		} else {
-			st.Transform = *tran
+			st.Transform = *tranObj.Transform
 		}
 		st.Thumbnails = strings.Split(thumbnails, ",")
 		sts = append(sts, &st)

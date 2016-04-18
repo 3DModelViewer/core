@@ -99,7 +99,7 @@ func (tns *treeNodeStore) CreateDocument(forUser string, parent string, name str
 	}
 }
 
-func (tns *treeNodeStore) CreateProjectSpace(forUser string, parent string, name string, createComment string, sheetTransforms []sheettransform.SheetTransform, camera *json.Json, thumbnailType string, thumbnail io.ReadCloser) (*TreeNode, error) {
+func (tns *treeNodeStore) CreateProjectSpace(forUser string, parent string, name string, createComment string, sheetTransforms []*sheettransform.SheetTransform, camera *json.Json, thumbnailType string, thumbnail io.ReadCloser) (*TreeNode, error) {
 	var projectId string
 
 	if thumbnail != nil {
