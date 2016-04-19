@@ -63,7 +63,7 @@ func NewSqlSaveSheetTransformsFunc(db *sql.DB) func(forUser string, sheetTransfo
 			if err := util.SqlExec(db, fmt.Sprintf(query, args...)); err != nil {
 				return sheetTransforms, err
 			}
-			sheetTransforms, err := getter(db, "sheetTransformGetForHashJsons(?)", len(hashes), strings.Join(hashes, "#"))
+			sheetTransforms, err := getter(db, "CALL sheetTransformGetForHashJsons(?)", len(hashes), strings.Join(hashes, "#"))
 			//TODO register any unregistered sheetTransforms with clashChangeService,
 			//TODO create every sheetTransform pair to clash against
 			//TODO check DB for which pairs have already been clashed

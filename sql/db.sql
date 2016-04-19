@@ -63,13 +63,18 @@ BEGIN
 		SIGNAL SQLSTATE 
 			'45001'
 		SET
-			MESSAGE_TEXT = 'Invalid sheetHashTransformHashJsons argument',
+			MESSAGE_TEXT = 'Invalid sheetTransformHashJsons argument',
             MYSQL_ERRNO = 45001;
 		RETURN FALSE;
     END IF;
  
-	WHILE sheetHashTransformHashJsons != '' > 0 DO
-		INSERT INTO tempSheetTransformHashJsons (hashJson) VALUES (UNHEX(SUBSTRING_INDEX(sheetTransformHashJsons, '#', 1)));
+	parse: WHILE sheetTransformHashJsons != '' > 0 DO
+		INSERT INTO tempSheetTransformHashJsons (hashJson) VALUES (SUBSTRING_INDEX(sheetTransformHashJsons, '#', 1))
+        ON DUPLICATE KEY UPDATE
+			hashJson = hashJson;
+		IF INSTR(sheetTransformHashJsons, '#') = 0 THEN
+			LEAVE parse;
+        END IF;
 		SET sheetTransformHashJsons = SUBSTRING(sheetTransformHashJsons, INSTR(sheetTransformHashJsons, '#') + 1);
 	END WHILE;
     
@@ -251,7 +256,7 @@ CREATE TABLE sheetTransform(
     clashChangeRegId BINARY(16) NOT NULL,
 	PRIMARY KEY (id),
     UNIQUE INDEX (sheetTransformHashJson),
-    UNIQUE INDEX (clashChangeRegId),
+    INDEX (clashChangeRegId),
     FOREIGN KEY (sheet) REFERENCES sheet(id) ON DELETE CASCADE
 );
 
@@ -1543,7 +1548,7 @@ BEGIN
 	END IF;
     
 	IF forUserRole IS NOT NULL THEN
-		SELECT COUNT(*) INTO totalResults FROM projectSpaceVesion WHERE projectSpace = UNHEX(projectSpaceId);
+		SELECT COUNT(*) INTO totalResults FROM projectSpaceVersion WHERE projectSpace = UNHEX(projectSpaceId);
         IF os >= totalResults OR l = 0 THEN
 			SELECT totalResults;
 		ELSE IF sortBy = 'versionAsc' THEN
@@ -1770,17 +1775,17 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS sheetTransformCreate;
 DELIMITER $$
-CREATE PROCEDURE sheetTransformCreate(forUserId VARCHAR(32), sheetId VARCHAR(32), sheetTransformHashJson VARCHAR(1000), clashChangeRegId VARCHAR(32))
+CREATE PROCEDURE sheetTransformCreate(forUserId VARCHAR(32), sheetId VARCHAR(32), sheetTransformHashJsonArg VARCHAR(1000), clashChangeRegIdArg VARCHAR(32))
 BEGIN
 	DECLARE projectId BINARY(16) DEFAULT NULL;
 	DECLARE forUserRole VARCHAR(50) DEFAULT NULL;
     
     SELECT project INTO projectId FROM sheet WHERE id = UNHEX(sheetId);
-    SET forUserRole = _permission_getRole(UNHEX(forUserId), UNHEX(projectId), UNHEX(forUserId));
+    SET forUserRole = _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId));
     
     IF forUserRole IN ('owner', 'admin', 'organiser', 'contributor') THEN
 		INSERT INTO sheetTransform (id, sheet, sheetTransformHashJson, clashChangeRegId)
-		VALUES (opUuid(), UNHEX(sheetId), sheetTransformHashJson, UNHEX(clashChangeRegId))
+		VALUES (opUuid(), UNHEX(sheetId), sheetTransformHashJsonArg, UNHEX(clashChangeRegIdArg))
         ON DUPLICATE KEY UPDATE
 			id = id,
             sheet = sheet,
@@ -1817,9 +1822,9 @@ DELIMITER ;
 DROP PROCEDURE IF EXISTS sheetTransformGetForHashJsons;
 DELIMITER $$
 CREATE PROCEDURE sheetTransformGetForHashJsons(hashJsons VARCHAR(21000))
-BEGIN    
-	IF createTempSheetHashTransformHashJsonsTable(hashJsons) THEN
-		SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempSheetTransformHashJsons AS tsthj ON s.sheetTransformHashJson = tsthj.hashJson;
+BEGIN
+	IF createTempSheetTransformHashJsonsTable(hashJsons) THEN
+		SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempSheetTransformHashJsons AS tsthj ON st.sheetTransformHashJson = tsthj.hashJson;
 	END IF;
     DROP TEMPORARY TABLE IF EXISTS tempSheetTransformHashJsons;
 END$$
@@ -1884,9 +1889,11 @@ DELIMITER $$
 CREATE PROCEDURE projectSpaceVersionSheetTransformCreate(projectSpaceVersionId VARCHAR(32), sheetTransformIds VARCHAR(3300))
 BEGIN
 	DECLARE projectSpaceVersionProjectId BINARY(16) DEFAULT (SELECT project FROM projectSpaceVersion WHERE id = UNHEX(projectSpaceVersionId));
-	DECLARE sheetProjectId BINARY(16) DEFAULT (SELECT s.project FROM sheet as s INNER JOIN sheetTransform AS st ON s.id = st.sheet WHERE st.id = UNHEX(sheetTransformId));
-    IF projectSpaceVersionProjectId = sheetProjectId THEN
-		IF createTempIdsTable(users) THEN
+	DECLARE sheetProjectId BINARY(16) DEFAULT NULL;
+    
+	IF createTempIdsTable(sheetTransformIds) THEN
+		SELECT s.project INTO sheetProjectId FROM sheet as s INNER JOIN sheetTransform AS st ON s.id = st.sheet WHERE st.id = (SELECT id FROM tempIds LIMIT 1);
+		IF projectSpaceVersionProjectId = sheetProjectId THEN
 			INSERT INTO projectSpaceVersionSheetTransform (projectSpaceVersion, sheetTransform)
 			SELECT UNHEX(projectSpaceVersionId), t.id FROM tempIds AS t;
         END IF;
@@ -1897,6 +1904,7 @@ BEGIN
 			MESSAGE_TEXT = 'Unauthorized action: projectSpaceVersionSheetTransformCreate cross project',
 			MYSQL_ERRNO = 45002;
     END IF;
+    DROP TEMPORARY TABLE IF EXISTS tempIds;
 END$$
 DELIMITER ;
 
