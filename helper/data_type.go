@@ -2,6 +2,7 @@ package helper
 
 import (
 	"github.com/modelhub/core/documentversion"
+	"github.com/modelhub/core/projectspaceversion"
 	"github.com/modelhub/core/treenode"
 )
 
@@ -30,4 +31,9 @@ type firstSheet struct {
 type DocumentVersion struct {
 	*documentversion.DocumentVersion
 	FirstSheet *firstSheet `json:"firstSheet,omitempty"`
+}
+
+type ProjectSpaceNode struct {
+	*treenode.TreeNode
+	LatestVersion *projectspaceversion.ProjectSpaceVersion `json:"latestVersion,omitempty"`
 }

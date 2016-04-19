@@ -27,7 +27,7 @@ func NewSqlCoreApi(mySqlConnection string, vada vada.VadaClient, statusCheckTime
 		psvs := projectspaceversion.NewSqlProjectSpaceVersionStore(db, vada, ossBucketPrefix, log)
 		ss := sheet.NewSqlSheetStore(db, vada, log)
 		sts := sheettransform.NewSqlSheetTransformStore(db, log)
-		h := helper.NewHelper(tns, dvs, ss, batchGetTimeout, log)
+		h := helper.NewHelper(tns, dvs, psvs, ss, batchGetTimeout, log)
 		return newCoreApi(us, ps, tns, dvs, psvs, ss, sts, h)
 	}
 }

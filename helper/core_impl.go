@@ -2,16 +2,18 @@ package helper
 
 import (
 	"github.com/modelhub/core/documentversion"
+	"github.com/modelhub/core/projectspaceversion"
 	"github.com/modelhub/core/sheet"
 	"github.com/modelhub/core/treenode"
 	"github.com/robsix/golog"
 	"time"
 )
 
-func NewHelper(tns treenode.TreeNodeStore, dvs documentversion.DocumentVersionStore, ss sheet.SheetStore, batchGetTimeout time.Duration, log golog.Log) Helper {
+func NewHelper(tns treenode.TreeNodeStore, dvs documentversion.DocumentVersionStore, psvs projectspaceversion.ProjectSpaceVersionStore, ss sheet.SheetStore, batchGetTimeout time.Duration, log golog.Log) Helper {
 	return &helper{
 		tns:             tns,
 		dvs:             dvs,
+		psvs:            psvs,
 		ss:              ss,
 		batchGetTimeout: batchGetTimeout,
 		log:             log,
@@ -21,6 +23,7 @@ func NewHelper(tns treenode.TreeNodeStore, dvs documentversion.DocumentVersionSt
 type helper struct {
 	tns             treenode.TreeNodeStore
 	dvs             documentversion.DocumentVersionStore
+	psvs            projectspaceversion.ProjectSpaceVersionStore
 	ss              sheet.SheetStore
 	batchGetTimeout time.Duration
 	log             golog.Log
@@ -152,6 +155,71 @@ func (h *helper) GetDocumentVersionsWithFirstSheetInfo(forUser string, document 
 				}
 			case <-timeOutChan:
 				h.log.Warning("Helper.GetDocumentVersionsWithFirstSheetInfo timed out after %v with %d open first sheet requests awaiting response", h.batchGetTimeout, countDown)
+				timedOut = true
+			}
+			if timedOut {
+				break
+			}
+		}
+		return res, totalResults, err
+	}
+}
+
+func (h *helper) GetChildrenProjectSpacesWithLatestVersion(forUser string, folder string, offset int, limit int, sortBy sortBy) ([]*ProjectSpaceNode, int, error) {
+	if projSpaces, totalResults, err := h.tns.GetChildren(forUser, folder, "projectSpace", offset, limit, treenode.SortBy(string(sortBy))); err != nil {
+		return nil, totalResults, err
+	} else {
+		countDown := len(projSpaces)
+		timeOutChan := time.After(h.batchGetTimeout)
+		res := make([]*ProjectSpaceNode, 0, totalResults)
+		resVerChan := make(chan *struct {
+			resIdx        int
+			latestVersion *projectspaceversion.ProjectSpaceVersion
+			err           error
+		})
+		for idx, projSpace := range projSpaces {
+			res = append(res, &ProjectSpaceNode{
+				TreeNode: projSpace,
+			})
+			go func(idx int, projSpace *treenode.TreeNode) {
+				vers, _, er := h.psvs.GetForProjectSpace(forUser, projSpace.Id, 0, 1, projectspaceversion.VersionDesc)
+				resVer := &struct {
+					resIdx        int
+					latestVersion *projectspaceversion.ProjectSpaceVersion
+					err           error
+				}{
+					resIdx:        idx,
+					latestVersion: nil,
+					err:           er,
+				}
+				if vers != nil && len(vers) > 0 {
+					ver := vers[0]
+					resVer.latestVersion = &projectspaceversion.ProjectSpaceVersion{
+						Id:                  ver.Id,
+						ProjectSpace:        ver.ProjectSpace,
+						Version:             ver.Version,
+						Project:             ver.Project,
+						Created:             ver.Created,
+						CreateComment:       ver.CreateComment,
+						CreatedBy:           ver.CreatedBy,
+						Camera:              ver.Camera,
+						ThumbnailType:       ver.ThumbnailType,
+						SheetTransformCount: ver.SheetTransformCount,
+					}
+				}
+				resVerChan <- resVer
+			}(idx, projSpace)
+		}
+		for countDown > 0 {
+			timedOut := false
+			select {
+			case resVer := <-resVerChan:
+				countDown--
+				if resVer.latestVersion != nil {
+					res[resVer.resIdx].LatestVersion = resVer.latestVersion
+				}
+			case <-timeOutChan:
+				h.log.Warning("Helper.GetChildrenProjectSpacesWithLatestVersion timed out after %v with %d open latest version requests awaiting response", h.batchGetTimeout, countDown)
 				timedOut = true
 			}
 			if timedOut {
