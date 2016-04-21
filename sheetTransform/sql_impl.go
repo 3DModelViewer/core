@@ -40,7 +40,7 @@ func NewSqlSheetTransformStore(db *sql.DB, log golog.Log) SheetTransformStore {
 	}
 
 	getForProjectSpaceVersion := func(forUser string, projectSpaceVersion string, offset int, limit int, sortBy sortBy) ([]*SheetTransform, int, error) {
-		return offsetGetter("CALL sheetGetForProjectSpaceVersion(?, ?, ?, ?, ?)", forUser, projectSpaceVersion, offset, limit, sortBy)
+		return offsetGetter("CALL sheetTransformGetForProjectSpaceVersion(?, ?, ?, ?, ?)", forUser, projectSpaceVersion, offset, limit, string(sortBy))
 	}
 
 	return newSheetTransformStore(get, getForProjectSpaceVersion, log)
