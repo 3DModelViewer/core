@@ -1806,7 +1806,7 @@ BEGIN
 		SELECT s.project INTO projectId FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id WHERE st.id = (SELECT id FROM tempIds LIMIT 1) LIMIT 1;
         SELECT COUNT(DISTINCT s.project) INTO distinctProjectsCount FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempIds AS t ON st.id = t.id;
         IF distinctProjectsCount = 1 AND projectId IS NOT NULL AND _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
-			SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempIds AS t ON st.id = t.id;
+			SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.baseUrn, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempIds AS t ON st.id = t.id;
         ELSE
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1824,7 +1824,7 @@ DELIMITER $$
 CREATE PROCEDURE sheetTransformGetForHashJsons(hashJsons VARCHAR(21000))
 BEGIN
 	IF createTempSheetTransformHashJsonsTable(hashJsons) THEN
-		SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempSheetTransformHashJsons AS tsthj ON st.sheetTransformHashJson = tsthj.hashJson;
+		SELECT lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.baseUrn, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN sheet AS s ON st.sheet = s.id INNER JOIN tempSheetTransformHashJsons AS tsthj ON st.sheetTransformHashJson = tsthj.hashJson;
 	END IF;
     DROP TEMPORARY TABLE IF EXISTS tempSheetTransformHashJsons;
 END$$
@@ -1868,9 +1868,9 @@ BEGIN
         IF os >= totalResults OR l = 0 THEN
             SELECT totalResults;
         ELSE IF sortBy = 'nameDesc' THEN
-            SELECT totalResults, lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId) ORDER BY s.name DESC LIMIT os, l;
+            SELECT totalResults, lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.baseUrn, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId) ORDER BY s.name DESC LIMIT os, l;
         ELSE
-            SELECT totalResults, lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId) ORDER BY s.name ASC LIMIT os, l;
+            SELECT totalResults, lex(st.id) AS id, lex(st.sheet) AS sheet, st.sheetTransformHashJson, lex(st.clashChangeRegId) AS clashChangeRegId, lex(s.documentVersion) AS documentVersion, lex(s.project) AS project, s.name, s.baseUrn, s.manifest, s.thumbnails, s.role FROM sheetTransform AS st INNER JOIN projectSpaceVersionSheetTransform AS psvst ON st.id = psvst.sheetTransform INNER JOIN sheet AS s ON st.sheet = s.id WHERE psvst.projectSpaceVersion = UNHEX(projectSpaceVersionId) ORDER BY s.name ASC LIMIT os, l;
         END IF;
         END IF;
         

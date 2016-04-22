@@ -20,7 +20,7 @@ func NewSqlSheetTransformStore(db *sql.DB, log golog.Log) SheetTransformStore {
 			st := SheetTransform{}
 			thumbnails := ""
 			hash := ""
-			if err := rows.Scan(&totalResults, &st.Id, &st.Sheet, &hash, &st.ClashChangeRegId, &st.DocumentVersion, &st.Project, &st.Name, &st.Manifest, &thumbnails, &st.Role); err != nil {
+			if err := rows.Scan(&totalResults, &st.Id, &st.Sheet, &hash, &st.ClashChangeRegId, &st.DocumentVersion, &st.Project, &st.Name, &st.BaseUrn, &st.Manifest, &thumbnails, &st.Role); err != nil {
 				return err
 			}
 			if tranObj, err := getTransformFromHashJson(hash); err != nil {
@@ -80,7 +80,7 @@ func getter(db *sql.DB, query string, colLen int, args ...interface{}) ([]*Sheet
 		st := SheetTransform{}
 		thumbnails := ""
 		hash := ""
-		if err := rows.Scan(&st.Id, &st.Sheet, &hash, &st.ClashChangeRegId, &st.DocumentVersion, &st.Project, &st.Name, &st.Manifest, &thumbnails, &st.Role); err != nil {
+		if err := rows.Scan(&st.Id, &st.Sheet, &hash, &st.ClashChangeRegId, &st.DocumentVersion, &st.Project, &st.Name, &st.BaseUrn, &st.Manifest, &thumbnails, &st.Role); err != nil {
 			return err
 		}
 		if tranObj, err := getTransformFromHashJson(hash); err != nil {

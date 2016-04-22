@@ -4,11 +4,12 @@ type SheetTransform struct {
 	Id               string    `json:"id"`
 	Sheet            string    `json:"sheet"`
 	Transform        Transform `json:"transform"`
-	ClashChangeRegId string    `json:-`
+	ClashChangeRegId string    `json:"-"`
 	DocumentVersion  string    `json:"documentVersion"`
 	Project          string    `json:"project"`
 	Name             string    `json:"name"`
 	Thumbnails       []string  `json:"thumbnails"`
+	BaseUrn          string	   `json:"-"`
 	Manifest         string    `json:"manifest"`
 	Role             string    `json:"role"`
 }
