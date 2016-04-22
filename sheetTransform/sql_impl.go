@@ -58,13 +58,19 @@ func NewSqlSaveSheetTransformsFunc(db *sql.DB) func(forUser string, sheetTransfo
 				if err != nil {
 					return sheetTransforms, err
 				}
-				args = append(args, forUser, st.Sheet, hash, "00000000000000000000000000000000")
+				args = append(args, forUser, st.Sheet, hash, util.EmptyUuid)
 			}
 			if err := util.SqlExec(db, fmt.Sprintf(query, args...)); err != nil {
 				return sheetTransforms, err
 			}
 			sheetTransforms, err := getter(db, "CALL sheetTransformGetForHashJsons(?)", len(hashes), strings.Join(hashes, "#"))
-			//TODO register any unregistered sheetTransforms with clashChangeService,
+			//register any unregistered sheetTransforms with clashChangeService
+			for _, st := range sheetTransforms {
+				if st.ClashChangeRegId == util.EmptyUuid {
+					go func(st *SheetTransform){
+					}(st)
+				}
+			}
 			//TODO create every sheetTransform pair to clash against
 			//TODO check DB for which pairs have already been clashed
 			//TODO clash any pairs which havent already been clashed
