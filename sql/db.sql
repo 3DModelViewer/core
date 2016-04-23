@@ -1795,6 +1795,14 @@ BEGIN
 END$$
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS sheetTransformSetClashChangeRedId;
+DELIMITER $$
+CREATE PROCEDURE sheetTransformSetClashChangeRedId(sheetTransformId VARCHAR(32), clashChangeRegIdArg VARCHAR(32))
+BEGIN
+	UPDATE sheetTransform SET clashChangeRegId = UNHEX(clashChangeRegIdArg) WHERE id = UNHEX(sheetTransformId);	
+END$$
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS sheetTransformGet;
 DELIMITER $$
 CREATE PROCEDURE sheetTransformGet(forUserId VARCHAR(32), sheetTransforms VARCHAR(3300))
@@ -1914,7 +1922,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS clashTestCreate;
 DELIMITER $$
-CREATE PROCEDURE clashTestCreate(clashTestId VARCHAR(32), sheetTransformA VARCHAR(32), sheetTransformB VARCHAR(32))
+CREATE PROCEDURE clashTestCreate(forUserId VARCHAR(32), clashTestId VARCHAR(32), sheetTransformA VARCHAR(32), sheetTransformB VARCHAR(32))
 BEGIN
 	DECLARE lst BINARY(16) DEFAULT UNHEX(sheetTransformA);
 	DECLARE rst BINARY(16) DEFAULT UNHEX(sheetTransformB);
@@ -1929,14 +1937,23 @@ BEGIN
 			MYSQL_ERRNO = 45003;   
     END IF;
     
-    IF sheetTransformB < sheetTransformA THEN
-		SET lst = UNHEX(sheetTransformB);
-		SET rst = UNHEX(sheetTransformA);
-    END IF;
+    IF lstProjectId = rstProjectId THEN    
+		IF _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
+			IF sheetTransformB < sheetTransformA THEN
+				SET lst = UNHEX(sheetTransformB);
+				SET rst = UNHEX(sheetTransformA);
+			END IF;
     
-    IF lstProjectId = rstProjectId THEN
-		INSERT INTO clashTest (id, leftSheetTransform, rightSheetTransform)
-		VALUES (UNHEX(clashTestId), lst, rst);
+			INSERT INTO clashTest (id, leftSheetTransform, rightSheetTransform)
+			VALUES (UNHEX(clashTestId), lst, rst);
+        ELSE
+			SIGNAL SQLSTATE 
+				'45002'
+			SET
+				MESSAGE_TEXT = 'Unauthorized action: get clash test',
+				MYSQL_ERRNO = 45002;  
+        
+        END IF;    
     ELSE
 		SIGNAL SQLSTATE 
 			'45002'
@@ -1949,17 +1966,38 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS clashTestGetForSheetTransforms;
 DELIMITER $$
-CREATE PROCEDURE clashTestGetForSheetTransforms(sheetTransformA VARCHAR(32), sheetTransformB VARCHAR(32))
+CREATE PROCEDURE clashTestGetForSheetTransforms(forUserId VARCHAR(32), sheetTransformA VARCHAR(32), sheetTransformB VARCHAR(32))
 BEGIN
 	DECLARE lst BINARY(16) DEFAULT UNHEX(sheetTransformA);
 	DECLARE rst BINARY(16) DEFAULT UNHEX(sheetTransformB);
+	DECLARE lstProjectId BINARY(16) DEFAULT (SELECT s.project FROM sheet AS s INNER JOIN sheetTransform AS st ON s.id = st.sheet WHERE st.id = lst);
+	DECLARE rstProjectId BINARY(16) DEFAULT (SELECT s.project FROM sheet AS s INNER JOIN sheetTransform AS st ON s.id = st.sheet WHERE st.id = rst);
     
-    IF sheetTransformB < sheetTransformA THEN
-		SET lst = UNHEX(sheetTransformB);
-		SET rst = UNHEX(sheetTransformA);
+    
+    IF lstProjectId = rstProjectId THEN    
+		IF _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
+			IF sheetTransformB < sheetTransformA THEN
+				SET lst = UNHEX(sheetTransformB);
+				SET rst = UNHEX(sheetTransformA);
+			END IF;
+    
+			SELECT lex(id) as id, lex(leftSheetTransform) as leftSheetTransform, lex(rightSheetTransform) as rightSheetTransform FROM clashTest WHERE leftSheetTransform = lst AND rightSheetTransform = rst;
+		ELSE
+			SIGNAL SQLSTATE 
+				'45002'
+			SET
+				MESSAGE_TEXT = 'Unauthorized action: get clash test',
+				MYSQL_ERRNO = 45002;  
+        
+        END IF;
+    ELSE
+		SIGNAL SQLSTATE 
+			'45002'
+		SET
+			MESSAGE_TEXT = 'Unauthorized action: clashTestGetForSheetTransforms cross project',
+			MYSQL_ERRNO = 45002;    
     END IF;
     
-    SELECT id, leftSheetTransform, rightSheetTransform FROM clashTest WHERE leftSheetTransform = lst AND rightSheetTransform = rst;
 END$$
 DELIMITER ;
 

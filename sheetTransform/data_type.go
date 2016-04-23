@@ -9,7 +9,7 @@ type SheetTransform struct {
 	Project          string    `json:"project"`
 	Name             string    `json:"name"`
 	Thumbnails       []string  `json:"thumbnails"`
-	BaseUrn          string	   `json:"-"`
+	BaseUrn          string    `json:"-"`
 	Manifest         string    `json:"manifest"`
 	Role             string    `json:"role"`
 }

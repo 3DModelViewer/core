@@ -18,10 +18,10 @@ func newProjectSpaceVersionStore(create create, get get, getForProjectSpace getF
 		get:                                get,
 		getForProjectSpace:                 getForProjectSpace,
 		saveSheetTransformsForProjectSpace: saveSheetTransformsForProjectSpace,
-		getRole: 			    getRole,
-		vada:                               vada,
-		ossBucketPrefix:                    ossBucketPrefix,
-		log:                                log,
+		getRole:         getRole,
+		vada:            vada,
+		ossBucketPrefix: ossBucketPrefix,
+		log:             log,
 	}
 }
 
