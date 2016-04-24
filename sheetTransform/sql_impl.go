@@ -119,7 +119,7 @@ func registerAnyUnregisteredSheetTransforms(sheetTransforms []*SheetTransform, r
 		if st.ClashChangeRegId == util.EmptyUuid {
 			registrationsCount++
 			go func(st *SheetTransform) {
-				if regId, err := caca.RegisterSheet(st.BaseUrn); err != nil {
+				if regId, err := caca.RegisterSheet(st.BaseUrn + st.Manifest); err != nil {
 					errChan <- err
 					return
 				} else {
