@@ -1938,7 +1938,7 @@ BEGIN
     END IF;
     
     IF lstProjectId = rstProjectId THEN    
-		IF _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
+		IF _permission_getRole(UNHEX(forUserId), lstProjectId, UNHEX(forUserId)) IS NOT NULL THEN
 			IF sheetTransformB < sheetTransformA THEN
 				SET lst = UNHEX(sheetTransformB);
 				SET rst = UNHEX(sheetTransformA);
@@ -1975,7 +1975,7 @@ BEGIN
     
     
     IF lstProjectId = rstProjectId THEN    
-		IF _permission_getRole(UNHEX(forUserId), projectId, UNHEX(forUserId)) IS NOT NULL THEN
+		IF _permission_getRole(UNHEX(forUserId), lstProjectId, UNHEX(forUserId)) IS NOT NULL THEN
 			IF sheetTransformB < sheetTransformA THEN
 				SET lst = UNHEX(sheetTransformB);
 				SET rst = UNHEX(sheetTransformA);
