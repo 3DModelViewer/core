@@ -9,6 +9,7 @@ import (
 	"github.com/modelhub/core/sheettransform"
 	"github.com/modelhub/core/treenode"
 	"github.com/modelhub/core/user"
+	"github.com/modelhub/core/clashtest"
 )
 
 type CoreApi interface {
@@ -19,5 +20,6 @@ type CoreApi interface {
 	ProjectSpaceVersion() projectspaceversion.ProjectSpaceVersionStore
 	Sheet() sheet.SheetStore
 	SheetTransform() sheettransform.SheetTransformStore
+	ClashTest() clashtest.ClashTestStore
 	Helper() helper.Helper
 }
