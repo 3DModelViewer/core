@@ -12,8 +12,7 @@ func NewSqlClashTestStore(db *sql.DB, caca caca.CacaClient, log golog.Log) Clash
 	getter := func(query string, args ...interface{}) (string, error) {
 		clashTestId := ""
 		rowsScan := func(rows *sql.Rows) error {
-			discard := ""
-			if err := rows.Scan(&clashTestId, &discard, &discard); err != nil {
+			if err := rows.Scan(&clashTestId); err != nil {
 				return err
 			}
 			return nil
@@ -21,8 +20,15 @@ func NewSqlClashTestStore(db *sql.DB, caca caca.CacaClient, log golog.Log) Clash
 		return clashTestId, util.SqlQuery(db, rowsScan, query, args...)
 	}
 
-	getForSheetTransforms := func(forUser string, leftSheetTransform string, rightSheetTransform string) (string, error) {
-		return getter(db, "CALL clashTestGetForSheetTransforms(?, ?, ?)", forUser, leftSheetTransform, rightSheetTransform)
+	getForSheetTransforms := func(forUser string, leftSheetTransform string, rightSheetTransform string) (string, bool, error) {
+		clashTestId, err := getter("CALL clashTestGetForSheetTransforms(?, ?, ?)", forUser, leftSheetTransform, rightSheetTransform)
+		var exists bool
+		if clashTestId == "" {
+			exists = false
+		} else {
+			exists = true
+		}
+		return clashTestId, exists, err
 	}
 
 	return newClashTestStore(getForSheetTransforms, caca, log)

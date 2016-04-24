@@ -1981,7 +1981,7 @@ BEGIN
 				SET rst = UNHEX(sheetTransformA);
 			END IF;
     
-			SELECT lex(id) as id, lex(leftSheetTransform) as leftSheetTransform, lex(rightSheetTransform) as rightSheetTransform FROM clashTest WHERE leftSheetTransform = lst AND rightSheetTransform = rst;
+			SELECT lex(id) as id FROM clashTest WHERE leftSheetTransform = lst AND rightSheetTransform = rst;
 		ELSE
 			SIGNAL SQLSTATE 
 				'45002'
@@ -1998,6 +1998,22 @@ BEGIN
 			MYSQL_ERRNO = 45002;    
     END IF;
     
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS _clashTest_getForSheetTransforms;
+DELIMITER $$
+CREATE PROCEDURE _clashTest_getForSheetTransforms(sheetTransformA VARCHAR(32), sheetTransformB VARCHAR(32))
+BEGIN
+	DECLARE lst BINARY(16) DEFAULT UNHEX(sheetTransformA);
+	DECLARE rst BINARY(16) DEFAULT UNHEX(sheetTransformB);
+    
+	IF sheetTransformB < sheetTransformA THEN
+		SET lst = UNHEX(sheetTransformB);
+		SET rst = UNHEX(sheetTransformA);
+	END IF;
+    
+	SELECT lex(id) as id FROM clashTest WHERE leftSheetTransform = lst AND rightSheetTransform = rst;
 END$$
 DELIMITER ;
 

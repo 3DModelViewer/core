@@ -8,9 +8,11 @@ import (
 	"github.com/robsix/golog"
 	"github.com/robsix/json"
 	"strings"
+	"github.com/modelhub/caca"
+	"time"
 )
 
-func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
+func NewSqlTreeNodeStore(db *sql.DB, subTaskTimeout time.Duration, vada vada.VadaClient, caca caca.CacaClient, ossBucketPrefix string, log golog.Log) TreeNodeStore {
 
 	getter := func(query string, colLen int, args ...interface{}) ([]*TreeNode, error) {
 		tns := make([]*TreeNode, 0, colLen)
@@ -101,5 +103,5 @@ func NewSqlTreeNodeStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix strin
 		return offsetGetter("CALL treeNodeProjectSearch(?, ?, ?, ?, ?, ?, ?)", forUser, project, search, string(nt), offset, limit, string(sortBy))
 	}
 
-	return newTreeNodeStore(createFolder, createDocument, createProjectSpace, sheettransform.NewSqlSaveSheetTransformsFunc(db), setName, move, get, getChildren, getParents, globalSearch, projectSearch, util.GetRoleFunc(db), vada, ossBucketPrefix, log)
+	return newTreeNodeStore(createFolder, createDocument, createProjectSpace, sheettransform.NewSqlSaveSheetTransformsFunc(subTaskTimeout, db, caca, log), setName, move, get, getChildren, getParents, globalSearch, projectSearch, util.GetRoleFunc(db), vada, ossBucketPrefix, log)
 }

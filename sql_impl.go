@@ -18,15 +18,15 @@ import (
 	"github.com/modelhub/caca"
 )
 
-func NewSqlCoreApi(mySqlConnection string, vada vada.VadaClient, caca caca.CacaClient, statusCheckTimeout time.Duration, batchGetTimeout time.Duration, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) (CoreApi, error) {
+func NewSqlCoreApi(mySqlConnection string, vada vada.VadaClient, caca caca.CacaClient, subTaskTimeout time.Duration, batchGetTimeout time.Duration, ossBucketPrefix string, ossBucketPolicy vada.BucketPolicy, log golog.Log) (CoreApi, error) {
 	if db, err := sql.Open("mysql", mySqlConnection); err != nil {
 		return nil, err
 	} else {
 		us := user.NewSqlUserStore(db, log)
 		ps := project.NewSqlProjectStore(db, vada, ossBucketPrefix, ossBucketPolicy, log)
-		tns := treenode.NewSqlTreeNodeStore(db, vada, ossBucketPrefix, log)
-		dvs := documentversion.NewSqlDocumentVersionStore(db, statusCheckTimeout, vada, ossBucketPrefix, log)
-		psvs := projectspaceversion.NewSqlProjectSpaceVersionStore(db, vada, ossBucketPrefix, log)
+		tns := treenode.NewSqlTreeNodeStore(db, subTaskTimeout, vada, caca, ossBucketPrefix, log)
+		dvs := documentversion.NewSqlDocumentVersionStore(db, subTaskTimeout, vada, ossBucketPrefix, log)
+		psvs := projectspaceversion.NewSqlProjectSpaceVersionStore(db, subTaskTimeout, vada, caca, ossBucketPrefix, log)
 		ss := sheet.NewSqlSheetStore(db, vada, log)
 		sts := sheettransform.NewSqlSheetTransformStore(db, log)
 		cts := clashtest.NewSqlClashTestStore(db, caca, log)

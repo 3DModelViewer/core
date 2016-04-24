@@ -4,7 +4,7 @@ import (
 	"github.com/modelhub/caca"
 	"github.com/robsix/golog"
 	"github.com/robsix/json"
-	"errors"
+	"github.com/modelhub/core/util"
 )
 
 func newClashTestStore(getForSheetTransforms getForSheetTransforms, caca caca.CacaClient, log golog.Log) ClashTestStore {
@@ -21,23 +21,21 @@ type clashTestStore struct {
 	log                   golog.Log
 }
 
-func (cts *clashTestStore) GetForSheetTransforms(forUser string, leftSheetTransform string, rightSheetTransform string) (*json.Json, error) {
-	if clashTestId, err := cts.getForSheetTransforms(forUser, leftSheetTransform, rightSheetTransform); err != nil {
+func (cts *clashTestStore) GetForSheetTransforms(forUser string, leftSheetTransform string, rightSheetTransform string) (*json.Json, bool, error) {
+	if clashTestId, exists, err := cts.getForSheetTransforms(forUser, leftSheetTransform, rightSheetTransform); err != nil {
 		cts.log.Error("ClashTestStore.GetForSheetTransforms error: forUser: %q leftSheetTransform: %q rightSheetTransform: %q error: %v", forUser, leftSheetTransform, rightSheetTransform, err)
-		return nil, err
-	} else if clashTestId != "" {
-		if js, err := cts.caca.GetClashTest(clashTestId); err != nil {
+		return nil, exists, err
+	} else if exists {
+		if js, err := cts.caca.GetClashTest(util.IdToUuidFormat(clashTestId)); err != nil {
 			cts.log.Error("ClashTestStore.GetForSheetTransforms error: forUser: %q leftSheetTransform: %q rightSheetTransform: %q error: %v", forUser, leftSheetTransform, rightSheetTransform, err)
-			return nil, err
+			return nil, exists, err
 		} else {
 			js.Del("data", "left", "urn")
 			js.Del("data", "right", "urn")
 			cts.log.Info("ClashTestStore.GetForSheetTransforms success: forUser: %q leftSheetTransform: %q rightSheetTransform: %q", forUser, leftSheetTransform, rightSheetTransform)
-			return js, nil
+			return js, exists, nil
 		}
 	} else {
-		err = errors.New("No clash test exists for given sheetTransforms")
-		cts.log.Error("ClashTestStore.GetForSheetTransforms error: forUser: %q leftSheetTransform: %q rightSheetTransform: %q error: %v", forUser, leftSheetTransform, rightSheetTransform, err)
-		return nil, err
+		return nil, exists, err
 	}
 }

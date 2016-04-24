@@ -8,7 +8,6 @@ import (
 	"github.com/robsix/golog"
 	"strings"
 	"time"
-	"github.com/modelhub/core/clashtest"
 )
 
 func NewSqlSheetTransformStore(db *sql.DB, log golog.Log) SheetTransformStore {
@@ -70,7 +69,18 @@ func getter(db *sql.DB, query string, colLen int, args ...interface{}) ([]*Sheet
 	return sts, util.SqlQuery(db, rowsScan, query, args...)
 }
 
-func NewSqlSaveSheetTransformsFunc(clashTestStore clashtest.ClashTestStore, subTaskTimeOut time.Duration, db *sql.DB, caca caca.CacaClient, log golog.Log) func(forUser string, sheetTransforms []*SheetTransform) ([]*SheetTransform, error) {
+func _clashTestGetter(db *sql.DB, leftSheetTransform string, rightSheetTransform string) (string, error) {
+	clashTestId := ""
+	rowsScan := func(rows *sql.Rows) error {
+		if err := rows.Scan(&clashTestId); err != nil {
+			return err
+		}
+		return nil
+	}
+	return clashTestId, util.SqlQuery(db, rowsScan, "CALL _clashTest_getForSheetTransforms(?, ?)", leftSheetTransform, rightSheetTransform)
+}
+
+func NewSqlSaveSheetTransformsFunc(subTaskTimeOut time.Duration, db *sql.DB, caca caca.CacaClient, log golog.Log) func(forUser string, sheetTransforms []*SheetTransform) ([]*SheetTransform, error) {
 	return func(forUser string, sheetTransforms []*SheetTransform) ([]*SheetTransform, error) {
 		if len(sheetTransforms) > 0 {
 			query := strings.Repeat("CALL sheetTransformCreate(%q, %q, '%v', %q); ", len(sheetTransforms))
@@ -89,11 +99,11 @@ func NewSqlSaveSheetTransformsFunc(clashTestStore clashtest.ClashTestStore, subT
 			}
 			sheetTransforms, err := getter(db, "CALL sheetTransformGetForHashJsons(?)", len(hashes), strings.Join(hashes, "#"))
 			if caca != nil {
-				registerAnyUnregisteredSheetTransforms(sheetTransforms, subTaskTimeOut, db, caca, log)
-				registerAnyUnregisteredClashTests(forUser, sheetTransforms, clashTestStore, subTaskTimeOut, db, caca, log)
-				//TODO create every sheetTransform pair to clash against
-				//TODO check DB for which pairs have already been clashed
-				//TODO clash any pairs which havent already been clashed
+				if err := registerAnyUnregisteredSheetTransforms(sheetTransforms, subTaskTimeOut, db, caca, log); err != nil {
+					return sheetTransforms, err
+				} else {
+					return sheetTransforms, registerAnyUnregisteredClashTests(forUser, sheetTransforms, subTaskTimeOut, db, caca, log)
+				}
 			}
 			return sheetTransforms, err
 		}
@@ -113,6 +123,7 @@ func registerAnyUnregisteredSheetTransforms(sheetTransforms []*SheetTransform, r
 					errChan <- err
 					return
 				} else {
+					regId = strings.Replace(regId, "-", "", -1)
 					if err := util.SqlExec(db, "CALL sheetTransformSetClashChangeRedId(?, ?)", st.Id, regId); err != nil {
 						errChan <- err
 						return
@@ -142,10 +153,10 @@ func registerAnyUnregisteredSheetTransforms(sheetTransforms []*SheetTransform, r
 			break
 		}
 	}
-	return sheetTransforms, lastErr
+	return lastErr
 }
 
-func registerAnyUnregisteredClashTests(forUser string, sheetTransforms []*SheetTransform, clashTestStore clashtest.ClashTestStore, clashRegistrationTimeOut time.Duration, db *sql.DB, caca caca.CacaClient, log golog.Log) error {
+func registerAnyUnregisteredClashTests(forUser string, sheetTransforms []*SheetTransform, clashRegistrationTimeOut time.Duration, db *sql.DB, caca caca.CacaClient, log golog.Log) error {
 	registrationsCount := 0
 	var lastErr error
 	errChan := make(chan error)
@@ -153,15 +164,20 @@ func registerAnyUnregisteredClashTests(forUser string, sheetTransforms []*SheetT
 		for j := i + 1; j < len(sheetTransforms); j++ {
 			registrationsCount++
 			go func(leftSheetTransform *SheetTransform, rightSheetTransform *SheetTransform) {
-				if clashTestId, err := clashTestStore.GetForSheetTransforms(forUser, leftSheetTransform, rightSheetTransform); err != nil {
+				if clashTestId, err := _clashTestGetter(db, leftSheetTransform.Id, rightSheetTransform.Id); err != nil {
 					errChan <- err
 					return
-				} else if clashTestId {
-
+				} else if clashTestId == "" {
+					if clashTestId, err := caca.RegisterClashTest(util.IdToUuidFormat(leftSheetTransform.ClashChangeRegId), util.IdToUuidFormat(rightSheetTransform.ClashChangeRegId)); err != nil {
+						errChan <- err
+						return
+					} else {
+						clashTestId = strings.Replace(clashTestId, "-", "", -1)
+						errChan <- util.SqlExec(db, "CALL clashTestCreate(?, ?, ?, ?)", forUser, clashTestId, leftSheetTransform.Id, rightSheetTransform.Id)
+					}
+				} else {
+					errChan <- nil
 				}
-				//TODO check db to see if clashTest has already been registered
-
-				//TODO register clashTest if not
 			}(sheetTransforms[i], sheetTransforms[j])
 		}
 	}
@@ -182,5 +198,5 @@ func registerAnyUnregisteredClashTests(forUser string, sheetTransforms []*SheetT
 			break
 		}
 	}
-	return sheetTransforms, lastErr
+	return lastErr
 }

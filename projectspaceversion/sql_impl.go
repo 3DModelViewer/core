@@ -8,9 +8,11 @@ import (
 	"github.com/robsix/golog"
 	"github.com/robsix/json"
 	"strings"
+	"time"
+	"github.com/modelhub/caca"
 )
 
-func NewSqlProjectSpaceVersionStore(db *sql.DB, vada vada.VadaClient, ossBucketPrefix string, log golog.Log) ProjectSpaceVersionStore {
+func NewSqlProjectSpaceVersionStore(db *sql.DB, subTaskTimeout time.Duration, vada vada.VadaClient, caca caca.CacaClient, ossBucketPrefix string, log golog.Log) ProjectSpaceVersionStore {
 
 	getter := func(query string, colLen int, args ...interface{}) ([]*ProjectSpaceVersion, error) {
 		psvs := make([]*ProjectSpaceVersion, 0, colLen)
@@ -64,5 +66,5 @@ func NewSqlProjectSpaceVersionStore(db *sql.DB, vada vada.VadaClient, ossBucketP
 		return offsetGetter("CALL projectSpaceVersionGetForProjectSpace(?, ?, ?, ?, ?)", forUser, document, offset, limit, string(sortBy))
 	}
 
-	return newProjectSpaceVersionStore(create, get, getForProjectSpace, sheettransform.NewSqlSaveSheetTransformsFunc(db), util.GetRoleFunc(db), vada, ossBucketPrefix, log)
+	return newProjectSpaceVersionStore(create, get, getForProjectSpace, sheettransform.NewSqlSaveSheetTransformsFunc(subTaskTimeout, db, caca, log), util.GetRoleFunc(db), vada, ossBucketPrefix, log)
 }
