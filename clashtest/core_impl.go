@@ -5,6 +5,7 @@ import (
 	"github.com/robsix/golog"
 	"github.com/robsix/json"
 	"github.com/modelhub/core/util"
+	"strings"
 )
 
 func newClashTestStore(getForSheetTransforms getForSheetTransforms, caca caca.CacaClient, log golog.Log) ClashTestStore {
@@ -32,6 +33,9 @@ func (cts *clashTestStore) GetForSheetTransforms(forUser string, leftSheetTransf
 		} else {
 			js.Del("data", "left", "urn")
 			js.Del("data", "right", "urn")
+			js.Set(strings.Replace(js.MustString("", "data", "id"), "-", "", -1), "data", "id")
+			js.Set(strings.Replace(js.MustString("", "data", "left", "id"), "-", "", -1), "data", "left", "id")
+			js.Set(strings.Replace(js.MustString("", "data", "right", "id"), "-", "", -1), "data", "right", "id")
 			cts.log.Info("ClashTestStore.GetForSheetTransforms success: forUser: %q leftSheetTransform: %q rightSheetTransform: %q", forUser, leftSheetTransform, rightSheetTransform)
 			return js, exists, nil
 		}
